@@ -1,43 +1,44 @@
+// SolicitudDetallePage.tsx
+
 import { Box, Heading, Text, Tag, SimpleGrid, Stat, StatLabel, StatNumber, Divider } from '@chakra-ui/react';
 import { redirect } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import { CodigoProveedorView } from '@/components/ui/codigo-proveedor-view';
-import { AdminActions } from '@/components/ui/admin-actions';
+import { AdminActions } from '@/components/ui/admin-actions'; // Lógica a ajustar
 import { CourseDetailsView } from '@/components/ui/course-details-view';
-import { CourseClassificationForm } from '@/components/formularios/categorias-cursos-form'; // <-- NUEVA IMPORTACIÓN
 
 // Interfaz que incluye todos los campos del formulario de curso.
 interface SolicitudDetalle {
-  id: string;
-  tipo: string;
-  estado: string;
-  nombre: string;
-  fecha: string;
-  organismo: string;
-  contacto: string;
-  descripcion: string;
-  documents?: { name: string; url: string }[];
-  // Campos del formulario (simplificado para el ejemplo)
-  denominacion?: string;
-  proposito?: string;
-  fundamentacion?: string;
-  duracion?: string;
-  estructuraCostos?: string;
-  perfilDocente?: string;
-  perfiles?: string;
-  exigencias?: string;
-  estructuraCurricular?: string;
-  evaluacion?: string;
-  cronograma?: string;
-  // Campos de compatibilidad
-  descripcionCurso?: string;
-  propuesta?: string;
-  cambiosSolicitados?: string;
+  id: string;
+  tipo: string;
+  estado: string;
+  nombre: string;
+  fecha: string;
+  organismo: string;
+  contacto: string;
+  descripcion: string;
+  documents?: { name: string; url: string }[];
+  // Campos del formulario (simplificado para el ejemplo)
+  denominacion?: string;
+  proposito?: string;
+  fundamentacion?: string;
+  duracion?: string;
+  estructuraCostos?: string;
+  perfilDocente?: string;
+  perfiles?: string;
+  exigencias?: string;
+  estructuraCurricular?: string;
+  evaluacion?: string;
+  cronograma?: string;
+  // Campos de compatibilidad
+  descripcionCurso?: string;
+  propuesta?: string;
+  cambiosSolicitados?: string;
 }
 
 // Simulación: Lógica para obtener detalles por ID (sustituir con fetch real a la BD)
 async function getSolicitudDetails(id: string): Promise<SolicitudDetalle | null> {
-  // ... [Mock Data array completo] ...
+  // ... [Mock Data array completo] ...
   const mockData: SolicitudDetalle[] = [
     { 
       id: 'sol-001', 
@@ -98,15 +99,15 @@ async function getSolicitudDetails(id: string): Promise<SolicitudDetalle | null>
     },
     { 
       id: 'sol-004', 
-      tipo: 'Actualización de Curso', 
+      tipo: 'Formulación de Curso - Directa',
       estado: 'Pendiente', 
       nombre: 'Organización D', 
       fecha: '2023-10-28',
       organismo: 'CEI',
       contacto: 'david.lopez@email.com',
-      descripcion: 'Solicitud de actualización del temario del curso "Gestión de Proyectos"',
+      descripcion: 'Propuesta de curso de "Gestión de Proyectos" para evaluación y formulación por el departamento correspondiente.',
       denominacion: 'Gestión de Proyectos',
-      proposito: 'Actualizar el contenido del curso para incluir las últimas tendencias y metodologías ágiles en la gestión de proyectos.',
+      proposito: 'Profundizar el contenido del curso para incluir las últimas tendencias y metodologías ágiles en la gestión de proyectos.',
       fundamentacion: 'La industria ha evolucionado hacia metodologías ágiles como Scrum y Kanban, por lo que es crucial actualizar el curso para mantener su relevancia y utilidad para los profesionales.',
       duracion: '32 horas',
       estructuraCostos: 'Sin cambios en la estructura de costos. Se utilizarán las mismas plataformas y recursos.',
@@ -119,39 +120,37 @@ async function getSolicitudDetails(id: string): Promise<SolicitudDetalle | null>
     },
   ];
 
-  return mockData.find(s => s.id === id) || null;
+  return mockData.find(s => s.id === id) || null;
 }
 
 // Lógica de seguridad (mantenida)
 async function checkAdminRole() {
-  const user = { role: 'admin' };
-  if (user.role !== 'admin') {
-    redirect('/login?error=unauthorized');
-  }
+  const user = { role: 'admin' };
+  if (user.role !== 'admin') {
+    redirect('/login?error=unauthorized');
+  }
 }
 
 export default async function SolicitudDetallePage({ params }: { params: { id: string } }) {
-  await checkAdminRole();
+  await checkAdminRole();
 
-  const solicitud = await getSolicitudDetails(params.id);
+  const solicitud = await getSolicitudDetails(params.id);
 
-  if (!solicitud) {
-    notFound();
-  }
+  if (!solicitud) {
+    notFound();
+  }
 
-  // Mapeo de colores para el estado
-  const getEstadoColorScheme = (estado: string) => {
-    switch (estado.toLowerCase()) {
-      case 'pendiente': return 'orange';
-      case 'aprobada': return 'green';
-      case 'rechazada': return 'red';
-      default: return 'gray';
-    }
-  };
+  // Mapeo de colores para el estado
+  const getEstadoColorScheme = (estado: string) => {
+    switch (estado.toLowerCase()) {
+      case 'pendiente': return 'orange';
+      case 'aprobada': return 'green';
+      case 'rechazada': return 'red';
+      default: return 'gray';
+    }
+  };
 
-  const isCourseRequest = 
-    solicitud.tipo.startsWith('Formulación de Curso') || 
-    solicitud.tipo === 'Actualización de Curso';
+  const isCourseRequest = solicitud.tipo.startsWith('Formulación de Curso') 
 
   return (
     <Box maxW="container.xl" mx="auto" py={10} px={6}>
@@ -190,9 +189,10 @@ export default async function SolicitudDetallePage({ params }: { params: { id: s
         <CourseDetailsView solicitud={solicitud} />
       )}
       
-      <Divider mb={8} />
+      <Divider mb={8} />
 
       {/* Las acciones del administrador se mantienen siempre */}
+      {/* AdminActions DEBE manejar la lógica específica para cada solicitudTipo */}
       <AdminActions solicitudId={solicitud.id} solicitudTipo={solicitud.tipo} adminOrganismo='ing' />
     </Box>
   );

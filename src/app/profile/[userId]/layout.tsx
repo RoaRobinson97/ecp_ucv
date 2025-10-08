@@ -3,7 +3,6 @@ import React from 'react';
 import { Box, Flex, Heading, Container } from '@chakra-ui/react';
 
 // Este componente de layout es estático.
-// Se carga instantáneamente para todos los usuarios.
 export default function UserProfileLayout({ children }: { children: React.ReactNode }) {
   return (
     <Box bg="gray.100" minH="100vh">

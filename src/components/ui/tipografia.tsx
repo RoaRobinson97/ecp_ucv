@@ -14,7 +14,7 @@ import {
  * Usa las props estándar de Chakra UI para tamaño, peso, etc.
  */
 export const Heading: React.FC<HeadingProps> = (props) => {
-  return <ChakraHeading fontFamily="Montserrat, sans-serif" {...props} />;
+  return <ChakraHeading margin={0} fontFamily="Montserrat, sans-serif" {...props} />;
 };
 
 /**

@@ -6,43 +6,24 @@ import { Heading, Paragraph } from "@/components/ui/tipografia";
 import { PrimaryButton } from "@/components/ui/buttons";
 import { ClientContent } from '../components/ui/client-components';
 
-
-
-// Datos de ejemplo para simular la respuesta de una API en el servidor
-const MOCK_COURSES = [
-    {
-        id: "1",
-        title: "Introducción a la Programación",
-        description: "Aprende los fundamentos de la programación con Python, desde variables hasta estructuras de datos.",
-        image: 'image-1.png'
-    },
-    {
-        id: "2",
-        title: "Marketing Digital Avanzado",
-        description: "Domina estrategias de SEO, SEM y redes sociales para impulsar cualquier negocio.",
-        image: null
-    },
-    {
-        id: "3",
-        title: "Bases de Datos con SQL",
-        description: "Diseña y gestiona bases de datos relacionales con los principales comandos de SQL.",
-        image: null
-    },
-];
-
-// Esta función simula una llamada a la API en el servidor
-async function getCourses() {
-    // Aquí es donde harías tu llamada a la API real, por ejemplo:
-    // const res = await fetch('https://tu-api.com/courses');
-    // const courses = await res.json();
-    return MOCK_COURSES;
-}
+// 🚀 IMPORTAMOS EL SERVICIO DE NEGOCIO EN LUGAR DE LA LÓGICA LOCAL
+import { courseService } from '../servicios/cursos-service'; 
 
 export default async function HomePage() {
-    // 1. Llama a la función del servidor para obtener los datos.
-    const courses = await getCourses();
+    
+    let courses = [];
+    try {
+        // 1. Llama a la función del SERVICIO para obtener los datos.
+        //    Esta llamada usa el ApiService, que decide si usar MOCK o API REAL.
+        courses = await courseService.getAllCourses();
+    } catch (error) {
+        // Manejo básico de errores de carga en el servidor
+        console.error("Fallo al cargar cursos en HomePage:", error);
+        // courses ya está inicializado a [] para evitar errores en la UI
+    }
 
-return (
+
+    return (
         <Box minH="100vh">
             {/* Encabezado del contenido principal */}
             <Box 
@@ -70,7 +51,7 @@ return (
                     </Box>
             </Box>
 
-            {/* Este Box ahora maneja la imagen de fondo de pantalla completa */}
+            {/* Renderiza el contenido que depende de los datos */}
             <ClientContent courses={courses} />
         </Box>
     );

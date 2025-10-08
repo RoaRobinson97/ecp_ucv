@@ -9,6 +9,7 @@ export default function RegisterPage() {
       alignItems="center"
       minH="100vh"
       bg="gray.100"
+      padding={8}
     >
       <RegisterForm />
     </Flex>

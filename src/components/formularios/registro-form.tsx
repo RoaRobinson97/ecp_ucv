@@ -4,131 +4,108 @@ import React, { useState } from 'react';
 import {
   Box,
   Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Stack,
+  VStack,
   Heading,
   useColorModeValue,
   Text,
+  Link,
 } from "@chakra-ui/react";
-import { useAuth } from "@/app/context/auth-context"; // <-- Importa el hook de autenticación
-import { useRouter } from "next/navigation"; // <-- Importa el hook de navegación
+import { useAuth } from "@/app/context/auth-context";
+import { useRouter } from "next/navigation";
+import { FormControl, FormLabel, Input, FormErrorMessage } from "@/components/ui/form-controls";
+
+// --- CAMBIO PRINCIPAL AQUÍ ---
+// 1. Agregamos la propiedad 'isRequired' a cada campo.
+// Para desarrollo/simulación, puedes ponerlos en 'false'.
+// Para producción, simplemente cámbialos a 'true'.
+const formFields = [
+  { id: "firstName", label: "Nombre", type: "text", isRequired: false },
+  { id: "lastName", label: "Apellido", type: "text", isRequired: false },
+  { id: "cedula", label: "Cédula", type: "text", isRequired: false },
+  { id: "email", label: "Email", type: "email", isRequired: false },
+  { id: "password", label: "Contraseña", type: "password", isRequired: false },
+];
+
+// Control para el campo de confirmación de contraseña
+const isConfirmPasswordRequired = false;
 
 export const RegisterForm = () => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [cedula, setCedula] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    cedula: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
   const [error, setError] = useState('');
 
-  // Obtenemos la función login del contexto
-  const { login } = useAuth(); 
-  // Obtenemos el enrutador para redirigir
-  const router = useRouter(); 
+  const { login } = useAuth();
+  const router = useRouter();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
+    if (formData.password !== formData.confirmPassword) {
       setError("Las contraseñas no coinciden.");
       return;
     }
     setError('');
 
-    // Aquí iría la lógica de registro real (ej. llamada a una API)
-    console.log("Nombre:", firstName);
-    console.log("Apellido:", lastName);
-    console.log("Cédula:", cedula);
-    console.log("Email:", email);
-    console.log("Contraseña:", password);
+    console.log("Datos del formulario:", formData);
 
-    // Simulación de registro exitoso
-    login("user-123",'admin'); // <-- Pasa un ID de usuario de ejemplo
-    
-    // Redirecciona al usuario a la página de inicio o a su perfil
+    login("ec-user-002", 'admin');
     router.push("/");
   };
 
   const formBgColor = useColorModeValue("white", "gray.700");
-  const inputBorderColor = useColorModeValue("gray.300", "gray.600");
 
   return (
     <Box
       bg={formBgColor}
       p={8}
       rounded="lg"
-      shadow="md"
+      shadow="lg"
       w="full"
-      maxW="sm"
+      maxW="md"
     >
       <Heading as="h1" size="xl" textAlign="center" mb={6}>
         Crear Cuenta
       </Heading>
       <form onSubmit={handleRegister}>
-        <Stack spacing={4}>
-          <FormControl id="firstName">
-            <FormLabel>Nombre</FormLabel>
-            <Input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              required
-              borderColor={inputBorderColor}
-            />
-          </FormControl>
-          <FormControl id="lastName">
-            <FormLabel>Apellido</FormLabel>
-            <Input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              required
-              borderColor={inputBorderColor}
-            />
-          </FormControl>
-          <FormControl id="cedula">
-            <FormLabel>Cédula</FormLabel>
-            <Input
-              type="text"
-              value={cedula}
-              onChange={(e) => setCedula(e.target.value)}
-              required
-              borderColor={inputBorderColor}
-            />
-          </FormControl>
-          <FormControl id="email">
-            <FormLabel>Email</FormLabel>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              borderColor={inputBorderColor}
-            />
-          </FormControl>
-          <FormControl id="password">
-            <FormLabel>Contraseña</FormLabel>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              borderColor={inputBorderColor}
-            />
-          </FormControl>
-          <FormControl id="confirmPassword">
+        <VStack spacing={4}>
+          {formFields.map((field) => (
+            // 2. Leemos la propiedad 'isRequired' del objeto del campo.
+            <FormControl key={field.id} id={field.id} isRequired={field.isRequired}>
+              <FormLabel>{field.label}</FormLabel>
+              <Input
+                type={field.type}
+                name={field.id}
+                value={formData[field.id as keyof typeof formData]}
+                onChange={handleChange}
+              />
+            </FormControl>
+          ))}
+
+          {/* Hacemos lo mismo para el campo de confirmación */}
+          <FormControl id="confirmPassword" isRequired={isConfirmPasswordRequired} isInvalid={!!error}>
             <FormLabel>Confirmar Contraseña</FormLabel>
             <Input
               type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              borderColor={inputBorderColor}
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
             />
-            {error && <Text color="red.500" fontSize="sm" mt={1}>{error}</Text>}
+            {error && <FormErrorMessage>{error}</FormErrorMessage>}
           </FormControl>
+
           <Button
             type="submit"
             colorScheme="teal"
@@ -138,8 +115,15 @@ export const RegisterForm = () => {
           >
             Registrarse
           </Button>
-        </Stack>
+        </VStack>
       </form>
+      
+      <Text mt={6} textAlign="center">
+        ¿Ya tienes una cuenta?{' '}
+        <Link color="teal.500" href="/login" fontWeight="bold">
+          Inicia Sesión
+        </Link>
+      </Text>
     </Box>
   );
 };

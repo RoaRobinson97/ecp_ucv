@@ -10,6 +10,7 @@ export default function LoginPage() {
       alignItems="center"
       minH="100vh"
       bg="gray.100"
+      p={8}
     >
       <LoginForm />
     </Flex>

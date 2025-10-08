@@ -1,3 +1,5 @@
+// components/ui/users-table.tsx
+
 "use client";
 
 import {
@@ -25,6 +27,7 @@ import {
   Flex,
 } from '@chakra-ui/react';
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation'; // ⬅️ IMPORTAR useRouter
 
 interface User {
   id: string;
@@ -47,7 +50,6 @@ const getRoleColorScheme = (rol: string) => {
     case 'proveedor':
       return 'purple';
     case 'visitante':
-      return 'gray';
     default:
       return 'gray';
   }
@@ -58,6 +60,7 @@ const editableRoles = ['admin', 'coordinador', 'proveedor', 'visitante'];
 
 export function UsersTable({ educacionContinuaUsers, grupoExtensionUsers }: UsersTableProps) {
   const toast = useToast();
+  const router = useRouter(); // ⬅️ Inicializar router
   const [filter, setFilter] = useState('Todos');
   const [currentUsers, setCurrentUsers] = useState(educacionContinuaUsers);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -71,6 +74,12 @@ export function UsersTable({ educacionContinuaUsers, grupoExtensionUsers }: User
     } else {
       setCurrentUsers(grupoExtensionUsers);
     }
+  };
+
+  // 🛑 NUEVO HANDLER DE NAVEGACIÓN
+  const handleUserClick = (userId: string) => {
+    // Redirige a la página dinámica del usuario: /usuario/[id]
+    router.push(`/profile/${userId}`);
   };
 
   const handleSaveRole = (userId: string) => {
@@ -113,9 +122,14 @@ export function UsersTable({ educacionContinuaUsers, grupoExtensionUsers }: User
         <Tbody>
           {users.length > 0 ? (
             users.map((user) => (
-              <Tr key={user.id}>
+              <Tr 
+                key={user.id} 
+                onClick={() => handleUserClick(user.id)} // ⬅️ ACCIÓN DE CLIC A LA FILA
+                cursor="pointer" // ⬅️ Indicador visual de que es clickeable
+                _hover={{ bg: 'rowhover' }} 
+              >
                 <Td>{user.id}</Td>
-                <Td>{user.nombre}</Td>
+                <Td fontWeight="semibold">{user.nombre}</Td>
                 <Td>{user.organismo}</Td>
                 <Td width="250px" py={1} alignItems="center">
                   {editingUserId === user.id ? (
@@ -134,18 +148,18 @@ export function UsersTable({ educacionContinuaUsers, grupoExtensionUsers }: User
                       <Button
                         size="sm"
                         colorScheme="green"
-                        onClick={() => handleSaveRole(user.id)}
+                        onClick={(e) => { 
+                          e.stopPropagation(); // Evita que se dispare el handleUserClick
+                          handleSaveRole(user.id);
+                        }}
                       >
                         Guardar
                       </Button>
                     </Flex>
                   ) : (
                     <Box 
-                      onClick={() => {
-                        setEditingUserId(user.id);
-                        setSelectedRole(user.rol);
-                      }}
-                      cursor="pointer"
+                      // 🛑 NOTA: Quité el onClick aquí para que la fila completa maneje la navegación.
+                      // Puedes volver a agregarlo si solo quieres editar dando clic al badge de rol.
                     >
                       <Badge colorScheme={getRoleColorScheme(user.rol)}>{user.rol}</Badge>
                     </Box>

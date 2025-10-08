@@ -4,13 +4,48 @@ import { SolicitudesTable } from '@/components/ui/solicitudes-table';
 
 // Simulación: Obtener solicitudes de Educación Continua
 async function getEducacionContinuaSolicitudes() {
-  const data = [
-    { id: 'sol-001', tipo: 'Código de Proveedor', fecha: '2023-10-26', estado: 'Pendiente', nombre: 'Organización A' },
-    { id: 'sol-002', tipo: 'Formulación de Curso - Directa', fecha: '2023-10-25', estado: 'Aprobada', nombre: 'Organización B' },
-    { id: 'sol-003', tipo: 'Formulación de Curso - Indirecta', fecha: '2023-10-24', estado: 'Pendiente', nombre: 'Organización C' },
-    { id: 'sol-004', tipo: 'Actualización de Curso', fecha: '2023-10-23', estado: 'Pendiente', nombre: 'Organización D' },
-  ];
-  return data;
+  const data = [
+    { 
+      id: 'sol-001', 
+      tipo: 'Código de Proveedor', 
+      fecha: '2023-10-26', 
+      estado: 'Pendiente', 
+      nombre: 'Organización A' 
+    },
+    { 
+      id: 'sol-002', 
+      tipo: 'Formulación de Curso - Directa', 
+      fecha: '2023-10-25', 
+      estado: 'Aprobada', 
+      nombre: 'Organización B', 
+      // 🟢 Curso Aprobado y Legal
+      isLegal: true 
+    },
+    { 
+      id: 'sol-003', 
+      tipo: 'Formulación de Curso - Indirecta', 
+      fecha: '2023-10-24', 
+      estado: 'Pendiente', 
+      nombre: 'Organización C' 
+    },
+    { 
+      id: 'sol-004', 
+      tipo: 'Formulación de Curso - Directa', 
+      fecha: '2023-10-23', 
+      estado: 'Pendiente', 
+      nombre: 'Organización D' 
+    },
+    { 
+      id: 'sol-005', 
+      tipo: 'Formulación de Curso - Indirecta', 
+      fecha: '2023-10-20', 
+      estado: 'Aprobada', 
+      nombre: 'Organización E', 
+      // 🟠 Curso Aprobado, pero la documentación NO está en vigencia
+      isLegal: false 
+    },
+  ];
+  return data;
 }
 
 // Simulación: Obtener solicitudes de Grupo de Extensión

@@ -28,13 +28,9 @@ interface CourseDetailsViewProps {
   };
 }
 
-// Componente auxiliar para mostrar un detalle clave (ACTUALIZADO)
+// Componente auxiliar para mostrar un detalle clave
 const KeyDetail = ({ label, value }: { label: string; value?: string }) => {
-  // Define un color que sea oscuro en modo claro (ej: gray.600) 
-  // y un color que sea claro en modo oscuro (ej: gray.300)
   const labelColor = useColorModeValue("gray.700", "gray.300");
-  
-  // Define el color de fondo de la caja de texto para que contraste
   const boxBg = useColorModeValue("white", "gray.700");
   const boxBorder = useColorModeValue("gray.200", "gray.600");
 
@@ -52,10 +48,10 @@ const KeyDetail = ({ label, value }: { label: string; value?: string }) => {
 
 export function CourseDetailsView({ solicitud }: CourseDetailsViewProps) {
   const getTitle = () => {
+    // Reemplaza las partes iniciales para crear un título de vista de detalles.
     return solicitud.tipo.replace('Formulación de ', 'Detalles de ').replace('Actualización de ', 'Detalles de ');
   };
 
-  // Ajuste de colores para la caja contenedora principal (VStack)
   const containerBg = useColorModeValue("gray.50", "gray.800");
 
   return (
@@ -63,6 +59,8 @@ export function CourseDetailsView({ solicitud }: CourseDetailsViewProps) {
       <Heading as="h2" size="xl" mb={6}>{getTitle()}</Heading>
 
       <VStack spacing={6} align="stretch" p={4} bg={containerBg} rounded="lg" shadow="sm">
+        
+        {/* Detalles del curso (aplica a Formulaciones y Actualizaciones) */}
         <KeyDetail label="Denominación o Título del Curso" value={solicitud.denominacion} />
         <KeyDetail label="Propósito General (Objetivo Principal)" value={solicitud.proposito} />
         <KeyDetail label="Fundamentación y Justificación" value={solicitud.fundamentacion} />
@@ -74,8 +72,15 @@ export function CourseDetailsView({ solicitud }: CourseDetailsViewProps) {
         <KeyDetail label="Estructura Curricular Detallada por Competencias y Módulos" value={solicitud.estructuraCurricular} />
         <KeyDetail label="Estrategias de Evaluación y Criterios de Aprobación" value={solicitud.evaluacion} />
         <KeyDetail label="Cronograma de Ejecución Anual (Tentativo)" value={solicitud.cronograma} />
+        
+        {/* // Campos específicos para otros tipos de solicitud (si fueran relevantes)
+          // Se pueden añadir aquí si la vista debe ser genérica para otros tipos de solicitud.
+          <KeyDetail label="Descripción del Curso Existente" value={solicitud.descripcionCurso} />
+          <KeyDetail label="Propuesta de Actualización" value={solicitud.propuesta} />
+          <KeyDetail label="Cambios Solicitados" value={solicitud.cambiosSolicitados} /> 
+        */}
       </VStack>
-  
+    
     </Box>
   );
 }

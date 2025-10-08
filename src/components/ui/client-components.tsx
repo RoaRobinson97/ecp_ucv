@@ -12,8 +12,8 @@ interface InfoCardProps {
 
 interface CourseProps {
     id: string;
-    title: string;
-    description: string;
+    titulo: string;
+    descripcion: string;
     image: string | null;
 }
 
@@ -32,14 +32,14 @@ const InfoCard = ({ title, description, image }: InfoCardProps) => {
 };
 
 // Componente para una tarjeta de curso
-const CourseCard = ({ title, description, image }: Omit<CourseProps, 'id'>) => {
+const CourseCard = ({ titulo, descripcion, image }: Omit<CourseProps, 'id'>) => {
     const placeholderImage = "https://placehold.co/400x200/cccccc/ffffff/png?text=Imagen+no+encontrada";
     
     return (
         <Card overflow="hidden" variant="outline">
             <Image
                 src={image as string} // Le decimos a TypeScript que 'image' es un string (esto es seguro porque 'fallbackSrc' lo maneja)
-                alt={title}
+                alt={titulo}
                 objectFit="cover"
                 w="100%"
                 h="200px"
@@ -47,8 +47,8 @@ const CourseCard = ({ title, description, image }: Omit<CourseProps, 'id'>) => {
             />
             <CardBody>
                 <Stack mt="6" spacing="3">
-                    <Heading size="md">{title}</Heading>
-                    <Paragraph>{description}</Paragraph>
+                    <Heading size="md">{titulo}</Heading>
+                    <Paragraph>{descripcion}</Paragraph>
                 </Stack>
             </CardBody>
         </Card>
@@ -90,8 +90,8 @@ export function ClientContent({ courses }: ClientContentProps) {
                     {courses.map(course => (
                         <CourseCard
                             key={course.id}
-                            title={course.title}
-                            description={course.description}
+                            titulo={course.titulo}
+                            descripcion={course.descripcion}
                             image={course.image}
                         />
                     ))}

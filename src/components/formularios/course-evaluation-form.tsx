@@ -4,19 +4,30 @@
 
 import React from 'react';
 import { 
-  FormControl, 
-  FormLabel, 
-  Input, 
-  Button, 
+  // ✅ Importaciones solo de utilidades y contenedores no personalizados
   VStack, 
-  Textarea, 
   Box, 
   Link,
   useColorModeValue,
   Text,
-  Heading, // 🛑 Agregamos Heading para el título
 } from '@chakra-ui/react';
+import NextLink from 'next/link';
 import { DownloadIcon } from '@chakra-ui/icons';
+import {
+  Heading,
+  Paragraph,
+  Label,
+} from "@/components/ui/tipografia";
+
+// ✅ Importamos TODOS los componentes de formulario desde tu librería
+import { 
+    FormControl, 
+    FormLabel, 
+    Input, 
+    Textarea,
+    FileInput,
+} from "@/components/ui/form-controls"; 
+import { InfoButton } from "@/components/ui/buttons"; 
 
 // Define las props que CourseEvaluationForm necesita
 interface CourseEvaluationFormProps {
@@ -42,55 +53,47 @@ export function CourseEvaluationForm({
   onFileChange,
 }: CourseEvaluationFormProps) {
   
-  // Handler simple para simular la selección de archivo
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] || null;
-    onFileChange(file);
-  };
-  
-  // 🎨 ESTILOS ARMONIZADOS (Similares a categorias-cursos.tsx)
+  // 🎨 ESTILOS ARMONIZADOS
   const containerBg = useColorModeValue("white", "gray.700");
-  const headingColor = useColorModeValue("teal.600", "teal.300"); // Usamos Teal para el encabezado
+  const headingColor = useColorModeValue("teal.600", "teal.300");
   const inputBg = useColorModeValue('white', 'gray.800');
   const inputBorder = useColorModeValue('gray.200', 'gray.600');
 
   return (
     <VStack 
-      spacing={4} 
-      align="stretch" 
+      spacing={6} 
+      align="stretch"
       p={6} 
-      rounded="lg" // Borde redondeado
-      borderWidth="1px" // Borde sutil
-      borderColor={useColorModeValue('gray.200', 'gray.600')} // Color de borde neutro
-      shadow="md" // Sombra
-      bg={containerBg} // Fondo blanco/gris oscuro
+      rounded="lg" 
+      borderWidth="1px" 
+      borderColor={useColorModeValue('gray.200', 'gray.600')} 
+      shadow="md" 
+      bg={containerBg} 
+      alignItems={'start'}
     >
       <Heading 
-        as="h3" 
         size="lg" 
         mb={2} 
-        color={headingColor}
-      >
-        Formulario de Evaluación Final de Curso
+        marginLeft={0}
+        padding={0}
+        textAlign="left" 
+      >Formulario de Evaluación Final de Curso
       </Heading>
 
-      <Text fontSize="sm" color={useColorModeValue("gray.600", "gray.400")} mb={4}>
-        Complete los campos requeridos para finalizar la revisión y **Aprobar** el curso.
-      </Text>
-      
-      {/* 1. RÚBRICA DE DESCARGA */}
-      <Box>
-        <Text mb={2} fontWeight="semibold">Documento de Referencia:</Text>
-        <Button 
-          as={Link}
-          href={rubricaUrl}
-          isExternal 
-          colorScheme="teal" // 🛑 Cambiamos a teal para armonizar
-          leftIcon={<DownloadIcon />}
-          size="md" // Tamaño mediano
-        >
-          Descargar Rúbrica de Evaluación
-        </Button>
+    <Text fontSize="sm" color={useColorModeValue("gray.600", "gray.400")} mb={4}>Complete los campos requeridos para finalizar la revisión y **Aprobar** el curso.
+    </Text><Box pb={4} borderBottom="1px" borderColor={useColorModeValue('gray.100', 'gray.700')} w="full">
+        <Text mb={3} fontWeight="bold" fontSize="lg" textAlign="left">Documento de Referencia:</Text>
+        <NextLink  
+            href={rubricaUrl} 
+            passHref 
+            target="_blank" // Abrir en nueva pestaña
+            rel="noopener noreferrer"
+        ><InfoButton 
+              leftIcon={<DownloadIcon />}
+              size="lg" 
+            >Descargar Rúbrica de Evaluación</InfoButton>
+        </NextLink>
+
       </Box>
 
       {/* 2. INPUT DE CALIFICACIÓN OBLIGATORIO */}
@@ -102,23 +105,14 @@ export function CourseEvaluationForm({
           placeholder="Ingrese la calificación final"
           bg={inputBg}
           borderColor={inputBorder}
+          size="lg" // Aseguramos que se mantenga el tamaño
         />
-      </FormControl>
-
-      {/* 3. SUBIDA DE ARCHIVO DE PRUEBA (EVIDENCIA) */}
-      <FormControl isRequired>
-        <FormLabel fontWeight="bold">Subir Archivo de Prueba/Evidencia</FormLabel>
-        <Text fontSize="sm" color={useColorModeValue("gray.500", "gray.400")} mb={1}>
-          Documento (PDF o ZIP) que justifique la calificación otorgada.
-        </Text>
-        <Input 
-          type="file" 
-          p={1} 
-          onChange={handleFileSelect}
-          bg={inputBg}
-          borderColor={inputBorder}
-        />
-      </FormControl>
+      </FormControl><FileInput
+        isRequired
+        label="Subir Archivo de Prueba/Evidencia"
+        description="Documento (PDF o ZIP) que justifique la calificación otorgada."
+        onFileChange={onFileChange} 
+      />
 
       {/* 4. OBSERVACIONES OPCIONALES */}
       <FormControl>
@@ -129,6 +123,7 @@ export function CourseEvaluationForm({
           placeholder="Observaciones adicionales sobre la evaluación."
           bg={inputBg}
           borderColor={inputBorder}
+          rows={4}
         />
       </FormControl>
     </VStack>
