@@ -4,27 +4,51 @@ import { CONFIG } from '../config/config';          // Configuración global (ej
 import { MOCKED_DB, generateMockId } from '../data/mock-data'; // Datos simulados y lógica de ID
 
 class BaseApiService {
+
     constructor() {
         this.baseURL = CONFIG.API_URL;
     }
 
-    async #realApiFetch(method, url, options) {
+    #getHeaders(customHeaders = {}) {
+        const headers = { 
+            'Content-Type': 'application/json',
+            ...customHeaders 
+        };
+
+        if (typeof window !== 'undefined') {
+            const token = localStorage.getItem('token'); 
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+        }
+        return headers;
+    }
+
+    async #realApiFetch(method, url, options = {}) {
         console.log(`REAL API: [${method}] ${url}`);
         
         try {
-            const response = await fetch(url, options);
+            
+            const fetchOptions = {
+                ...options,
+                headers: this.#getHeaders(options.headers)
+            };
+
+            const response = await fetch(url, fetchOptions);
 
             if (!response.ok) {
+                // Manejo especial para 401 (Token vencido o inválido)
+                if (response.status === 401) {
+                    console.error("Token inválido o expirado.");
+                    // Opcional: Redirigir al login
+                    // window.location.href = '/login'; 
+                }
 
                 const errorBody = await response.json().catch(() => ({ message: response.statusText }));
-                const errorMessage = errorBody.message || `Error ${response.status}: ${response.statusText}`;
-                
-                throw new Error(errorMessage);
+                throw new Error(errorBody.message || `Error ${response.status}: ${response.statusText}`);
             }
             
-            if (response.status === 204) {
-                return { success: true, message: "Operación exitosa sin contenido." };
-            }
+            if (response.status === 204) return { success: true };
 
             return await response.json();
             
@@ -79,14 +103,22 @@ class BaseApiService {
     }
 
 
-    async #executeRequest(method, entityName, id = null, data = null) {
+    async #executeRequest(method, entityName, id = null, data = null, queryParams = null) {
         if (CONFIG.USE_MOCK_DATA) {
             return await this.#mockDataFetch(method, entityName, id, data);
         } else {
-            const url = `${this.baseURL}/${entityName}${id ? '/' + id : ''}`;
+            // Construcción de URL mejorada para soportar query params
+            let url = `${this.baseURL}/${entityName}${id ? '/' + id : ''}`;
+            
+            // Si hay queryParams (ej: { page: 1, limit: 3 }), los añadimos a la URL
+            if (queryParams) {
+                const searchParams = new URLSearchParams(queryParams);
+                url += `?${searchParams.toString()}`;
+            }
+
             const options = {
                 method: method,
-                headers: { 'Content-Type': 'application/json' },
+                // headers: se generan dentro de #realApiFetch ahora
                 body: data ? JSON.stringify(data) : null,
             };
             return await this.#realApiFetch(method, url, options);
@@ -94,8 +126,13 @@ class BaseApiService {
     }
 
     // --- MÉTODOS PÚBLICOS (El Contrato) ---
-    async get(entityName, id = null) {
-        return await this.#executeRequest('GET', entityName, id);
+    async get(entityName, idOrParams = null) {
+        // Si el segundo argumento es un objeto pero no un string, son params
+        if (typeof idOrParams === 'object' && idOrParams !== null) {
+            return await this.#executeRequest('GET', entityName, null, null, idOrParams);
+        }
+        // Si es string o number, es un ID
+        return await this.#executeRequest('GET', entityName, idOrParams);
     }
     
     async post(entityName, data) {

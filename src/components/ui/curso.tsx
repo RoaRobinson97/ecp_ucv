@@ -1,285 +1,365 @@
-// app/curso/[courseId]/CourseClientPage.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Heading,
-  Text,
-  Flex,
-  VStack,
-  Divider,
-  Button,
-  FormControl,
-  FormLabel,
-  Input,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  useToast,
-  Link as ChakraLink,
-  useDisclosure,
+    Box,
+    Heading,
+    Text,
+    Flex,
+    VStack,
+    Divider,
+    Link as ChakraLink,
+    Spinner,
+    Alert,
+    AlertIcon,
+    useColorModeValue,
+    Card,
+    CardHeader,
+    CardBody,
+    Grid,
+    GridItem,
+    Badge,
+    Avatar,
+    Stack,
+    // IconButton, // Descomentar si añades botones de acción a publicaciones
 } from "@chakra-ui/react";
 import NextLink from 'next/link';
-import { useGlobalData } from "@/app/context/global-data-context";
-import { useRouter } from "next/navigation";
-import CloseCohortModal from "@/components/modals/cerrar-cohorte-modal"
+// import { EditIcon, DeleteIcon } from '@chakra-ui/icons'; // Descomentar para acciones
+import { courseService } from '@/servicios/cursos-service';
+import { userService } from '@/servicios/users-service'; // Importamos userService
+import { useAuth } from '@/app/context/auth-context';
+import CohortManagementPanel from '@/components/formularios/gestion-cohorte-form';
+import { Course, User, Publication } from '@/data/types'; // Importamos Publication
 
-// El componente ahora recibe el courseId como una prop
-export default function CourseClientPage({ courseId }: { courseId: string }) {
-  const toast = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+// --- Helper Functions for Status Display ---
+type CourseStatus = Course['estado_gestion'];
 
-  // Estados locales para el formulario
-  const [cohortName, setCohortName] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [capacity, setCapacity] = useState(20);
-  
-  // Usa el contexto global para leer y actualizar el estado de la cohorte
-  const { isCohortOpen, setCohortOpen } = useGlobalData();
-  const router = useRouter();
-
-  // Simulated course data
-  const currentCourse = {
-    id: courseId,
-    denominacion: "Marketing Digital para Emprendedores",
-    proposito: "Capacitar a emprendedores en estrategias de marketing digital para impulsar sus negocios online, abarcando SEO, SEM, redes sociales, email marketing y analítica web.",
-    fundamentacion: "En la era digital, la visibilidad online es crucial para el éxito empresarial. Este curso está diseñado para proporcionar a los emprendedores las herramientas y conocimientos prácticos necesarios para competir eficazmente y alcanzar a su público objetivo.",
-    duracion: "40 horas",
-    estructuraCostos: "La inversión total por participante es de $350 USD, que incluye acceso a todos los módulos online, materiales didácticos descargables, sesiones de mentoría en vivo y la certificación final de aprobación.",
-    perfilDocente: "El docente es un profesional con más de 10 años de experiencia en la industria de la tecnología y el marketing, con certificaciones en Google Ads, Meta Blueprint y un master en analítica digital. Ha impartido clases en diversas universidades y colaborado con startups y grandes corporaciones.",
-    perfiles: "Perfil de Ingreso: Emprendedores, dueños de PYMES o profesionales que deseen adquirir o reforzar sus conocimientos en marketing digital. Perfil de Egreso: Participantes capaces de diseñar, implementar y medir una estrategia de marketing digital integral, optimizando campañas y tomando decisiones basadas en datos.",
-    exigencias: "Acceso a un ordenador con conexión a internet estable, una cuenta de correo electrónico activa y cuentas en las principales redes sociales. No se requieren conocimientos previos, aunque se recomienda una comprensión básica del uso de navegadores web.",
-    estructuraCurricular: "Módulo 1: Fundamentos de Marketing Digital. Módulo 2: SEO y Contenido. Módulo 3: Publicidad en Google Ads y Meta. Módulo 4: Email Marketing y Automatización. Módulo 5: Analítica Web y Estrategias de Crecimiento.",
-    evaluacion: "La evaluación se compone de un 40% de participación activa en los foros y sesiones en vivo, un 30% en la entrega de proyectos modulares prácticos y un 30% en un proyecto final integrador, donde cada estudiante deberá presentar un plan de marketing para su negocio.",
-    cronograma: "El curso se desarrollará a lo largo de 8 semanas. Las sesiones en vivo se realizarán los martes y jueves de 19:00 a 21:00 (hora de Caracas). Las actividades asíncronas podrán ser completadas en el horario de preferencia del participante.",
-    providerCode: "CODE-XYZ-123",
-    userId: "AUTH-USER-456",
-  };
-  
-  // Objeto con información simulada para la cohorte activa
-  const activeCohortData = {
-      name: 'Cohorte Primavera 2024',
-      start: '2024-09-01',
-      end: '2024-11-01',
-      cap: 25,
-  };
-
-  const handleOpenCohort = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setIsLoading(true);
-
-    if (!cohortName || !startDate || !endDate || capacity <= 0) {
-      toast({
-        title: "Error de validación.",
-        description: "Por favor, completa todos los campos requeridos.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      setIsLoading(false);
-      return;
+const getStatusColorScheme = (status?: CourseStatus): string => {
+    switch (status) {
+        case 'aprobado': return 'green';
+        case 'abierto': return 'blue';
+        case 'rechazado': return 'red';
+        case 'cerrado': return 'gray';
+        case 'pendiente': return 'yellow';
+        default: return 'gray';
     }
+};
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setCohortOpen(true); // Actualiza el estado global a 'true'
-      
-      toast({
-        title: "Cohorte Abierta.",
-        description: `La cohorte "${cohortName}" para "${currentCourse.denominacion}" ha sido creada con éxito.`,
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
-
-      router.push(`/`); // Redirige a la página principal
-
-    } catch (error) {
-      toast({
-        title: "Error al abrir cohorte.",
-        description: "Por favor, inténtalo de nuevo más tarde.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setIsLoading(false);
+const formatStatusText = (status?: CourseStatus): string => {
+    switch (status) {
+        case 'aprobado': return 'Aprobado';
+        case 'abierto': return 'Abierto';
+        case 'rechazado': return 'Rechazado';
+        case 'cerrado': return 'Cerrado';
+        case 'pendiente': return 'Pendiente Revisión';
+        default: return 'Desconocido';
     }
-  };
+};
 
-  return (
-    <Box maxW="4xl" mx="auto" p={8} my={8} bg="white" rounded="lg" shadow="xl">
-      <VStack spacing={8} align="stretch">
-        <Heading as="h1" size="2xl" textAlign="center" color="teal.700">
-          Detalles del Curso: "{currentCourse.denominacion}"
-        </Heading>
-        <Text fontSize="lg" textAlign="center" color="gray.600">
-          Explora la información de este curso y configura una nueva cohorte.
-        </Text>
+// ✨ ADICIÓN: Helper para formatear el tipo de proveedor
+const formatProviderType = (type?: User['providerType']): string => {
+    switch (type) {
+        case 'con-fines-de-lucro': return 'Organización con Fines de Lucro';
+        case 'sin-fines-de-lucro': return 'Organización Sin Fines de Lucro';
+        default: return 'Tipo no especificado';
+    }
+};
+// --- End Helper Functions ---
 
-        <Divider borderColor="gray.300" />
 
+// --- KeyDetail Component ---
+const KeyDetail = ({ label, value }: { label: string; value?: string | null }) => {
+// ... (Componente KeyDetail sin cambios)
+    const labelColor = useColorModeValue("gray.600", "gray.400");
+    const valueColor = useColorModeValue("gray.800", "white");
+    const boxBg = useColorModeValue("gray.100", "gray.700");
+    const boxBorder = useColorModeValue("gray.200", "gray.600");
+
+    return (
         <Box>
-          <Heading as="h2" size="lg" mb={4} color="teal.600">
-            Descripción General
-          </Heading>
-          <Text mb={2}><Text as="span" fontWeight="bold">Propósito:</Text> {currentCourse.proposito}</Text>
-          <Text mb={2}><Text as="span" fontWeight="bold">Fundamentación:</Text> {currentCourse.fundamentacion}</Text>
-          <Text mb={2}><Text as="span" fontWeight="bold">Duración:</Text> {currentCourse.duracion}</Text>
-          <Text mb={2}><Text as="span" fontWeight="bold">Estructura de Costos:</Text> {currentCourse.estructuraCostos}</Text>
+            <Text fontWeight="semibold" fontSize="sm" color={labelColor} mb={1}>{label}</Text>
+            <Box p={2} bg={boxBg} borderWidth="1px" borderColor={boxBorder} borderRadius="md">
+                <Text whiteSpace="pre-wrap" color={valueColor}>
+                    {value || <Text as="i" color="gray.500">No especificado</Text>}
+                </Text>
+            </Box>
         </Box>
+    );
+};
+// --- End KeyDetail Component ---
 
-        <Divider borderColor="gray.300" />
+// --- Publication Card Component ---
+const PublicationCard = ({ publication }: { publication: Publication }) => {
+// ... (Componente PublicationCard sin cambios)
+    const cardBg = useColorModeValue("white", "gray.700");
+    const dividerColor = useColorModeValue("gray.200", "gray.600");
+    const dateColor = useColorModeValue("gray.500", "gray.400");
+    const titleColor = useColorModeValue("gray.800", "white");
+    const contentColor = useColorModeValue("gray.700", "gray.300");
 
-        <Box>
-          <Heading as="h2" size="lg" mb={4} color="teal.600">
-            Perfiles y Exigencias
-          </Heading>
-          <Text mb={2}><Text as="span" fontWeight="bold">Perfil del Docente:</Text> {currentCourse.perfilDocente}</Text>
-          <Text mb={2}><Text as="span" fontWeight="bold">Perfiles de Ingreso/Egreso:</Text> {currentCourse.perfiles}</Text>
-          <Text mb={2}><Text as="span" fontWeight="bold">Exigencias:</Text> {currentCourse.exigencias}</Text>
-        </Box>
+    const formattedDate = new Date(publication.fecha).toLocaleDateString('es-VE', {
+        year: 'numeric', month: 'long', day: 'numeric'
+    });
 
-        <Divider borderColor="gray.300" />
-
-        <Box>
-          <Heading as="h2" size="lg" mb={4} color="teal.600">
-            Aspectos Curriculares y Logísticos
-          </Heading>
-          <Text mb={2}><Text as="span" fontWeight="bold">Estructura Curricular:</Text> {currentCourse.estructuraCurricular}</Text>
-          <Text mb={2}><Text as="span" fontWeight="bold">Estrategias de Evaluación:</Text> {currentCourse.evaluacion}</Text>
-          <Text mb={2}><Text as="span" fontWeight="bold">Cronograma Anual:</Text> {currentCourse.cronograma}</Text>
-        </Box>
-
-        <Divider borderColor="gray.300" />
-
-        {/* Renderizado condicional */}
-        <Box p={6} border="2px" borderColor="teal.100" rounded="lg" bg="teal.50">
-          {isCohortOpen ? (
-            <VStack spacing={4}>
-              <Heading as="h2" size="xl" mb={4} textAlign="center" color="teal.800">
-                Gestión de Cohorte Abierta
-              </Heading>
-
-              <FormControl id="cohortName">
-                <FormLabel fontWeight="bold">Nombre de la Cohorte</FormLabel>
-                <Input type="text" value={activeCohortData.name} isReadOnly disabled />
-              </FormControl>
-
-              <Flex width="full" gap={4}>
-                <FormControl id="startDate">
-                  <FormLabel fontWeight="bold">Fecha de Inicio</FormLabel>
-                  <Input type="date" value={activeCohortData.start} isReadOnly disabled />
-                </FormControl>
-                <FormControl id="endDate">
-                  <FormLabel fontWeight="bold">Fecha de Fin</FormLabel>
-                  <Input type="date" value={activeCohortData.end} isReadOnly disabled />
-                </FormControl>
-              </Flex>
-
-              <FormControl id="capacity">
-                <FormLabel fontWeight="bold">Capacidad de Estudiantes</FormLabel>
-                  <NumberInput value={activeCohortData.cap} isReadOnly isDisabled>
-                  <NumberInputField />
-                </NumberInput>
-              </FormControl>
-
-              <Button
-                onClick={onOpen}
-                colorScheme="red"
-                size="lg"
-                width="full"
-                mt={4}
-              >
-                Cerrar Cohorte
-              </Button>
-            </VStack>
-          ) : (
-            <form onSubmit={handleOpenCohort}>
-              <Heading as="h2" size="xl" mb={6} textAlign="center" color="teal.800">
-                Abrir Nueva Cohorte
-              </Heading>
-              <VStack spacing={4}>
-                <FormControl id="cohortName" isRequired>
-                  <FormLabel>Nombre de la Cohorte</FormLabel>
-                  <Input
-                    type="text"
-                    placeholder="Ej: Cohorte Invierno 2024"
-                    value={cohortName}
-                    onChange={(e) => setCohortName(e.target.value)}
-                  />
-                </FormControl>
-
-                <Flex width="full" gap={4}>
-                  <FormControl id="startDate" isRequired>
-                    <FormLabel>Fecha de Inicio</FormLabel>
-                    <Input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                    />
-                  </FormControl>
-
-                  <FormControl id="endDate" isRequired>
-                    <FormLabel>Fecha de Fin</FormLabel>
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                    />
-                  </FormControl>
+    return (
+        <Card bg={cardBg} variant="outline" borderColor={dividerColor} size="sm">
+            <CardHeader pb={2}>
+                <Flex justify="space-between" align="center">
+                    <Heading size="sm" color={titleColor}>{publication.titulo}</Heading>
                 </Flex>
+                <Text fontSize="xs" color={dateColor} mt={1}>{formattedDate}</Text>
+            </CardHeader>
+            <Divider borderColor={dividerColor} />
+            <CardBody>
+                <Text fontSize="sm" color={contentColor} whiteSpace="pre-wrap">
+                    {publication.contenido}
+                </Text>
+            </CardBody>
+        </Card>
+    );
+};
+// --- End Publication Card Component ---
 
-                <FormControl id="capacity" isRequired>
-                  <FormLabel>Capacidad de Estudiantes</FormLabel>
-                  <NumberInput
-                    min={1}
-                    max={100}
-                    value={capacity}
-                    onChange={(_, valueAsNumber) => setCapacity(valueAsNumber)}
-                  >
-                    <NumberInputField />
-                    <NumberInputStepper>
-                      <NumberIncrementStepper />
-                      <NumberDecrementStepper />
-                    </NumberInputStepper>
-                  </NumberInput>
-                </FormControl>
 
-                <Button
-                  type="submit"
-                  colorScheme="teal"
-                  size="lg"
-                  width="full"
-                  mt={4}
-                  isLoading={isLoading}
-                  loadingText="Abriendo Cohorte..."
-                >
-                  Abrir Cohorte
-                </Button>
-              </VStack>
-            </form>
-          )}
+export default function CourseClientPage({ courseId }: { courseId: string }) {
+    // --- Hooks ---
+    const [course, setCourse] = useState<Course | null>(null);
+    const [provider, setProvider] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const { user: loggedInUser, isHydrated } = useAuth();
+    const cardBg = useColorModeValue("white", "gray.800");
+    const headingColor = useColorModeValue("teal.600", "teal.300");
+    const subHeadingColor = useColorModeValue("gray.700", "gray.200");
+    const dividerColor = useColorModeValue("gray.200", "gray.600");
+    const linkColor = "teal.500";
+    const mutedTextColor = useColorModeValue("gray.500", "gray.400");
+    // --- End Hooks ---
+
+    useEffect(() => {
+        // ... (useEffect sin cambios)
+        if (!isHydrated) return;
+
+        const fetchCourseAndProviderData = async () => {
+            try {
+                setLoading(true); setError(null); setCourse(null); setProvider(null);
+
+                const courseData = await courseService.getCourseById(courseId) as Course;
+                if (!courseData) throw new Error('Curso no encontrado.');
+                setCourse(courseData);
+
+                const providerUserId = courseData.userId;
+                if (providerUserId && typeof providerUserId === 'string') {
+                    try {
+                        const providerData = await userService.getUserById(providerUserId) as User;
+                        setProvider(providerData);
+                    } catch (providerError: any) {
+                        console.warn("Could not fetch provider details:", providerError.message);
+                    }
+                } else {
+                    console.warn("Course does not have a valid associated userId.");
+                }
+
+            } catch (err: any) {
+                setError(err.message || 'Ocurrió un error inesperado al cargar los datos.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCourseAndProviderData();
+    }, [courseId, isHydrated]);
+
+    // --- Loading, Error, Not Found States ---
+    if (!isHydrated || loading) {
+    // ... (Estado de carga sin cambios)
+        return (
+            <Flex justify="center" align="center" minH="80vh">
+                <Spinner thickness="4px" speed="0.65s" emptyColor="gray.200" color="teal.500" size="xl" />
+            </Flex>
+        );
+    }
+    if (error) {
+    // ... (Estado de error sin cambios)
+        return (
+            <Box maxW="4xl" mx="auto" p={8} my={8}>
+                <Alert status="error" rounded="md">
+                    <AlertIcon />
+                    <Text fontWeight="bold">Error al cargar el curso:</Text>
+                    <Text ml={2}>{error}</Text>
+                </Alert>
+            </Box>
+        );
+    }
+    if (!course) {
+    // ... (Estado 'no encontrado' sin cambios)
+        return <Text textAlign="center" mt={10}>No se encontró información para este curso.</Text>;
+    }
+    // --- End States ---
+
+    // --- Authorization Logic ---
+    // ... (Lógica de autorización sin cambios)
+    const isOwner = loggedInUser?.role === 'proveedor' && loggedInUser?.id === course.userId;
+    const isAdminOrCoordinator = loggedInUser?.role === 'admin' || loggedInUser?.role === 'coordinador';
+    const canSeePrivateDetails = isOwner || isAdminOrCoordinator;
+    const canManageCohort = isOwner && course.estado_gestion !== 'cerrado';
+    let displayStatus: CourseStatus | undefined = undefined;
+    if (canSeePrivateDetails) {
+        displayStatus = course.estado_gestion;
+    } else if (course.estado_gestion === 'abierto' || course.estado_gestion === 'cerrado') {
+        displayStatus = course.estado_gestion;
+    }
+    // --- End Authorization Logic ---
+
+
+    // --- Main Render ---
+    return (
+        <Box maxW="5xl" mx="auto" p={{ base: 4, md: 8 }} my={8}>
+            <VStack spacing={8} align="stretch">
+
+                {/* --- Provider Info Card --- */}
+                {provider && (
+                    <Card
+                        direction={{ base: 'column', sm: 'row' }}
+                        overflow='hidden'
+                        variant='outline'
+                        bg={cardBg}
+                        mb={6}
+                        borderColor={dividerColor}
+                        shadow="sm"
+                    >
+                        <Flex align="center" p={4}>
+                            <Avatar size='xl' name={provider.name} src={provider.avatarUrl} mr={4} />
+                        </Flex>
+                        <Stack flex={1}>
+                            <CardBody>
+                                <Text fontSize="sm" color={mutedTextColor} mb={1}>Ofrecido por:</Text>
+                                <Heading size='lg' color={subHeadingColor} mb={1}>{provider.name}</Heading>
+                                
+                                {/* ✨ ADICIÓN: Badge para el tipo de proveedor */}
+                                {provider.providerType && (
+                                    <Badge 
+                                        colorScheme={provider.providerType === 'con-fines-de-lucro' ? 'blue' : 'green'}
+                                        variant="solid"
+                                        fontSize="xs"
+                                        px={2}
+                                        py={0.5}
+                                        rounded="md"
+                                        mb={2}
+                                    >
+                                        {formatProviderType(provider.providerType)}
+                                    </Badge>
+                                )}
+                                {/* --- FIN DE LA ADICIÓN --- */}
+
+                                <Text py='1' fontSize="sm" color={mutedTextColor}>
+                                    {provider.bio || 'Proveedor de contenido educativo.'}
+                                </Text>
+                                <ChakraLink as={NextLink} href={`/profile/${provider.id}`} color={linkColor} fontWeight="medium" fontSize="sm">
+                                    Ver perfil completo
+                                </ChakraLink>
+                            </CardBody>
+                        </Stack>
+                    </Card>
+                )}
+                {/* --- End Provider Info Card --- */}
+
+
+                {/* --- Course Header --- */}
+                <Box textAlign="center">
+                {/* ... (Header del curso sin cambios) */}
+                    <Heading as="h1" size={{ base: "xl", md: "2xl" }} color={headingColor} mb={3}>
+                        {course.titulo}
+                    </Heading>
+                    {displayStatus && (
+                        <Badge
+                            colorScheme={getStatusColorScheme(displayStatus)}
+                            variant="solid"
+                            fontSize="xs"
+                            px={3} py={1} borderRadius="full" textTransform="uppercase"
+                        >
+                            {formatStatusText(displayStatus)}
+                        </Badge>
+                    )}
+                    {canSeePrivateDetails && course.providerCode && (
+                        <Text fontSize="xs" color={mutedTextColor} mt={2}>
+                            (Código: {course.providerCode})
+                        </Text>
+                    )}
+                </Box>
+                {/* --- End Course Header --- */}
+
+
+                {/* --- Course Details Grid in a Card --- */}
+                <Card bg={cardBg} variant="outline" borderColor={dividerColor} shadow="sm">
+                    <CardBody>
+                        <Grid
+                            templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+                            gap={{ base: 6, md: 8 }}
+                        >
+                            <GridItem colSpan={{ base: 1, md: 2 }}>
+                                <Heading as="h2" size="md" mb={4} borderBottomWidth="1px" pb={2} borderColor={dividerColor} color={subHeadingColor}>
+                                    Descripción General
+                                </Heading>
+                            </GridItem>
+                            <GridItem><KeyDetail label="Propósito" value={course.proposito} /></GridItem>
+                            <GridItem><KeyDetail label="Fundamentación" value={course.fundamentacion} /></GridItem>
+                            <GridItem><KeyDetail label="Duración" value={course.duracion} /></GridItem>
+                            <GridItem><KeyDetail label="Estructura de Costos" value={course.estructuraCostos} /></GridItem>
+
+                            <GridItem colSpan={{ base: 1, md: 2 }} pt={6}>
+                                <Heading as="h2" size="md" mb={4} borderBottomWidth="1px" pb={2} borderColor={dividerColor} color={subHeadingColor}>
+                                    Perfiles y Exigencias
+                                </Heading>
+                            </GridItem>
+                            <GridItem><KeyDetail label="Perfil del Docente" value={course.perfilDocente} /></GridItem>
+                            <GridItem><KeyDetail label="Perfiles de Ingreso/Egreso" value={course.perfiles} /></GridItem>
+                            <GridItem colSpan={{ base: 1, md: 2 }}><KeyDetail label="Exigencias" value={course.exigencias} /></GridItem>
+
+                            <GridItem colSpan={{ base: 1, md: 2 }} pt={6}>
+                                <Heading as="h2" size="md" mb={4} borderBottomWidth="1px" pb={2} borderColor={dividerColor} color={subHeadingColor}>
+                                    Aspectos Curriculares y Logísticos
+                                </Heading>
+                            </GridItem>
+                            <GridItem><KeyDetail label="Estructura Curricular" value={course.estructuraCurricular} /></GridItem>
+                            <GridItem><KeyDetail label="Estrategias de Evaluación" value={course.evaluacion} /></GridItem>
+                            <GridItem colSpan={{ base: 1, md: 2 }}><KeyDetail label="Cronograma Anual" value={course.cronograma} /></GridItem>
+                        </Grid>
+                    </CardBody>
+                </Card>
+                {/* --- End Course Details Grid --- */}
+
+
+                {/* --- Cohort Management Panel (Conditional) --- */}
+                {canManageCohort && <CohortManagementPanel course={course} />}
+                {/* --- End Cohort Panel --- */}
+
+                {/* --- Publications Section --- */}
+                {course.publications && course.publications.length > 0 && (
+                    <Box mt={8}>
+                        <Heading as="h2" size="lg" mb={6} borderBottomWidth="1px" pb={2} borderColor={dividerColor} color={headingColor}>
+                            Publicaciones Recientes
+                        </Heading>
+                        <VStack spacing={4} align="stretch">
+                            {course.publications
+                                .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+                                .map(pub => (
+                                    <PublicationCard key={pub.id} publication={pub} />
+                                ))}
+                        </VStack>
+                    </Box>
+                )}
+                {/* --- End Publications Section --- */}
+
+
+                {/* --- Footer Info --- */}
+                <VStack spacing={1} mt={4}>
+                    <Text textAlign="center" color={mutedTextColor} fontSize="xs">
+                        ID del Curso: {course.id}
+                    </Text>
+                </VStack>
+                {/* --- End Footer Info --- */}
+
+            </VStack>
         </Box>
-
-        <Divider borderColor="gray.300" />
-
-        <Text textAlign="center" color="gray.500" fontSize="sm">
-          Este es el curso con ID: <Text as="span" fontWeight="bold">{currentCourse.id}</Text>.
-        </Text>
-        <Text textAlign="center" color="gray.500" fontSize="sm">
-          Puedes volver a tu <ChakraLink as={NextLink} href={`/profile/${currentCourse.userId}`} color="teal.500" fontWeight="bold">Perfil</ChakraLink>.
-        </Text>
-      </VStack>
-
-      {/* Componente del modal ahora en un archivo aparte */}
-      <CloseCohortModal isOpen={isOpen} onClose={onClose} />
-
-    </Box>
-  );
+    );
 }

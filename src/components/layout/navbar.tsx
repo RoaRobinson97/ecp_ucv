@@ -18,27 +18,37 @@ import {
 import React from "react";
 import NextLink from 'next/link';
 import { FaUserCircle } from "react-icons/fa";
-import { useAuth } from "../../app/context/auth-context";
+// Import User type if needed, AuthUser likely covers it if User is exported from auth-context
+import { useAuth, AuthUser } from "../../app/context/auth-context";
 import { useGlobalData } from "../../app/context/global-data-context";
 import { ColorModeSwitcher } from "../ui/color-mode-switcher";
-import { 
-    PrimaryButton, 
-    GhostButton,
-    SecondaryButton, 
+import {
+    PrimaryButton,
+    SecondaryButton,
+    GhostButton, // Added GhostButton for "Mis Cursos" example
 } from "../ui/buttons";
 
 export const Navbar = () => {
-    const { isAuthenticated, logout, userId, isHydrated, userRole } = useAuth(); // ¡Añade userRole aquí!
-    const { providerCode, courses, isCohortOpen } = useGlobalData();
+    const { isAuthenticated, logout, user, isHydrated } = useAuth();
+    console.log(user)
+    // Assuming providerCode is now primarily derived from 'user' object in authContext
+    const { courses, isCohortOpen } = useGlobalData();
 
-    const navBgColor = useColorModeValue("white", "gray.800");
     const menuButtonColor = useColorModeValue("primary.500", "whiteAlpha.900");
 
+    // Get providerCode directly from the authenticated user object
+    const providerCode = user?.codigo_proveedor;
+
+    // Visibility conditions for buttons
     const showFormulateButton = isAuthenticated && providerCode && courses.length === 0;
     const showCohortButton = !isCohortOpen && isAuthenticated && providerCode && courses.length > 0;
     const showLoginRegisterButtons = !isAuthenticated;
-    const showSolicitudButton = isAuthenticated && !providerCode;
-    const showAdminButton = isAuthenticated && userRole === 'admin'; // Nueva variable para el botón de admin
+    const showSolicitudButton = isAuthenticated && !providerCode && user?.rol === 'visitante';
+    console.log(isAuthenticated, providerCode, user?.rol)
+    const showAdminPanelLink = isAuthenticated && (user?.rol === 'admin' || user?.rol === 'coordinador');
+    (console.log(user))
+    // Condition for the "Mis Cursos" button
+    const showMisCursosButton = isAuthenticated && !!providerCode;
 
     const courseId = courses.length > 0 ? courses[0].id : null;
 
@@ -60,52 +70,57 @@ export const Navbar = () => {
                 </NextLink>
                 <Spacer />
                 <HStack spacing={{ base: 2, md: 4 }}>
+                    {/* === Authenticated User View === */}
                     {isHydrated && isAuthenticated ? (
                         <>
+                            {/* --- Provider Specific Buttons --- */}
                             {providerCode && (
                                 <HStack spacing={{ base: 2, md: 4 }}>
                                     {showFormulateButton && (
                                         <NextLink href="/formulacion-de-curso" passHref>
-                                            <PrimaryButton>Formular Curso</PrimaryButton>
+                                            <PrimaryButton size={"sm"}>Formular Curso</PrimaryButton>
                                         </NextLink>
                                     )}
                                     {showCohortButton && (
                                         <NextLink href={`/curso/${courseId}`} passHref>
-                                            <PrimaryButton>Abrir Cohorte</PrimaryButton>
+                                            <PrimaryButton size={"sm"}>Abrir Cohorte</PrimaryButton>
                                         </NextLink>
                                     )}
                                     {isCohortOpen && (
                                         <NextLink href={`/curso/${courseId}`} passHref>
-                                            <PrimaryButton>Cerrar Cohorte</PrimaryButton>
+                                            <PrimaryButton size={"sm"}>Cerrar Cohorte</PrimaryButton>
                                         </NextLink>
                                     )}
                                 </HStack>
                             )}
+                            {/* --- Visitor Specific Button --- */}
                             {showSolicitudButton && (
                                 <NextLink href="/solicitar-organizacion" passHref>
-                                    <PrimaryButton>Solicitar Inscripción de Organización</PrimaryButton>
+                                    <PrimaryButton size={"sm"}>Solicitar Inscripción</PrimaryButton>
                                 </NextLink>
                             )}
 
+                            {/* --- NEW "Mis Cursos" Button for Providers --- */}
+                            {showMisCursosButton && user?.id && ( // Aseguramos que user.id exista
+                                <NextLink href={`/mis-cursos?providerCode=${user.codigo_proveedor}`} passHref> 
+                                    <GhostButton size={"md"}>Mis Cursos</GhostButton> 
+                                </NextLink>
+                            )}
+
+                            {/* --- User Menu --- */}
                             <Menu>
                                 <MenuButton as={IconButton} aria-label="Opciones de usuario" icon={<FaUserCircle size="24px" />} variant="ghost" color={menuButtonColor} />
                                 <MenuList>
-                                    <MenuItem as={NextLink} href={`/profile/${userId}`}>
-                                        Mi Perfil
-                                    </MenuItem>
-                                    {/* También puedes agregar el enlace de admin aquí para más opciones */}
-                                    {true && (
-                                        <MenuItem as={NextLink} href="/admin">
-                                            Panel de Administración
-                                        </MenuItem>
+                                    <MenuItem as={NextLink} href={`/profile/${user?.id}`}>Mi Perfil</MenuItem>
+                                    {showAdminPanelLink && (
+                                        <MenuItem as={NextLink} href="/admin">Panel de Administración</MenuItem>
                                     )}
-                                    <MenuItem onClick={logout}>
-                                        Cerrar Sesión
-                                    </MenuItem>
+                                    <MenuItem onClick={logout}>Cerrar Sesión</MenuItem>
                                 </MenuList>
                             </Menu>
                         </>
                     ) : (
+                        /* === Unauthenticated User View === */
                         isHydrated && showLoginRegisterButtons && (
                             <>
                                 <NextLink href="/login" passHref>
@@ -117,6 +132,7 @@ export const Navbar = () => {
                             </>
                         )
                     )}
+                    {/* --- Always Visible --- */}
                     <ColorModeSwitcher />
                 </HStack>
             </Flex>

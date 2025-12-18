@@ -1,7 +1,9 @@
+// src/components/ui/client-components.tsx
 "use client";
 
 import { Box, VStack, SimpleGrid, Card, CardBody, Stack, Image } from "@chakra-ui/react";
 import React from 'react';
+import NextLink from 'next/link';
 import { Heading, Paragraph } from "@/components/ui/tipografia";
 
 interface InfoCardProps {
@@ -12,6 +14,7 @@ interface InfoCardProps {
 
 interface CourseProps {
     id: string;
+    slug: string; 
     titulo: string;
     descripcion: string;
     image: string | null;
@@ -31,24 +34,23 @@ const InfoCard = ({ title, description, image }: InfoCardProps) => {
     );
 };
 
-// Componente para una tarjeta de curso
-const CourseCard = ({ titulo, descripcion, image }: Omit<CourseProps, 'id'>) => {
-    const placeholderImage = "https://placehold.co/400x200/cccccc/ffffff/png?text=Imagen+no+encontrada";
-    
+const CourseCard = ({ titulo, descripcion, image }: Omit<CourseProps, 'id' | 'slug'>) => {
+    const placeholderImage = "https://placehold.co/400x200/cccccc/ffffff/png?text=Curso";
     return (
-        <Card overflow="hidden" variant="outline">
+        // 👇 AQUÍ ESTÁ EL CAMBIO: Se eliminó as="a"
+        <Card _hover={{ transform: 'translateY(-5px)', shadow: 'lg' }} transition="all 0.2s" height="100%" overflow="hidden" variant="outline">
             <Image
-                src={image as string} // Le decimos a TypeScript que 'image' es un string (esto es seguro porque 'fallbackSrc' lo maneja)
+                src={image || ''}
                 alt={titulo}
                 objectFit="cover"
                 w="100%"
                 h="200px"
-                fallbackSrc={placeholderImage} // ¡CORRECTO! Chakra UI maneja la lógica por ti
+                fallbackSrc={placeholderImage}
             />
             <CardBody>
                 <Stack mt="6" spacing="3">
                     <Heading size="md">{titulo}</Heading>
-                    <Paragraph>{descripcion}</Paragraph>
+                    <Paragraph noOfLines={3}>{descripcion}</Paragraph>
                 </Stack>
             </CardBody>
         </Card>
@@ -62,6 +64,7 @@ interface ClientContentProps {
 export function ClientContent({ courses }: ClientContentProps) {
     return (
         <Box maxW="container.xl" mx="auto" py={10} px={6}>
+            {/* Sección "Nuestra Plataforma" */}
             <Box as="section" id="how-it-works">
                 <VStack spacing={4} py={8} px={6} textAlign="center">
                     <Heading size="xl">Nuestra Plataforma</Heading>
@@ -81,19 +84,22 @@ export function ClientContent({ courses }: ClientContentProps) {
                 </SimpleGrid>
             </Box>
 
+            {/* Sección de Cursos Certificados */}
             <Box as="section" id="certified-courses" mt={12}>
                 <VStack spacing={4} py={8} px={6} textAlign="center">
                     <Heading size="xl">Explora Nuestros Cursos Certificados</Heading>
                     <Paragraph fontSize="lg">Aprende nuevas habilidades con el respaldo de la universidad.</Paragraph>
                 </VStack>
+                
                 <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10}>
                     {courses.map(course => (
-                        <CourseCard
-                            key={course.id}
-                            titulo={course.titulo}
-                            descripcion={course.descripcion}
-                            image={course.image}
-                        />
+                        <NextLink href={`/curso/${course.id}`} passHref key={course.id}>
+                            <CourseCard
+                                titulo={course.titulo}
+                                descripcion={course.descripcion}
+                                image={course.image}
+                            />
+                        </NextLink>
                     ))}
                 </SimpleGrid>
             </Box>

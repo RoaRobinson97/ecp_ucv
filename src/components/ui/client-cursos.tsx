@@ -1,32 +1,26 @@
-// src/components/ui/client-cursos.tsx
 "use client";
 
 import { Box, SimpleGrid, Card, CardBody, Stack, Image } from "@chakra-ui/react";
 import NextLink from 'next/link';
 import React from 'react';
 import { Heading, Paragraph } from "@/components/ui/tipografia";
-import { Pagination } from "@/components/ui/pagination"; // Importa el nuevo componente
-
-interface CourseProps {
-    id: string;
-    title: string;
-    description: string;
-    image: string | null;
-}
+import { Pagination } from "@/components/ui/pagination";
+import { Course } from '@/data/types';
 
 interface ClientCoursesProps {
-    courses: CourseProps[];
+    courses: Course[];
     currentPage: number;
     totalPages: number;
 }
 
-const CourseCard = ({ title, description, image }: Omit<CourseProps, 'id'>) => {
+const CourseCard = ({ titulo, descripcion, image }: Pick<Course, 'titulo' | 'descripcion' | 'image'>) => {
     const placeholderImage = "https://placehold.co/400x200/cccccc/ffffff/png?text=Imagen+no+encontrada";
+
     return (
         <Card overflow="hidden" variant="outline">
             <Image
-                src={image as string}
-                alt={title}
+                src={image ?? placeholderImage}
+                alt={titulo}
                 objectFit="cover"
                 w="100%"
                 h="200px"
@@ -34,8 +28,8 @@ const CourseCard = ({ title, description, image }: Omit<CourseProps, 'id'>) => {
             />
             <CardBody>
                 <Stack mt="6" spacing="3">
-                    <Heading size="md">{title}</Heading>
-                    <Paragraph>{description}</Paragraph>
+                    <Heading size="md">{titulo}</Heading>
+                    <Paragraph>{descripcion}</Paragraph>
                 </Stack>
             </CardBody>
         </Card>
@@ -49,15 +43,14 @@ export function ClientCourses({ courses, currentPage, totalPages }: ClientCourse
                 {courses.map(course => (
                     <NextLink href={`/curso/${course.id}`} passHref key={course.id}>
                         <CourseCard
-                            title={course.title}
-                            description={course.description}
+                            titulo={course.titulo}
+                            descripcion={course.descripcion}
                             image={course.image}
                         />
                     </NextLink>
                 ))}
             </SimpleGrid>
-            
-            {/* Agrega el componente de paginación aquí */}
+
             <Pagination currentPage={currentPage} totalPages={totalPages} />
         </Box>
     );

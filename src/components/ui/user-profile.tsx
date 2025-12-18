@@ -1,46 +1,65 @@
-// components/ui/user-profile.tsx (ACTUALIZADO)
 "use client";
 import { 
     Box, Heading, Text, Avatar, VStack, useColorModeValue, Divider, 
-    Table, Thead, Tbody, Tr, Th, Td, TableContainer, Badge 
+    Table, Thead, Tbody, Tr, Th, Td, TableContainer, Badge,
+    HStack, // ✨ Añadido
+    Icon    // ✨ Añadido
 } from '@chakra-ui/react';
 import React from 'react';
+// ✨ ADICIÓN: Importamos Course desde tipos globales
+import { Course } from "@/data/types"; 
+import { MdEmail, MdPhone } from 'react-icons/md'; // ✨ Añadido para iconos
 
-// --- DEFINICIÓN DE INTERFACES (Copiadas de profile-coordinator-review.tsx) ---
-export interface Course { 
-    id: string;
-    nombre: string;
-    // En la vista estándar/pública, solo nos interesa si está 'Aprobado' o no para mostrar al cliente. 
-    // Usamos el tipo completo por consistencia de datos, pero podemos simplificar la visualización.
-    estado_gestion: 'Pendiente' | 'En Revisión' | 'Aprobado' | 'N/A';
-}
-
-const mockCourses: Course[] = [
-    { id: 'C001', nombre: 'Introducción a React Hooks', estado_gestion: 'Aprobado' },
-    { id: 'C002', nombre: 'Arquitectura de Microservicios', estado_gestion: 'Aprobado' },
-    { id: 'C003', nombre: 'Diseño UX Avanzado', estado_gestion: 'En Revisión' },
-];
-// ----------------------------------------------------------------------------
-
-
-// Vista estándar/pública del perfil para roles que no requieren gestión documental
+// Vista estándar/pública del perfil
 export function UserProfileClient({ 
     name, 
     bio, 
     avatarUrl, 
-    courses // 🚨 NUEVA PROP: Lista de cursos
+    courses,
+    providerType,
+    contactEmails,  // ✨ ADICIÓN: Nueva prop
+    contactPhones   // ✨ ADICIÓN: Nueva prop
 }: { 
     name: string, 
     bio: string, 
     avatarUrl: string,
-    courses: Course[] | undefined // Definido como opcional o puede ser undefined
+    courses: Course[] | undefined,
+    providerType: 'con-fines-de-lucro' | 'sin-fines-de-lucro' | undefined,
+    contactEmails?: string[], // ✨ ADICIÓN: Tipo de la prop
+    contactPhones?: string[]  // ✨ ADICIÓN: Tipo de la prop
 }) {
     const cardBg = useColorModeValue("white", "gray.700");
     const textColor = useColorModeValue("gray.600", "gray.400");
+    const mutedTextColor = useColorModeValue("gray.500", "gray.400"); // Color para el contacto
     
-    // Usa los cursos que llegan por props o el mock si no hay datos
-    const userCourses = courses || mockCourses; 
+    const userCourses = courses || []; 
     
+    const formatProviderType = (type: string) => {
+        return type === 'con-fines-de-lucro' 
+            ? 'Organización con Fines de Lucro' 
+            : 'Organización Sin Fines de Lucro';
+    };
+
+    // Lógica de color actualizada para estados en minúscula
+    const getStatusColor = (status: string | undefined) => {
+        switch (status) {
+            case 'aprobado': return 'green';
+            case 'pendiente': return 'orange';
+            case 'rechazado': return 'red';
+            default: return 'gray';
+        }
+    };
+
+    // Lógica de texto actualizada para estados en minúscula
+    const getStatusText = (status: string | undefined) => {
+        switch (status) {
+            case 'aprobado': return 'Activo';
+            case 'pendiente': return 'En Preparación';
+            case 'rechazado': return 'No disponible';
+            default: return 'N/A';
+        }
+    };
+
     return (
         <Box p={8} bg={cardBg} shadow="xl" rounded="lg" maxW="2xl" mx="auto">
             
@@ -48,7 +67,23 @@ export function UserProfileClient({
             <VStack spacing={4} align="center" mb={6}>
                 <Avatar size="2xl" name={name} src={avatarUrl} />
                 <Heading size="xl" mt={2}>{name}</Heading>
-                <Box textAlign="center" maxW="md">
+                
+                {/* Badge de Tipo de Proveedor */}
+                {providerType && (
+                    <Badge 
+                        colorScheme={providerType === 'con-fines-de-lucro' ? 'blue' : 'green'}
+                        variant="solid"
+                        fontSize="sm"
+                        px={3}
+                        py={1}
+                        rounded="md"
+                    >
+                        {formatProviderType(providerType)}
+                    </Badge>
+                )}
+
+                {/* Biografía */}
+                <Box textAlign="center" maxW="md" pt={2}>
                     <Text color={textColor} fontSize="md" fontStyle="italic">
                         Biografía:
                     </Text>
@@ -56,11 +91,29 @@ export function UserProfileClient({
                         {bio}
                     </Text>
                 </Box>
+
+                {/* ✨ ADICIÓN: Información de Contacto Pública */}
+                <VStack align="stretch" spacing={1} pt={4}>
+                    {(contactEmails && contactEmails.length > 0) && (
+                        <HStack spacing={2} fontSize="sm" color={mutedTextColor} justify="center">
+                            <Icon as={MdEmail} color="teal.500" boxSize={5} />
+                            <Text>{contactEmails.join(', ')}</Text>
+                        </HStack>
+                    )}
+                    {(contactPhones && contactPhones.length > 0) && (
+                        <HStack spacing={2} fontSize="sm" color={mutedTextColor} justify="center">
+                            <Icon as={MdPhone} color="teal.500" boxSize={5} />
+                            <Text>{contactPhones.join(', ')}</Text>
+                        </HStack>
+                    )}
+                </VStack>
+                {/* --- FIN DE LA ADICIÓN --- */}
+
             </VStack>
 
             <Divider my={6} />
             
-            {/* SECCIÓN 2: TABLA DE CURSOS (Añadida) */}
+            {/* SECCIÓN 2: TABLA DE CURSOS */}
             <Heading size="lg" mb={4} textAlign="center" color="teal.500">Cursos Dictados</Heading>
             
             {userCourses.length > 0 ? (
@@ -68,7 +121,6 @@ export function UserProfileClient({
                     <Table variant="simple" size="md">
                         <Thead>
                             <Tr>
-                                {/* Ocultamos el ID para una vista más limpia si no es relevante */}
                                 <Th>Nombre del Curso</Th>
                                 <Th textAlign="center">Estado</Th>
                             </Tr>
@@ -76,15 +128,13 @@ export function UserProfileClient({
                         <Tbody>
                             {userCourses.map(course => (
                                 <Tr key={course.id}>
-                                    <Td fontWeight="medium">{course.nombre}</Td>
+                                    <Td fontWeight="medium">{course.titulo}</Td>
                                     <Td textAlign="center">
                                         <Badge 
-                                            // Coloreamos el estado de forma simplificada para la vista de cliente
-                                            colorScheme={course.estado_gestion === 'Aprobado' ? 'green' : 'orange'}
+                                            colorScheme={getStatusColor(course.estado_gestion)}
                                             variant="subtle"
                                         >
-                                            {/* Solo mostramos Aprobado o En Revisión para la vista pública */}
-                                            {course.estado_gestion === 'Aprobado' ? 'Activo' : 'En Preparación'}
+                                            {getStatusText(course.estado_gestion)}
                                         </Badge>
                                     </Td>
                                 </Tr>
@@ -101,7 +151,7 @@ export function UserProfileClient({
             <Divider my={6} />
             
             <Text fontSize="sm" color="gray.500" textAlign="center">
-                Esta es la vista estándar del perfil del proveedor/cliente.
+                Esta es la vista estándar del perfil.
             </Text>
         </Box>
     );

@@ -1,27 +1,34 @@
-// Este es un Server Component por defecto
+// /app/page.tsx (HomePage)
+
 import React from 'react';
 import { Box } from "@chakra-ui/react";
 import NextLink from 'next/link';
 import { Heading, Paragraph } from "@/components/ui/tipografia";
 import { PrimaryButton } from "@/components/ui/buttons";
 import { ClientContent } from '../components/ui/client-components';
-
-// 🚀 IMPORTAMOS EL SERVICIO DE NEGOCIO EN LUGAR DE LA LÓGICA LOCAL
 import { courseService } from '../servicios/cursos-service'; 
+
+interface Course {
+  id: string;
+  slug: string;
+  titulo: string;
+  descripcion: string;
+  image: string | null;
+}
 
 export default async function HomePage() {
     
-    let courses = [];
+    let coursesForClient: Course[] = []; 
+    
     try {
-        // 1. Llama a la función del SERVICIO para obtener los datos.
-        //    Esta llamada usa el ApiService, que decide si usar MOCK o API REAL.
-        courses = await courseService.getAllCourses();
-    } catch (error) {
-        // Manejo básico de errores de carga en el servidor
-        console.error("Fallo al cargar cursos en HomePage:", error);
-        // courses ya está inicializado a [] para evitar errores en la UI
-    }
+        // 👇 AQUÍ ESTÁ EL ÚNICO CAMBIO: limit: 6 se convierte en limit: 3
+        const { courses } = await courseService.getAllCourses({ page: 1, limit: 3 }) as { courses: Course[] };
+        
+        coursesForClient = courses;
 
+    } catch (error) {
+        console.error("Fallo al cargar cursos en HomePage:", error);
+    }
 
     return (
         <Box minH="100vh">
@@ -33,26 +40,26 @@ export default async function HomePage() {
                 backgroundPosition="center"
                 backgroundRepeat="no-repeat"
                 color="white"
+            >
+                <Box 
+                    bgColor={'#33333399'} 
+                    py={10} 
+                    px={6} 
                 >
-                    <Box 
-                        bgColor={'#33333399'} 
-                        py={10} 
-                        px={6} 
-                    >
-                        <Heading as="h1" size="2xl" mb={4}>
-                            Cursos Certificados por la UCV
-                        </Heading>
-                        <Paragraph fontSize="lg" maxW="600px" mx="auto" mb={6}>
-                            Valida y eleva tu formación académica. Nuestra plataforma te permite certificar tus cursos online a través de la Universidad Central de Venezuela, o si eres un educador, solicitar la validación de tu contenido.
-                        </Paragraph>
-                        <NextLink href="/cursos" passHref>
-                            <PrimaryButton size="md">Ver Cursos</PrimaryButton>
-                        </NextLink>
-                    </Box>
+                    <Heading as="h1" size="2xl" mb={4}>
+                        Cursos Certificados por la UCV
+                    </Heading>
+                    <Paragraph fontSize="lg" maxW="600px" mx="auto" mb={6}>
+                        Valida y eleva tu formación académica. Nuestra plataforma te permite certificar tus cursos online a través de la Universidad Central de Venezuela, o si eres un educador, solicitar la validación de tu contenido.
+                    </Paragraph>
+                    <NextLink href="/cursos" passHref>
+                        <PrimaryButton size="md">Ver Cursos</PrimaryButton>
+                    </NextLink>
+                </Box>
             </Box>
 
             {/* Renderiza el contenido que depende de los datos */}
-            <ClientContent courses={courses} />
+            <ClientContent courses={coursesForClient} />
         </Box>
     );
 }

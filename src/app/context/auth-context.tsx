@@ -2,13 +2,16 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import Cookies from 'js-cookie'; 
+import {User, UserRole } from '@/data/types'
 
-// Define the type of your context, including the userRole
+// Tipo de usuario para el estado, puede ser User o null
+export type AuthUser = User | null;
+
 interface AuthContextType {
     isAuthenticated: boolean;
-    userId: string | null;
-    userRole: 'admin' | 'estudiante' | null; // Add the user's role
-    login: (userId: string, role: 'admin' | 'estudiante') => void; // Update the login function to accept the role
+    user: AuthUser; // ✨ CAMBIO: Ahora es el objeto User completo
+    login: (userData: User) => void; // ✨ CAMBIO: Ahora recibe el objeto User completo
     logout: () => void;
     isHydrated: boolean;
 }
@@ -18,38 +21,47 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [userId, setUserId] = useState<string | null>(null);
-    const [userRole, setUserRole] = useState<'admin' | 'estudiante' | null>(null); // New state for the role
+    const [user, setUser] = useState<AuthUser>(null); // ✨ CAMBIO: Estado para el objeto User completo
     const [isHydrated, setIsHydrated] = useState(false);
 
     useEffect(() => {
-        // Hydrate the state from localStorage or cookies on load
-        const storedAuth = localStorage.getItem('auth');
-        if (storedAuth) {
-            const { userId, role } = JSON.parse(storedAuth);
-            setIsAuthenticated(true);
-            setUserId(userId);
-            setUserRole(role); // Load the role on initial render
+        const authCookie = Cookies.get('auth');
+        if (authCookie) {
+            try {
+                // ✨ CAMBIO: Parseamos el objeto User completo
+                const userData: User = JSON.parse(authCookie);
+                
+                // Verificamos que al menos los campos esenciales existan
+                if (userData && userData.id && userData.rol) { 
+                    setIsAuthenticated(true);
+                    setUser(userData); // ✨ CAMBIO: Guardamos el objeto completo
+                }
+            } catch (e) {
+                // En caso de que la cookie esté corrupta, la borramos
+                Cookies.remove('auth');
+                console.error("Error parsing auth cookie:", e);
+            }
         }
-        setIsHydrated(true); // <-- Tell the Navbar it can now render
+        setIsHydrated(true);
     }, []);
 
-    const login = (userId: string, role: 'admin' | 'estudiante') => {
+    // ✨ CAMBIO: La función recibe el objeto de usuario completo
+    const login = (userData: User) => { 
         setIsAuthenticated(true);
-        setUserId(userId);
-        setUserRole(role); // Store the role in state
-        // Persist the user data to localStorage
-        localStorage.setItem('auth', JSON.stringify({ userId, role })); 
+        setUser(userData); // Guardamos el objeto completo
+        
+        // Guardamos el objeto User completo en la cookie (expira en 7 días)
+        // La cookie guardará { id: '...', email: '...', role: '...', name: '...', providerCode?: '...' }
+        Cookies.set('auth', JSON.stringify(userData), { expires: 7 }); 
     };
 
     const logout = () => {
         setIsAuthenticated(false);
-        setUserId(null);
-        setUserRole(null);
-        localStorage.removeItem('auth');
+        setUser(null); // Borramos el objeto User
+        Cookies.remove('auth');
     };
 
-    const value = { isAuthenticated, userId, userRole, login, logout, isHydrated };
+    const value = { isAuthenticated, user, login, logout, isHydrated }; 
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
