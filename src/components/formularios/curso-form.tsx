@@ -59,7 +59,7 @@ const CourseFormControl = ({ id, label, isRequired = true, isTextArea = false }:
 
 export const CourseForm = () => {
   const { userId } = useAuth();
-  const { providerCode, addCourse } = useGlobalData();
+  const { codigo_proveedor, addCourse } = useGlobalData();
   const router = useRouter();
   const toast = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -86,7 +86,7 @@ export const CourseForm = () => {
       estructuraCurricular: formData.get('estructura-curricular') as string,
       evaluacion: formData.get('evaluacion') as string,
       cronograma: formData.get('cronograma') as string,
-      providerCode,
+      codigo_proveedor,
       userId,
     };
 

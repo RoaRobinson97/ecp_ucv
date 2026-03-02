@@ -1,294 +1,230 @@
-// components/ui/profile-coordinator-review.tsx (COMPLETO)
 "use client";
 
+import React, { useState, useEffect } from "react";
 import { 
-    Box, Heading, Text, Divider, useColorModeValue, Button, VStack, Avatar,
-    useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton,
-    Table, Thead, Tbody, Tr, Th, Td, TableContainer, List, ListItem, ListIcon, Badge, 
-    FormControl as ChakraFormControl, FormLabel as ChakraFormLabel, FormErrorMessage as ChakraFormErrorMessage, 
-    Input as ChakraInput, Textarea as ChakraTextarea, FormControlProps, FormLabelProps, 
-    InputProps, TextareaProps,  Button as ChakraButton, InputGroup as ChakraInputGroup, Flex,
-    HStack, // ✨ Añadido
-    Icon    // ✨ Añadido
+    Box, Heading, Text, Avatar, VStack, useColorModeValue, Divider, 
+    Table, Thead, Tbody, Tr, Th, Td, TableContainer, Badge,
+    HStack, Icon, Spinner, Center, Button, useDisclosure,
+    Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, 
+    ModalBody, ModalCloseButton, FormControl, FormLabel, Input,
+    List, ListItem, ListIcon, Skeleton
 } from '@chakra-ui/react';
-import React, { useState, useRef } from 'react';
-import { CheckCircleIcon } from '@chakra-ui/icons';
+import { Course, User, FullProvider } from "@/data/types"; 
+import { MdVerifiedUser, MdCloudUpload, MdCheckCircle, MdInfo } from 'react-icons/md'; 
+import { courseService } from "@/servicios/cursos-service";
+import { userService } from "@/servicios/users-service"; // 👈 Importado
 
-// ✨ ADICIÓN: Importamos los tipos globales
-import { User, Course } from "@/data/types"; 
-import { MdEmail, MdPhone } from 'react-icons/md'; // ✨ Añadido para iconos
-
-
-// === 🛠️ Componentes Base Reutilizados para FileInput ===
-// (Necesarios para que FileInput funcione)
-
-export const FormControl: React.FC<FormControlProps> = (props) => <ChakraFormControl {...props} />;
-export const FormLabel: React.FC<FormLabelProps> = (props) => <ChakraFormLabel {...props} />;
-export const Input: React.FC<InputProps> = (props) => <ChakraInput {...props} />;
-export const Textarea: React.FC<TextareaProps> = (props) => <ChakraTextarea {...props} />;
-
-
-// === 🚀 COMPONENTE CUSTOMIZADO: FileInput (Código Completo) ===
-
-interface FileInputProps extends InputProps {
-    label: string;
-    description: string;
-    isRequired?: boolean;
-    onFileChange: (file: File | null) => void;
-    currentFile: File | null; 
-}
-
-/**
- * Control de formulario reutilizable diseñado para la subida de archivos.
- */
-export const FileInput: React.FC<FileInputProps> = ({
-    label,
-    description,
-    isRequired = false,
-    onFileChange,
-    currentFile, 
-    ...rest
-}) => {
+export function ProfileCoordinatorReview({ user, mode }: { user: User | FullProvider, mode: string }) {
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [isLoadingCourses, setIsLoadingCourses] = useState(false);
     
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const fileName = currentFile ? currentFile.name : "Ningún archivo seleccionado";
-    const fileDescriptionColor = useColorModeValue("gray.500", "gray.400");
-    const inputBg = useColorModeValue('white', 'gray.700');
-    const inputBorder = useColorModeValue('gray.300', 'gray.600');
+    // --- ESTADOS PARA LA VALIDACIÓN LEGAL ---
+    const [hasInitialContract, setHasInitialContract] = useState<boolean | null>(null);
+    const [isValidatingLegal, setIsValidatingLegal] = useState(true);
 
-    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0] || null;
-        onFileChange(file); 
-    };
+    const { isOpen, onOpen, onClose } = useDisclosure();
 
-    const handleButtonClick = () => {
-        fileInputRef.current?.click(); 
-    };
-
-    return (
-        <FormControl isRequired={isRequired} {...rest}>
-            <FormLabel fontWeight="bold" fontSize="md">{label}</FormLabel>
-            <Text fontSize="sm" color={fileDescriptionColor} mb={1}>
-                {description}
-            </Text>
-            <ChakraInputGroup size="lg" w="full">
-                <Box w="full">
-                    {/* Input Falso (visible) */}
-                    <Input
-                        isReadOnly
-                        placeholder={fileName}
-                        value={fileName}
-                        bg={inputBg}
-                        borderColor={inputBorder}
-                        _hover={{ cursor: 'pointer' }}
-                        onClick={handleButtonClick}
-                    />
-                    {/* Botón de selección */}
-                    <ChakraButton
-                        onClick={handleButtonClick}
-                        colorScheme="teal"
-                        variant="solid"
-                        size="sm"
-                        mt={2}
-                        w="fit-content"
-                    >
-                        {currentFile ? 'Cambiar archivo' : 'Seleccionar archivo'}
-                    </ChakraButton>
-                </Box>
-                {/* Input Real (oculto) */}
-                <Box 
-                    as="input" 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleFileSelect}
-                    position="absolute"
-                    opacity="0"
-                    width="0.1px"
-                    height="0.1px"
-                    pointerEvents="none"
-                />
-            </ChakraInputGroup>
-        </FormControl>
-    );
-};
-
-
-// === Componente Principal: ProfileCoordinatorReview ===
-
-export function ProfileCoordinatorReview({ user, mode }: { user: User, mode: string }) {
     const cardBg = useColorModeValue("white", "gray.700");
     const textColor = useColorModeValue("gray.600", "gray.400");
-    const mutedTextColor = useColorModeValue("gray.500", "gray.400"); // Color para el contacto
-    const { isOpen, onOpen, onClose } = useDisclosure(); 
+    const headerBg = useColorModeValue("gray.50", "gray.800");
+    const tableBorder = useColorModeValue("gray.100", "gray.600");
+    const brandColor = "orange.400"; 
 
-    const [cartaIntencionFile, setCartaIntencionFile] = useState<File | null>(null);
-    const [cartaCompromisoFile, setCartaCompromisoFile] = useState<File | null>(null);
+    const isProvider = user.rol === 'proveedor';
 
-    const isReadyToSubmit = cartaIntencionFile !== null && cartaCompromisoFile !== null;
-    const providerCourses = user.courses ?? [];
-
-    const handleIntencionChange = (file: File | null) => setCartaIntencionFile(file);
-    const handleCompromisoChange = (file: File | null) => setCartaCompromisoFile(file);
-
-    const handleFinalSubmission = () => {
-        if (!isReadyToSubmit) {
-            console.error("Faltan documentos requeridos.");
-            return;
+    // 1️⃣ EFECTO PARA VALIDAR ESTADO LEGAL (CARTA VS ADENDA)
+    useEffect(() => {
+        async function checkLegalStatus() {
+            setIsValidatingLegal(true);
+            try {
+                // Usamos el nuevo método con lógica de Mock 50/50
+                const hasContract = await userService.hasInitialContract(user.id);
+                setHasInitialContract(hasContract);
+            } catch (error) {
+                console.error("Error validando contrato:", error);
+                setHasInitialContract(false);
+            } finally {
+                setIsValidatingLegal(false);
+            }
         }
+        
+        if (isProvider) checkLegalStatus();
+    }, [user.id, isProvider]);
 
-        console.log("Subiendo Carta de Intención:", cartaIntencionFile?.name);
-        console.log("Subiendo Carta de Compromiso:", cartaCompromisoFile?.name);
-        alert("Documentos subidos y asociados a los cursos (Simulación)");
-        onClose();
-    }
+    // 2️⃣ EFECTO PARA CARGAR CURSOS
+    useEffect(() => {
+        async function loadAllCourses() {
+            setIsLoadingCourses(true);
+            try {
+                const result = await courseService.getCoursesByUserId(user.id);
+                setCourses(result.courses);
+            } catch (error) {
+                console.error("Error cargando cursos para revisión:", error);
+            } finally {
+                setIsLoadingCourses(false);
+            }
+        }
+        loadAllCourses();
+    }, [user.id]);
 
-    const getStatusColor = (status: string | undefined) => {
+    const pendingLegalCourses = courses.filter(c => 
+        c.estado_gestion === 'aprobado' && !c.documento_legal_id
+    );
+
+    const getStatusBadge = (status: string | undefined) => {
         switch (status) {
-            case 'aprobado': return 'green';
-            case 'pendiente': return 'orange';
-            case 'rechazado': return 'red';
-            default: return 'gray';
+            case 'aprobado': return { color: "green", label: "Aprobado" };
+            case 'abierto': return { color: "teal", label: "Abierto" };
+            case 'rechazado': return { color: "red", label: "Rechazado" };
+            case 'revision': return { color: "orange", label: "En Revisión" };
+            default: return { color: "gray", label: status || "Pendiente" };
         }
     };
 
+    const displayName = `${user.nombres} ${user.apellidos}`;
+
     return (
-        <Box p={6} bg={cardBg} shadow="xl" rounded="lg" border="3px" borderColor="teal.500">
+        <Box p={8} bg={cardBg} shadow="2xl" rounded="lg" maxW="3xl" mx="auto" borderTop="6px solid" borderColor={brandColor}>
             
-            <Heading size="xl" mb={4}>Gestión Documental de Proveedor</Heading>
-            <Text fontSize="lg" color="teal.500" fontWeight="bold">Modo: {mode}</Text>
-            <Divider my={4} />
+            <HStack mb={4} justify="center">
+                <Icon as={MdVerifiedUser} color={brandColor} />
+                <Text fontSize="xs" fontWeight="bold" color={brandColor} textTransform="uppercase" letterSpacing="widest">
+                    {mode}
+                </Text>
+            </HStack>
 
-            {/* SECCIÓN 1: PERFIL VISUAL (Actualizado) */}
             <VStack spacing={4} align="center" mb={6}>
-                <Avatar size="xl" name={user.name} src={user.avatarUrl} />
-                <Heading size="lg">{user.name}</Heading>
-                <Box textAlign="center" maxW="md">
-                    <Text color={textColor} fontSize="md" fontStyle="italic">Biografía:</Text>
-                    <Text fontSize="md">{user.bio ?? "Biografía no definida."}</Text>
-                </Box>
-
-                {/* ✨ ADICIÓN: Información de Contacto Pública */}
-                <VStack align="stretch" spacing={1} pt={4}>
-                    {(user.contactEmails && user.contactEmails.length > 0) && (
-                        <HStack spacing={2} fontSize="sm" color={mutedTextColor} justify="center">
-                            <Icon as={MdEmail} color="teal.500" boxSize={5} />
-                            <Text>{user.contactEmails.join(', ')}</Text>
-                        </HStack>
-                    )}
-                    {(user.contactPhones && user.contactPhones.length > 0) && (
-                        <HStack spacing={2} fontSize="sm" color={mutedTextColor} justify="center">
-                            <Icon as={MdPhone} color="teal.500" boxSize={5} />
-                            <Text>{user.contactPhones.join(', ')}</Text>
-                        </HStack>
-                    )}
+                <Avatar size="2xl" name={displayName} src={(user as any).avatarUrl} border="4px solid" borderColor={brandColor} />
+                
+                <VStack spacing={1}>
+                    <Heading size="lg" textAlign="center">{displayName}</Heading>
+                    <Badge colorScheme="purple" variant="solid" px={3} rounded="full">
+                        {isProvider ? 'PROVEEDOR' : 'USUARIO'}
+                    </Badge>
                 </VStack>
-                {/* --- FIN DE LA ADICIÓN --- */}
-            </VStack>
-            <Divider my={6} />
 
-            {/* SECCIÓN 2: TABLA DE CURSOS DEL PROVEEDOR */}
-            <Heading size="md" mb={3}>Cursos a cargo del Proveedor</Heading>
-            <TableContainer mb={6}>
-                <Table variant="simple" size="sm">
-                    <Thead>
-                        <Tr>
-                            <Th>ID</Th>
-                            <Th>Nombre del Curso</Th>
-                            <Th>Estado de Gestión</Th>
-                        </Tr>
-                    </Thead>
-                    <Tbody>
-                        {providerCourses.map(course => (
-                            <Tr key={course.id}>
-                                <Td>{course.id}</Td>
-                                <Td>{course.titulo}</Td> 
-                                <Td>
-                                    <Badge colorScheme={getStatusColor(course.estado_gestion)}>
-                                        {course.estado_gestion ?? 'N/A'}
-                                    </Badge>
-                                </Td>
-                            </Tr>
-                        ))}
-                    </Tbody>
-                </Table>
-            </TableContainer>
-            
-            <Divider my={6} />
+                {/* BOTÓN CON SKELETON MIENTRAS EL SERVICIO RESPONDE */}
+                <Skeleton isLoaded={!isValidatingLegal} rounded="md">
+                    <Button 
+                        mt={4}
+                        leftIcon={<MdCloudUpload />} 
+                        colorScheme="orange" 
+                        variant="solid"
+                        onClick={onOpen}
+                        isDisabled={pendingLegalCourses.length === 0}
+                    >
+                        Subir Documentación Legal
+                    </Button>
+                </Skeleton>
 
-            <Text mb={6} fontWeight="semibold" textAlign="center" fontSize="lg">
-                Estado General de Documentos: 
-                <Text as="span" color="orange.500" ml={2} fontWeight="bold">{user.documentStatus ?? "N/A"}</Text>
-            </Text>
-            
-            {/* SECCIÓN 3: ÁREAS DE SUBIDA DE DOCUMENTOS */}
-            <VStack spacing={6} align="stretch" mb={6}>
-                <FileInput
-                    label="1. Carta de Intención (Requerido)"
-                    description="Sube el documento PDF o DOCX de tu Carta de Intención formal."
-                    isRequired
-                    onFileChange={handleIntencionChange}
-                    currentFile={cartaIntencionFile}
-                />
-                <FileInput
-                    label="2. Carta de Compromiso (Requerido)"
-                    description="Sube el documento PDF o DOCX de tu Carta de Compromiso firmada."
-                    isRequired
-                    onFileChange={handleCompromisoChange}
-                    currentFile={cartaCompromisoFile}
-                />
-            </VStack>
-
-            <Divider my={6} />
-
-            {/* SECCIÓN 4: ACCIONES GLOBALES */}
-            <VStack align="stretch" spacing={2}>
-                <Button 
-                    colorScheme="teal" 
-                    size="lg" 
-                    onClick={onOpen}
-                    fontWeight="bold"
-                    isDisabled={!isReadyToSubmit} 
-                >
-                    Subir Documentos y Asociar a Cursos
-                </Button>
-                {!isReadyToSubmit && (
-                    <Text color="red.500" fontSize="sm" textAlign="center">
-                        * Debes seleccionar ambos documentos para poder subir.
-                    </Text>
+                {!isValidatingLegal && (
+                    <HStack spacing={1} color="gray.400" fontSize="xs">
+                        <Icon as={MdInfo} />
+                        <Text>Trámite detectado: {hasInitialContract ? "Adenda" : "Registro Inicial"}</Text>
+                    </HStack>
                 )}
             </VStack>
-            
-            {/* MODAL DE CONFIRMACIÓN DE CURSOS */}
-            <Modal isOpen={isOpen} onClose={onClose} isCentered>
+
+            <Divider my={6} />
+
+            <Box>
+                <Heading size="sm" mb={4} color="gray.500" textAlign="left" letterSpacing="wider">
+                    PROGRAMAS BAJO SUPERVISIÓN
+                </Heading>
+                
+                {isLoadingCourses ? (
+                    <Center py={10}><Spinner color={brandColor} size="xl" /></Center>
+                ) : courses.length > 0 ? (
+                    <TableContainer border="1px" borderColor={tableBorder} rounded="md">
+                        <Table variant="simple" size="sm">
+                            <Thead bg={headerBg}>
+                                <Tr>
+                                    <Th>ID</Th>
+                                    <Th>Título del Programa</Th>
+                                    <Th textAlign="center">Estado de Gestión</Th>
+                                </Tr>
+                            </Thead>
+                            <Tbody>
+                                {courses.map((course: Course) => {
+                                    const statusInfo = getStatusBadge(course.estado_gestion);
+                                    return (
+                                        <Tr key={course.id}>
+                                            <Td fontSize="xs" fontFamily="mono" color="gray.400">{course.id}</Td>
+                                            <Td fontWeight="medium">
+                                                <Text noOfLines={1}>{course.titulo}</Text>
+                                            </Td>
+                                            <Td textAlign="center">
+                                                <Badge colorScheme={statusInfo.color} variant="subtle" px={2} rounded="md" fontSize="xs">
+                                                    {statusInfo.label}
+                                                </Badge>
+                                            </Td>
+                                        </Tr>
+                                    );
+                                })}
+                            </Tbody>
+                        </Table>
+                    </TableContainer>
+                ) : (
+                    <Center py={4}><Text color={textColor} fontStyle="italic">No hay programas registrados.</Text></Center>
+                )}
+            </Box>
+
+            {/* --- MODAL DE GESTIÓN LEGAL --- */}
+            <Modal isOpen={isOpen} onClose={onClose} size="lg">
                 <ModalOverlay />
                 <ModalContent>
-                    <ModalHeader>Confirmar Documentación para Cursos</ModalHeader>
+                    <ModalHeader fontSize="md">
+                        {hasInitialContract ? "Gestión de Adenda Legal" : "Formalización: Carta de Intención"}
+                    </ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
-                        <Text mb={4}>Los documentos seleccionados (**{cartaIntencionFile?.name}** y **{cartaCompromisoFile?.name}**) **cubrirán la gestión** de los siguientes cursos:</Text>
-                        <List spacing={2}>
-                            {providerCourses.map(course => (
-                                <ListItem key={course.id}>
-                                    <ListIcon as={CheckCircleIcon} color="green.500" />
-                                    {course.titulo} 
-                                </ListItem>
-                            ))}
-                        </List>
-                        <Text mt={4} fontWeight="bold">¿Deseas proceder con la subida y asociar estos documentos a la lista anterior?</Text>
+                        <VStack spacing={4} align="start">
+                            <Box w="full" p={3} bg="orange.50" rounded="md" borderLeft="4px solid" borderColor="orange.400">
+                                <Text fontSize="xs" fontWeight="bold" color="orange.800" mb={2} textTransform="uppercase">
+                                    Cursos a amparar legalmente:
+                                </Text>
+                                <List spacing={1}>
+                                    {pendingLegalCourses.map(c => (
+                                        <ListItem key={c.id} fontSize="xs" color="orange.900">
+                                            <ListIcon as={MdCheckCircle} color="orange.500" />
+                                            {c.titulo}
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            </Box>
+
+                            <FormControl isRequired>
+                                <FormLabel fontSize="sm" fontWeight="bold">
+                                    {hasInitialContract ? "Archivo de Adenda (.pdf)" : "Carta de Intención (.pdf)"}
+                                </FormLabel>
+                                <Input type="file" p={1} accept=".pdf" />
+                            </FormControl>
+
+                            <FormControl isRequired={!hasInitialContract}>
+                                <FormLabel fontSize="sm" fontWeight="bold">
+                                    Carta de Compromiso {hasInitialContract && "(Opcional)"}
+                                </FormLabel>
+                                <Input type="file" p={1} accept=".pdf" />
+                            </FormControl>
+                            
+                            <Text fontSize="xx-small" color="gray.500">
+                                Nota: Al procesar esta carga, el sistema vinculará legalmente los cursos listados al expediente del proveedor.
+                            </Text>
+                        </VStack>
                     </ModalBody>
+
                     <ModalFooter>
-                        <Button colorScheme='gray' mr={3} onClick={onClose}>
-                            Cancelar
-                        </Button>
-                        <Button 
-                            colorScheme='teal' 
-                            onClick={handleFinalSubmission}
-                        >
-                            Aceptar y Subir Documentos
-                        </Button>
+                        <Button variant="ghost" mr={3} onClick={onClose} size="sm">Cancelar</Button>
+                        <Button colorScheme="orange" size="sm">Procesar Documentación</Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
+
+            <Box mt={10} pt={4} borderTop="1px" borderColor={tableBorder}>
+                <Text fontSize="xx-small" color="gray.400" textAlign="center" textTransform="uppercase">
+                    Vista de Auditoría Académica - Sistema Central de Postgrado UCV
+                </Text>
+            </Box>
         </Box>
     );
 }

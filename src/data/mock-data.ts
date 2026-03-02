@@ -26,7 +26,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-ADDV",
+        "codigo_proveedor": "PROV-ADDV",
         "userId": "ec-user-014",
         "estado_gestion": "pendiente"
     },
@@ -46,7 +46,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-HTI",
+        "codigo_proveedor": "PROV-HTI",
         "userId": "ec-user-015",
         "estado_gestion": "aprobado"
     },
@@ -66,7 +66,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-CFM",
+        "codigo_proveedor": "PROV-CFM",
         "userId": "ec-user-016",
         "estado_gestion": "rechazado"
     },
@@ -86,7 +86,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-F22",
+        "codigo_proveedor": "PROV-F22",
         "userId": "ec-user-017",
         "estado_gestion": "abierto"
     },
@@ -106,7 +106,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-GLA",
+        "codigo_proveedor": "PROV-GLA",
         "userId": "ec-user-018",
         "estado_gestion": "cerrado"
     },
@@ -126,7 +126,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-ICC",
+        "codigo_proveedor": "PROV-ICC",
         "userId": "ec-user-019",
         "estado_gestion": "pendiente"
     },
@@ -146,7 +146,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-ADDV",
+        "codigo_proveedor": "PROV-ADDV",
         "userId": "ec-user-014",
         "estado_gestion": "aprobado"
     },
@@ -166,7 +166,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-HTI",
+        "codigo_proveedor": "PROV-HTI",
         "userId": "ec-user-015",
         "estado_gestion": "rechazado"
     },
@@ -186,7 +186,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-CFM",
+        "codigo_proveedor": "PROV-CFM",
         "userId": "ec-user-016",
         "estado_gestion": "abierto"
     },
@@ -206,7 +206,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-F22",
+        "codigo_proveedor": "PROV-F22",
         "userId": "ec-user-017",
         "estado_gestion": "cerrado"
     },
@@ -226,7 +226,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-GLA",
+        "codigo_proveedor": "PROV-GLA",
         "userId": "ec-user-018",
         "estado_gestion": "pendiente"
     },
@@ -246,7 +246,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-ICC",
+        "codigo_proveedor": "PROV-ICC",
         "userId": "ec-user-019",
         "estado_gestion": "aprobado"
     },
@@ -266,7 +266,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-ADDV",
+        "codigo_proveedor": "PROV-ADDV",
         "userId": "ec-user-014",
         "estado_gestion": "rechazado"
     },
@@ -286,7 +286,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-HTI",
+        "codigo_proveedor": "PROV-HTI",
         "userId": "ec-user-015",
         "estado_gestion": "abierto"
     },
@@ -306,7 +306,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-CFM",
+        "codigo_proveedor": "PROV-CFM",
         "userId": "ec-user-016",
         "estado_gestion": "cerrado"
     },
@@ -326,7 +326,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-F22",
+        "codigo_proveedor": "PROV-F22",
         "userId": "ec-user-017",
         "estado_gestion": "pendiente"
     },
@@ -346,7 +346,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-GLA",
+        "codigo_proveedor": "PROV-GLA",
         "userId": "ec-user-018",
         "estado_gestion": "aprobado"
     },
@@ -366,7 +366,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-ICC",
+        "codigo_proveedor": "PROV-ICC",
         "userId": "ec-user-019",
         "estado_gestion": "rechazado"
     },
@@ -386,7 +386,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-ADDV",
+        "codigo_proveedor": "PROV-ADDV",
         "userId": "ec-user-014",
         "estado_gestion": "abierto"
     },
@@ -406,7 +406,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-HTI",
+        "codigo_proveedor": "PROV-HTI",
         "userId": "ec-user-015",
         "estado_gestion": "cerrado"
     },
@@ -426,7 +426,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-CFM",
+        "codigo_proveedor": "PROV-CFM",
         "userId": "ec-user-016",
         "estado_gestion": "pendiente"
     },
@@ -446,7 +446,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-F22",
+        "codigo_proveedor": "PROV-F22",
         "userId": "ec-user-017",
         "estado_gestion": "aprobado"
     },
@@ -466,7 +466,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-GLA",
+        "codigo_proveedor": "PROV-GLA",
         "userId": "ec-user-018",
         "estado_gestion": "rechazado"
     },
@@ -486,7 +486,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-ICC",
+        "codigo_proveedor": "PROV-ICC",
         "userId": "ec-user-019",
         "estado_gestion": "abierto"
     },
@@ -506,7 +506,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-ADDV",
+        "codigo_proveedor": "PROV-ADDV",
         "userId": "ec-user-014",
         "estado_gestion": "cerrado"
     },
@@ -526,7 +526,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-HTI",
+        "codigo_proveedor": "PROV-HTI",
         "userId": "ec-user-015",
         "estado_gestion": "pendiente"
     },
@@ -546,7 +546,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-CFM",
+        "codigo_proveedor": "PROV-CFM",
         "userId": "ec-user-016",
         "estado_gestion": "aprobado"
     },
@@ -566,7 +566,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-F22",
+        "codigo_proveedor": "PROV-F22",
         "userId": "ec-user-017",
         "estado_gestion": "rechazado"
     },
@@ -586,7 +586,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-GLA",
+        "codigo_proveedor": "PROV-GLA",
         "userId": "ec-user-018",
         "estado_gestion": "abierto"
     },
@@ -606,7 +606,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Introducción, Desarrollo Práctico, Proyecto Final.",
         "evaluacion": "Evaluación continua: Participación (30%), Tareas (40%), Proyecto Final (30%).",
         "cronograma": "8 semanas de duración. Sesiones sincrónicas semanales.",
-        "providerCode": "PROV-ICC",
+        "codigo_proveedor": "PROV-ICC",
         "userId": "ec-user-019",
         "estado_gestion": "cerrado"
     },
@@ -626,7 +626,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Mallas de degradado, Efectos 3D, Automatización, Proyecto Final.",
         "evaluacion": "Evaluación continua: Tareas (50%), Proyecto Final (50%).",
         "cronograma": "8 semanas de duración. Acceso 24/7 a la plataforma.",
-        "providerCode": "PROV-ADDV",
+        "codigo_proveedor": "PROV-ADDV",
         "userId": "ec-user-014",
         "estado_gestion": "pendiente" // Ejemplo de estado
     },
@@ -646,7 +646,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Formatos y tamaños, Capas y máscaras, Texto y efectos, Exportación.",
         "evaluacion": "Tareas prácticas semanales (60%), Proyecto final (40%).",
         "cronograma": "6 semanas de duración. Acceso 24/7.",
-        "providerCode": "PROV-ADDV",
+        "codigo_proveedor": "PROV-ADDV",
         "userId": "ec-user-014",
         "estado_gestion": "aprobado" // Ejemplo de estado
     },
@@ -666,7 +666,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Principios UX, Investigación, Arquitectura de Información, Principios UI, Prototipado.",
         "evaluacion": "Quizzes (20%), Ejercicios prácticos (50%), Proyecto final (30%).",
         "cronograma": "7 semanas de duración. Clases grabadas y sesiones de Q&A.",
-        "providerCode": "PROV-ADDV",
+        "codigo_proveedor": "PROV-ADDV",
         "userId": "ec-user-014",
         "estado_gestion": "pendiente" // Ejemplo de estado
     },
@@ -686,7 +686,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Interfaz y Keyframes, Animación de Texto, Efectos Visuales, Renderizado.",
         "evaluacion": "Ejercicios semanales (60%), Proyecto final animado (40%).",
         "cronograma": "10 semanas de duración. Acceso 24/7.",
-        "providerCode": "PROV-ADDV",
+        "codigo_proveedor": "PROV-ADDV",
         "userId": "ec-user-014",
         "estado_gestion": "rechazado" // Ejemplo de estado
     },
@@ -706,7 +706,7 @@ const MOCK_COURSES_DATA = [
         "estructuraCurricular": "Módulos: Conceptos de Branding, Investigación, Diseño de Logo, Manual de Marca, Aplicaciones.",
         "evaluacion": "Análisis de casos (30%), Desarrollo de concepto (30%), Manual de marca final (40%).",
         "cronograma": "7 semanas de duración. Sesiones en vivo y material asincrónico.",
-        "providerCode": "PROV-ADDV",
+        "codigo_proveedor": "PROV-ADDV",
         "userId": "ec-user-014",
         "estado_gestion": "aprobado" // Ejemplo de estado
     }
@@ -714,7 +714,7 @@ const MOCK_COURSES_DATA = [
 
 const MOCK_PUBLICATIONS_DATA = [
   { id: 'pub-001', courseId: '1', titulo: '¡Bienvenidos al curso de Diseño Gráfico!', contenido: '...', fecha: '2025-10-25' },
-  { id: 'pub-002', courseId: '1', titulo: 'Material Adicional: Paletas de Colores', contenido: '...', fecha: '2025-10-28' },
+  { id: 'pub-002', courseId: '1', titulo: 'Material Adicional: Paletas de Colores', contenido: 'Deben traer un estuche con 14 colores.', fecha: '2025-10-28' },
   { id: 'pub-003', courseId: '2', titulo: 'Recordatorio: Sesión de Hooks Avanzados', contenido: '...', fecha: '2025-11-01' },
   { id: 'pub-004', courseId: '30', titulo: 'Ingredientes Clase 3: Cocina Nikkei', contenido: '...', fecha: '2025-11-05' },
 
@@ -772,7 +772,7 @@ const MOCK_USERS_DATA = [
     
     // ✨ CAMBIOS:
     rol: 'proveedor',
-    providerCode: 'PROV-ADDV' 
+    codigo_proveedor: 'PROV-ADDV' 
   },
   { 
     id: 'ec-user-015', 
@@ -787,7 +787,7 @@ const MOCK_USERS_DATA = [
     
     // ✨ CAMBIOS:
     rol: 'proveedor',
-    providerCode: 'PROV-HTI'
+    codigo_proveedor: 'PROV-HTI'
   },
   { 
     id: 'ec-user-016', 
@@ -802,7 +802,7 @@ const MOCK_USERS_DATA = [
     
     // ✨ CAMBIOS:
     rol: 'proveedor',
-    providerCode: 'PROV-CFM'
+    codigo_proveedor: 'PROV-CFM'
   },
   { 
     id: 'ec-user-017', 
@@ -817,7 +817,7 @@ const MOCK_USERS_DATA = [
     
     // ✨ CAMBIOS:
     rol: 'proveedor',
-    providerCode: 'PROV-F22'
+    codigo_proveedor: 'PROV-F22'
   },
   { 
     id: 'ec-user-018', 
@@ -832,7 +832,7 @@ const MOCK_USERS_DATA = [
     
     // ✨ CAMBIOS:
     rol: 'proveedor',
-    providerCode: 'PROV-GLA'
+    codigo_proveedor: 'PROV-GLA'
   },
   { 
     id: 'ec-user-019', 
@@ -847,7 +847,7 @@ const MOCK_USERS_DATA = [
     
     // ✨ CAMBIOS:
     rol: 'proveedor',
-    providerCode: 'PROV-ICC'
+    codigo_proveedor: 'PROV-ICC'
   },
 
   { 
@@ -927,42 +927,42 @@ const MOCK_USERS_DATA = [
 
 export const MOCK_PROVIDERS_DATA = [
   {
-    id: 'prov-001',
-    user_id: 'ec-user-014', // Alejandro Perez
-    nombre: 'Academia de Diseño Venezuela', // Inventé el nombre basado en el email
+    provider_id: 'prov-001',
+    id: 'ec-user-014', // Alejandro Perez
+    nombre_proveedor: 'Academia de Diseño Venezuela', // Inventé el nombre basado en el email
     codigo: 'PROV-ADDV',
     tipo_proveedor: 'con-fines-de-lucro', 
     estatus_documentacion: 'Pendiente de Revisión', 
-    bio: 'Líderes en formación de diseño digital y UX/UI en Venezuela.',
+    biografia: 'Líderes en formación de diseño digital y UX/UI en Venezuela.',
     emails_contacto: ['info@acaddiseno.com', 'soporte@acaddiseno.com'], 
     telefonos_contacto: ['+58 (212) 555-1234'] 
   },
   { 
-    id: 'prov-002', 
-    user_id: 'ec-user-015', // Roberto Castillo
-    nombre: 'Hub de Tecnología e Innovación', 
+    provider_id: 'prov-002', 
+    id: 'ec-user-015', // Roberto Castillo
+    nombre_proveedor: 'Hub de Tecnología e Innovación', 
     codigo: 'PROV-HTI', 
     tipo_proveedor: 'con-fines-de-lucro', 
     estatus_documentacion: 'Pendiente de Revisión', 
-    bio: 'Impulsando el futuro de la tecnología con bootcamps intensivos.',
+    biografia: 'Impulsando el futuro de la tecnología con bootcamps intensivos.',
     emails_contacto: ['contacto@hubtecnologico.ve'], 
     telefonos_contacto: ['+58 (212) 555-5678', '+58 (212) 555-9012'] 
   },
   { 
-    id: 'prov-003', 
-    user_id: 'ec-user-016', // Mariana Lopez
-    nombre: 'Centro de Finanzas Modernas', 
+    provider_id: 'prov-003', 
+    id: 'ec-user-016', // Mariana Lopez
+    nombre_proveedor: 'Centro de Finanzas Modernas', 
     codigo: 'PROV-CFM', 
     tipo_proveedor: 'con-fines-de-lucro', 
     estatus_documentacion: 'Pendiente de Revisión', 
-    bio: 'Formación especializada en finanzas, criptomonedas y mercados de capitales.',
+    biografia: 'Formación especializada en finanzas, criptomonedas y mercados de capitales.',
     emails_contacto: ['adm@finanzasmodernas.com'], 
     telefonos_contacto: ['+58 (212) 555-3456'] 
   },
   { 
-    id: 'prov-004', 
-    user_id: 'ec-user-017', // Luis Mendez
-    nombre: 'Escuela de Fotografía F/22', 
+    provider_id: 'prov-004', 
+    id: 'ec-user-017', // Luis Mendez
+    nombre_proveedor: 'Escuela de Fotografía F/22', 
     codigo: 'PROV-F22', 
     tipo_proveedor: 'sin-fines-de-lucro', 
     estatus_documentacion: 'Pendiente de Revisión', 
@@ -971,26 +971,244 @@ export const MOCK_PROVIDERS_DATA = [
     telefonos_contacto: [] 
   },
   { 
-    id: 'prov-005', 
-    user_id: 'ec-user-018', // Sofia Vargas
-    nombre: 'Grupo Liderazgo Ágil', 
+    provider_id: 'prov-005', 
+    id: 'ec-user-018', // Sofia Vargas
+    nombre_proveedor: 'Grupo Liderazgo Ágil', 
     codigo: 'PROV-GLA', 
     tipo_proveedor: 'con-fines-de-lucro', 
     estatus_documentacion: 'Pendiente de Revisión', 
-    bio: 'Certificaciones internacionales en Scrum, Kanban y metodologías ágiles.',
+    biografia: 'Certificaciones internacionales en Scrum, Kanban y metodologías ágiles.',
     emails_contacto: ['cursos@liderazgoagil.com.ve', 'admin@liderazgoagil.com.ve'], 
     telefonos_contacto: ['+58 (212) 555-7890'] 
   },
   { 
-    id: 'prov-006', 
-    user_id: 'ec-user-019', // Ricardo Chef
-    nombre: 'Instituto Culinario de Caracas', 
+    provider_id: 'prov-006', 
+    id: 'ec-user-019', // Ricardo Chef
+    nombre_proveedor: 'Instituto Culinario de Caracas', 
     codigo: 'PROV-ICC', 
     tipo_proveedor: 'con-fines-de-lucro', 
     estatus_documentacion: 'Pendiente de Revisión', 
-    bio: 'La mejor formación profesional de artes culinarias del país.',
+    biografia: 'La mejor formación profesional de artes culinarias del país.',
     emails_contacto: ['inscripciones@iccaracas.com'], 
     telefonos_contacto: ['+58 (212) 555-4321'] 
+  }
+];
+
+// /src/data/mock-data.ts
+const MOCK_SOLICITUDES_DATA: any[] = [
+  // 1. SOLICITUD DE CÓDIGO (NATURAL) - PENDIENTE
+  {
+    id: 'sol-001',
+    userId: 'ec-user-020',
+    tipo: 'codigo-proveedor',
+    estado: 'pendiente',
+    fechaCreacion: '2026-02-01',
+    payload: {
+      tipoPersona: 'natural',
+      nombreProveedor: 'Andrés Ríos Consultores',
+      nombreUsuario: 'Andrés Ríos', // ✨ NUEVO
+      biografia: 'Consultoría en optimización de procesos industriales.',
+      documentos: { 
+        cedula: '/docs/cedula_andres.pdf', 
+        rif: '/docs/rif_andres.pdf', 
+        curriculum: '/docs/cv_andres.pdf' 
+      }
+    }
+  },
+
+  // 2. FORMULACIÓN DIRECTA - PENDIENTE
+  {
+    id: 'sol-002',
+    userId: 'ec-user-014',
+    tipo: 'formulacion-curso-directa',
+    estado: 'pendiente',
+    fechaCreacion: '2026-02-03',
+    payload: {
+      titulo: 'Diseño Gráfico Esencial - #1',
+      nombreProveedor: 'Academia Visual Pro', // ✨ NUEVO
+      duracion: '35 horas',
+      proposito: 'Dominar fundamentos visuales.',
+      fundamentacion: 'Necesidad de digitalización empresarial.',
+      estructuraCostos: '$250 por participante.',
+      perfilDocente: 'Diseñador Senior con 10 años de experiencia.',
+      perfiles: 'Ingreso: Bachilleres. Egreso: Diseñador Junior.',
+      exigencias: 'Adobe Creative Suite.',
+      estructuraCurricular: 'Módulo 1: Teoría del color, Módulo 2: Composición.',
+      evaluacion: 'Proyecto de identidad visual.',
+      cronograma: 'Lunes y Miércoles 6:00 PM.'
+    }
+  },
+
+  // 3. FORMULACIÓN INDIRECTA - RECHAZADA
+  {
+    id: 'sol-003',
+    userId: 'ec-user-015',
+    tipo: 'formulacion-curso-indirecta',
+    estado: 'rechazada',
+    fechaCreacion: '2026-01-20',
+    motivoRechazo: 'El ente avalante no posee convenio vigente con la universidad.',
+    payload: {
+      titulo: 'Blockchain aplicado a Logística',
+      nombreProveedor: 'Tech Solutions & Logistics', // ✨ NUEVO
+      enteAvalante: 'CryptoTrade International',
+      archivoProyectoUrl: '/convenios/blockchain_v1.pdf',
+      duracion: '45 horas',
+      proposito: 'Trazabilidad de suministros usando Smart Contracts.',
+      fundamentacion: 'Modernización de aduanas.',
+      estructuraCostos: 'Costo total: $1500 (Subvencionado).',
+      perfilDocente: 'PhD en Computación distribuida.',
+      perfiles: 'Profesionales del área logística.',
+      exigencias: 'Conocimientos previos de bases de datos.',
+      estructuraCurricular: 'Conceptos de Ledger, Nodos y Consenso.',
+      evaluacion: 'Examen teórico-práctico.',
+      cronograma: 'Intensivo de 2 semanas.'
+    }
+  },
+
+  // 4. CIERRE DE COHORTE - PENDIENTE
+  {
+    id: 'sol-004',
+    userId: 'ec-user-016',
+    tipo: 'cierre-cohorte',
+    estado: 'pendiente',
+    fechaCreacion: '2026-02-05',
+    payload: {
+      // En cierres, solemos usar el proveedor del curso original
+      nombreProveedor: 'Academia Visual Pro', // ✨ NUEVO
+      cursoId: '3',
+      cohorteId: 'FIN-2025-II',
+      actaCierreUrl: '/cargas/acta_cierre_3.pdf',
+      notasFinalesUrl: '/cargas/notas_3.xlsx',
+      resumenResultados: '40 aprobados, 2 reprobados, 1 retiro.'
+    }
+  },
+
+  // 5. SOLICITUD DE CÓDIGO (JURÍDICA) - PENDIENTE
+  {
+    id: 'sol-005',
+    userId: 'ec-user-021',
+    tipo: 'codigo-proveedor',
+    estado: 'pendiente',
+    fechaCreacion: '2026-02-06',
+    payload: {
+      tipoPersona: 'juridica',
+      nombreUsuario: 'Carla Soto', // ✨ NUEVO
+      biografia: 'Agencia especializada en desarrollo de aplicaciones móviles.',
+      documentos: { 
+        cedula: '/docs/legal_carla.pdf', 
+        rif: '/docs/rif_sototech.pdf', 
+        registroMercantil: '/docs/reg_mercantil.pdf' 
+      }
+    }
+  },
+
+  // 6. FORMULACIÓN DIRECTA - APROBADA
+  {
+    id: 'sol-006',
+    userId: 'ec-user-017',
+    tipo: 'formulacion-curso-directa',
+    estado: 'aprobada',
+    fechaCreacion: '2026-01-10',
+    payload: {
+      titulo: 'Fotografía Creativa - #4',
+      nombreProveedor: 'Luis Méndez Fotografía', // ✨ NUEVO
+      duracion: '25 horas',
+      proposito: 'Explorar técnicas de composición avanzada.',
+      fundamentacion: 'Mercado de contenido digital en auge.',
+      estructuraCostos: '$150 por persona.',
+      perfilDocente: 'Luis Méndez - Fotógrafo Profesional.',
+      perfiles: 'Entusiastas de la fotografía con cámara propia.',
+      exigencias: 'Cámara DSLR o Mirrorless.',
+      estructuraCurricular: 'Luz, Composición, Edición en Lightroom.',
+      evaluacion: 'Portafolio de 10 fotos.',
+      cronograma: 'Sábados presenciales.',
+      contratoId: 'CONT-2026-001',
+    }
+  },
+
+  // 7. FORMULACIÓN INDIRECTA - PENDIENTE
+  {
+    id: 'sol-007',
+    userId: 'ec-user-018',
+    tipo: 'formulacion-curso-indirecta',
+    estado: 'pendiente',
+    fechaCreacion: '2026-02-07',
+    payload: {
+      titulo: 'Agilidad Organizacional con Scrum',
+      nombreProveedor: 'Gestión Ágil Consultores', // ✨ NUEVO
+      enteAvalante: 'Agile Institute South America',
+      archivoProyectoUrl: '/proyectos/agilidad_scrum.pdf',
+      duracion: '32 horas',
+      proposito: 'Certificar Scrum Masters internos.',
+      fundamentacion: 'Mejora de eficiencia en equipos remotos.',
+      estructuraCostos: 'Financiado por ente externo.',
+      perfilDocente: 'Trainer Certificado por Scrum.org.',
+      perfiles: 'Líderes de equipo y gerentes.',
+      exigencias: 'Uso de plataformas colaborativas (Miro/Trello).',
+      estructuraCurricular: 'Roles, Eventos y Artefactos de Scrum.',
+      evaluacion: 'Simulacro de examen oficial.',
+      cronograma: 'Martes y Jueves (Virtual).'
+    }
+  },
+
+  // 8. CIERRE DE COHORTE - APROBADA
+  {
+    id: 'sol-008',
+    userId: 'ec-user-019',
+    tipo: 'cierre-cohorte',
+    estado: 'aprobada',
+    fechaCreacion: '2025-12-15',
+    payload: {
+      nombreProveedor: 'Luis Méndez Fotografía', // ✨ NUEVO
+      cursoId: '6',
+      cohorteId: 'COC-2025-I',
+      actaCierreUrl: '/archivos/acta_final.pdf',
+      notasFinalesUrl: '/archivos/notas_finales.csv',
+      resumenResultados: 'Exito total, 100% de aprobación.'
+    }
+  },
+
+  // 9. FORMULACIÓN DIRECTA - PENDIENTE
+  {
+    id: 'sol-009',
+    userId: 'ec-user-022',
+    tipo: 'formulacion-curso-directa',
+    estado: 'pendiente',
+    fechaCreacion: '2026-02-08',
+    payload: {
+      titulo: 'Marketing para Emprendedores',
+      nombreProveedor: 'Growth Hacking Vzla', // ✨ NUEVO
+      duracion: '20 horas',
+      proposito: 'Vender a través de redes sociales.',
+      fundamentacion: 'Necesidad de autoempleo.',
+      estructuraCostos: '$100 (becas disponibles).',
+      perfilDocente: 'Especialista en Growth Hacking.',
+      perfiles: 'Emprendedores locales.',
+      exigencias: 'Smartphone con acceso a internet.',
+      estructuraCurricular: 'Instagram, TikTok y Ads básicos.',
+      evaluacion: 'Plan de marketing real.',
+      cronograma: 'Sesiones grabadas y tutoría semanal.'
+    }
+  },
+
+  // 10. SOLICITUD DE CÓDIGO (NATURAL) - PENDIENTE
+  {
+    id: 'sol-010',
+    userId: 'ec-user-023',
+    tipo: 'codigo-proveedor',
+    estado: 'pendiente',
+    fechaCreacion: '2026-02-09',
+    payload: {
+      tipoPersona: 'natural',
+      nombreProveedor: 'Emilia Reyes - Artes Plásticas',
+      nombreUsuario: 'Emilia Reyes', // ✨ NUEVO
+      biografia: 'Escultora con especialización en técnicas de resina.',
+      documentos: { 
+        cedula: '/docs/emilia_c.pdf', 
+        rif: '/docs/emilia_r.pdf', 
+        titulo: '/docs/emilia_t.pdf' 
+      }
+    }
   }
 ];
 
@@ -1006,7 +1224,8 @@ export const MOCKED_DB = {
   'courses': MOCK_COURSES_DATA,
   'users': MOCK_USERS_DATA,
   'publications': MOCK_PUBLICATIONS_DATA,
-  'proveedores': MOCK_PROVIDERS_DATA
+  'providers': MOCK_PROVIDERS_DATA,
+  'solicitudes': MOCK_SOLICITUDES_DATA 
 };
 
 

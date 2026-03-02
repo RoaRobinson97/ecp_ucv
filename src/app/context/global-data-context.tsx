@@ -10,10 +10,10 @@ type CourseDataType = {
 };
 
 interface GlobalDataContextProps {
-  providerCode: string | null;
+  codigo_proveedor: string | null;
   courses: CourseDataType[];
   isCohortOpen: boolean; // ✅ Agrega el nuevo estado
-  setProviderCode: (code: string | null) => void;
+  setcodigo_proveedor: (code: string | null) => void;
   addCourse: (course: CourseDataType) => void;
   setCohortOpen: (isOpen: boolean) => void; // ✅ Agrega la nueva función
 }
@@ -22,13 +22,13 @@ const GlobalDataContext = createContext<GlobalDataContextProps | undefined>(unde
 
 export const GlobalDataProvider = ({ children }: { children: React.ReactNode }) => {
   const { isHydrated, isAuthenticated } = useAuth();
-  const [providerCode, setProviderCodeState] = useState<string | null>(null);
+  const [codigo_proveedor, setcodigo_proveedorState] = useState<string | null>(null);
   const [courses, setCourses] = useState<CourseDataType[]>([]);
   const [isCohortOpen, setIsCohortOpen] = useState(false); // ✅ Declara el estado de la cohorte
 
-  const setProviderCode = (code: string | null) => {
-    localStorage.setItem("providerCode", code || "");
-    setProviderCodeState(code);
+  const setcodigo_proveedor = (code: string | null) => {
+    localStorage.setItem("codigo_proveedor", code || "");
+    setcodigo_proveedorState(code);
   };
   
   const addCourse = (course: Omit<CourseDataType, 'id'>) => { // 👈 Ahora recibe un objeto sin ID
@@ -43,18 +43,18 @@ export const GlobalDataProvider = ({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (isHydrated && isAuthenticated) {
-      const storedProviderCode = localStorage.getItem("providerCode");
-      if (storedProviderCode) {
-        setProviderCodeState(storedProviderCode);
+      const storedcodigo_proveedor = localStorage.getItem("codigo_proveedor");
+      if (storedcodigo_proveedor) {
+        setcodigo_proveedorState(storedcodigo_proveedor);
       }
     }
   }, [isHydrated, isAuthenticated]);
 
   const value = {
-    providerCode,
+    codigo_proveedor,
     courses,
     isCohortOpen, // ✅ Incluye el nuevo estado en el valor del contexto
-    setProviderCode,
+    setcodigo_proveedor,
     addCourse,
     setCohortOpen, // ✅ Incluye la nueva función
   };

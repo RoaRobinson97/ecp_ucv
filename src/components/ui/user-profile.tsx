@@ -1,158 +1,168 @@
 "use client";
+
+import React, { useState, useEffect } from "react";
 import { 
     Box, Heading, Text, Avatar, VStack, useColorModeValue, Divider, 
     Table, Thead, Tbody, Tr, Th, Td, TableContainer, Badge,
-    HStack, // ✨ Añadido
-    Icon    // ✨ Añadido
+    HStack, Icon, Spinner, Center
 } from '@chakra-ui/react';
-import React from 'react';
-// ✨ ADICIÓN: Importamos Course desde tipos globales
-import { Course } from "@/data/types"; 
-import { MdEmail, MdPhone } from 'react-icons/md'; // ✨ Añadido para iconos
+import { Course, User, FullProvider } from "@/data/types"; 
+import { MdEmail, MdPhone } from 'react-icons/md'; // ✨ Íconos de contacto
+import { courseService } from "@/servicios/cursos-service";
 
-// Vista estándar/pública del perfil
-export function UserProfileClient({ 
-    name, 
-    bio, 
-    avatarUrl, 
-    courses,
-    providerType,
-    contactEmails,  // ✨ ADICIÓN: Nueva prop
-    contactPhones   // ✨ ADICIÓN: Nueva prop
-}: { 
-    name: string, 
-    bio: string, 
-    avatarUrl: string,
-    courses: Course[] | undefined,
-    providerType: 'con-fines-de-lucro' | 'sin-fines-de-lucro' | undefined,
-    contactEmails?: string[], // ✨ ADICIÓN: Tipo de la prop
-    contactPhones?: string[]  // ✨ ADICIÓN: Tipo de la prop
-}) {
+export function UserProfileClient({ user }: { user: User | FullProvider }) {
+    // 1️⃣ HOOKS DE ESTADO (React)
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [isLoadingCourses, setIsLoadingCourses] = useState(false);
+
+    // 2️⃣ HOOKS DE ESTILO Y CONTEXTO (Chakra UI)
+    // Se declaran todos arriba para evitar errores de orden de Hooks
     const cardBg = useColorModeValue("white", "gray.700");
     const textColor = useColorModeValue("gray.600", "gray.400");
-    const mutedTextColor = useColorModeValue("gray.500", "gray.400"); // Color para el contacto
-    
-    const userCourses = courses || []; 
-    
-    const formatProviderType = (type: string) => {
-        return type === 'con-fines-de-lucro' 
-            ? 'Organización con Fines de Lucro' 
-            : 'Organización Sin Fines de Lucro';
-    };
+    const headerBg = useColorModeValue("gray.50", "gray.800");
+    const tableBorder = useColorModeValue("gray.100", "gray.600");
+    const brandColor = "teal.500";
 
-    // Lógica de color actualizada para estados en minúscula
+    // 3️⃣ LÓGICA DE DERIVACIÓN (Variables calculadas)
+    const isProvider = user.rol === 'proveedor';
+    
+    const displayName = (isProvider && 'nombre_proveedor' in user) 
+        ? (user as FullProvider).nombre_proveedor 
+        : `${user.nombres} ${user.apellidos}`;
+
+    const bioText = (isProvider && 'biografia' in user) 
+        ? (user as FullProvider).biografia 
+        : (user.biografia || "Usuario de la plataforma.");
+
+    const avatarUrl = (user as any).avatarUrl ?? `https://i.pravatar.cc/150?u=${user.id}`;
+
+    // Extraer arreglos de contacto si es proveedor
+    const extraEmails = (isProvider && 'emails_contacto' in user) ? (user as FullProvider).emails_contacto : [];
+    const extraPhones = (isProvider && 'telefonos_contacto' in user) ? (user as FullProvider).telefonos_contacto : [];
+
+    // 4️⃣ EFECTO PARA CARGAR CURSOS
+    useEffect(() => {
+        async function loadPublicCourses() {
+            if (!isProvider) return;
+            setIsLoadingCourses(true);
+            try {
+                const result = await courseService.getCoursesByUserId(user.id);
+                const publicCourses = result.courses.filter((c: Course) => 
+                    c.estado_gestion === 'aprobado' || c.estado_gestion === 'abierto'
+                );
+                setCourses(publicCourses);
+            } catch (error) {
+                console.error("Error cargando cursos públicos:", error);
+            } finally {
+                setIsLoadingCourses(false);
+            }
+        }
+        loadPublicCourses();
+    }, [user.id, isProvider]);
+
     const getStatusColor = (status: string | undefined) => {
-        switch (status) {
-            case 'aprobado': return 'green';
-            case 'pendiente': return 'orange';
-            case 'rechazado': return 'red';
-            default: return 'gray';
-        }
+        return status === 'abierto' ? 'green' : 'blue';
     };
 
-    // Lógica de texto actualizada para estados en minúscula
-    const getStatusText = (status: string | undefined) => {
-        switch (status) {
-            case 'aprobado': return 'Activo';
-            case 'pendiente': return 'En Preparación';
-            case 'rechazado': return 'No disponible';
-            default: return 'N/A';
-        }
-    };
-
+    // 5️⃣ RENDERIZADO
     return (
-        <Box p={8} bg={cardBg} shadow="xl" rounded="lg" maxW="2xl" mx="auto">
+        <Box p={8} bg={cardBg} shadow="xl" rounded="lg" maxW="2xl" mx="auto" borderTop="4px solid" borderColor={brandColor}>
             
-            {/* SECCIÓN 1: PERFIL VISUAL */}
             <VStack spacing={4} align="center" mb={6}>
-                <Avatar size="2xl" name={name} src={avatarUrl} />
-                <Heading size="xl" mt={2}>{name}</Heading>
+                <Avatar size="2xl" name={displayName} src={avatarUrl} border="2px solid" borderColor={brandColor} />
                 
-                {/* Badge de Tipo de Proveedor */}
-                {providerType && (
-                    <Badge 
-                        colorScheme={providerType === 'con-fines-de-lucro' ? 'blue' : 'green'}
-                        variant="solid"
-                        fontSize="sm"
-                        px={3}
-                        py={1}
-                        rounded="md"
-                    >
-                        {formatProviderType(providerType)}
-                    </Badge>
-                )}
+                <VStack spacing={1}>
+                    <Heading size="xl" textAlign="center">{displayName}</Heading>
+                    
+                    {isProvider && 'tipo_proveedor' in user && (
+                        <Badge colorScheme="teal" variant="subtle" px={2} py={1} rounded="md">
+                            {(user as FullProvider).tipo_proveedor.replace(/-/g, ' ')}
+                        </Badge>
+                    )}
+                </VStack>
 
-                {/* Biografía */}
                 <Box textAlign="center" maxW="md" pt={2}>
-                    <Text color={textColor} fontSize="md" fontStyle="italic">
-                        Biografía:
-                    </Text>
-                    <Text fontSize="lg">
-                        {bio}
+                    <Text fontSize="md" color={textColor} fontStyle="italic">
+                        {bioText}
                     </Text>
                 </Box>
 
-                {/* ✨ ADICIÓN: Información de Contacto Pública */}
-                <VStack align="stretch" spacing={1} pt={4}>
-                    {(contactEmails && contactEmails.length > 0) && (
-                        <HStack spacing={2} fontSize="sm" color={mutedTextColor} justify="center">
-                            <Icon as={MdEmail} color="teal.500" boxSize={5} />
-                            <Text>{contactEmails.join(', ')}</Text>
-                        </HStack>
-                    )}
-                    {(contactPhones && contactPhones.length > 0) && (
-                        <HStack spacing={2} fontSize="sm" color={mutedTextColor} justify="center">
-                            <Icon as={MdPhone} color="teal.500" boxSize={5} />
-                            <Text>{contactPhones.join(', ')}</Text>
-                        </HStack>
-                    )}
-                </VStack>
-                {/* --- FIN DE LA ADICIÓN --- */}
+                {/* ✨ SECCIÓN DE CONTACTO */}
+                <VStack spacing={2} pt={4} w="full" align="center">
+                    {/* Email principal (de la cuenta) */}
+                    <HStack spacing={2} fontSize="sm" color="teal.500" fontWeight="bold">
+                        <Icon as={MdEmail} />
+                        <Text>{user.email}</Text>
+                    </HStack>
 
+                    {/* Emails adicionales (si es proveedor) */}
+                    {extraEmails?.map((email) => (
+                        <HStack key={email} spacing={2} fontSize="sm" color={textColor}>
+                            <Icon as={MdEmail} opacity={0.6} />
+                            <Text>{email}</Text>
+                        </HStack>
+                    ))}
+
+                    {/* Teléfonos adicionales (si es proveedor) */}
+                    {extraPhones?.map((phone) => (
+                        <HStack key={phone} spacing={2} fontSize="sm" color={textColor}>
+                            <Icon as={MdPhone} color="green.500" />
+                            <Text>{phone}</Text>
+                        </HStack>
+                    ))}
+                </VStack>
             </VStack>
 
-            <Divider my={6} />
-            
-            {/* SECCIÓN 2: TABLA DE CURSOS */}
-            <Heading size="lg" mb={4} textAlign="center" color="teal.500">Cursos Dictados</Heading>
-            
-            {userCourses.length > 0 ? (
-                <TableContainer>
-                    <Table variant="simple" size="md">
-                        <Thead>
-                            <Tr>
-                                <Th>Nombre del Curso</Th>
-                                <Th textAlign="center">Estado</Th>
-                            </Tr>
-                        </Thead>
-                        <Tbody>
-                            {userCourses.map(course => (
-                                <Tr key={course.id}>
-                                    <Td fontWeight="medium">{course.titulo}</Td>
-                                    <Td textAlign="center">
-                                        <Badge 
-                                            colorScheme={getStatusColor(course.estado_gestion)}
-                                            variant="subtle"
-                                        >
-                                            {getStatusText(course.estado_gestion)}
-                                        </Badge>
-                                    </Td>
-                                </Tr>
-                            ))}
-                        </Tbody>
-                    </Table>
-                </TableContainer>
-            ) : (
-                <Text textAlign="center" color={textColor} fontStyle="italic" mt={4}>
-                    Este perfil aún no tiene cursos activos asociados.
-                </Text>
+            {isProvider && (
+                <Box mt={4}>
+                    <Divider my={6} />
+                    <Heading size="md" mb={4} textAlign="center" color="teal.500">Oferta Académica</Heading>
+                    
+                    {isLoadingCourses ? (
+                        <Center py={10}><Spinner color="teal.500" size="xl" /></Center>
+                    ) : courses.length > 0 ? (
+                        <TableContainer border="1px" borderColor={tableBorder} rounded="md">
+                            <Table variant="simple" size="md">
+                                <Thead bg={headerBg}>
+                                    <Tr>
+                                        <Th>Curso</Th>
+                                        <Th textAlign="center">Estado</Th>
+                                    </Tr>
+                                </Thead>
+                                <Tbody>
+                                    {courses.map((course: Course) => (
+                                        <Tr key={course.id}>
+                                            <Td fontWeight="medium">
+                                                <Text noOfLines={1}>{course.titulo}</Text>
+                                            </Td>
+                                            <Td textAlign="center">
+                                                <Badge 
+                                                    colorScheme={getStatusColor(course.estado_gestion)}
+                                                    variant="subtle"
+                                                    px={3}
+                                                    rounded="full"
+                                                >
+                                                    {course.estado_gestion === 'abierto' ? 'Inscripciones Abiertas' : 'Próximamente'}
+                                                </Badge>
+                                            </Td>
+                                        </Tr>
+                                    ))}
+                                </Tbody>
+                            </Table>
+                        </TableContainer>
+                    ) : (
+                        <Text textAlign="center" color={textColor} fontStyle="italic" py={4}>
+                            Este proveedor no tiene cursos disponibles para el público actualmente.
+                        </Text>
+                    )}
+                </Box>
             )}
 
-            <Divider my={6} />
-            
-            <Text fontSize="sm" color="gray.500" textAlign="center">
-                Esta es la vista estándar del perfil.
-            </Text>
+            <Box mt={10} pt={4} borderTop="1px" borderColor={tableBorder}>
+                <Text fontSize="xs" color="gray.400" textAlign="center">
+                    Perfil verificado por la Dirección de Extensión Universitaria (DEU)
+                </Text>
+            </Box>
         </Box>
     );
 }

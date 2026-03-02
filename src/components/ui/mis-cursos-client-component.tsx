@@ -59,7 +59,7 @@ const ProviderCourseCard = ({ course }: { course: Course }) => {
   const statusText = formatStatusText(course.estado_gestion);
 
   return (
-    <Card 
+    <Card  
       as={NextLink} 
       href={`/curso/${course.id}`} 
       bg={cardBg}

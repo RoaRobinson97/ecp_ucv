@@ -9,17 +9,17 @@ import { Course } from '@/data/types'; // Asegúrate de tener este tipo
 // Interfaz para los searchParams esperados
 interface MisCursosSearchParams {
     page?: string;
-    providerCode?: string; // Esperamos el userId como parámetro
+    codigo_proveedor?: string; // Esperamos el userId como parámetro
 }
 
 export default async function MisCursosPage({ searchParams }: { searchParams: MisCursosSearchParams }) {
     
     // Obtenemos el userId de los parámetros de búsqueda
-    const providerCode = searchParams.providerCode;
+    const codigo_proveedor = searchParams.codigo_proveedor;
 
     // Si no se proporciona un userId, mostramos un error o redirigimos (aquí solo mostramos error)
     // En una app real, la protección de ruta (middleware) manejaría esto antes.
-    if (!providerCode) {
+    if (!codigo_proveedor) {
         return (
             <Box maxW="container.lg" mx="auto" py={10} px={6} textAlign="center">
                 <Text fontSize="xl" color="red.500">Error: Falta el identificador del usuario.</Text>
@@ -35,7 +35,7 @@ export default async function MisCursosPage({ searchParams }: { searchParams: Mi
 
     try {
         // Llamamos al servicio para obtener los cursos DE ESE USUARIO específico
-        const result = await courseService.getCoursesByProviderCode(providerCode, { page, limit }) as { courses: Course[], totalPages: number };
+        const result = await courseService.getCoursesBycodigo_proveedor(codigo_proveedor, { page, limit }) as { courses: Course[], totalPages: number };
         courses = result.courses;
         totalPages = result.totalPages;
     } catch (error) {

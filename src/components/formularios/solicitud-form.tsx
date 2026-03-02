@@ -85,7 +85,7 @@ const FileUploadControl = ({ id, label, accept }: { id: string, label: string, a
 );
 
 export const SolicitudForm = () => {
-  const { setProviderCode } = useGlobalData();
+  const { setcodigo_proveedor } = useGlobalData();
   const router = useRouter();
   const toast = useToast();
 
@@ -154,8 +154,8 @@ export const SolicitudForm = () => {
       console.log("Enviando datos:", { providerName, bio, personType, finalImageFile });
       
       await new Promise(resolve => setTimeout(resolve, 1500));
-      const newProviderCode = "ORG123";
-      setProviderCode(newProviderCode);
+      const newcodigo_proveedor = "ORG123";
+      setcodigo_proveedor(newcodigo_proveedor);
 
       toast({
         title: "Solicitud enviada.",

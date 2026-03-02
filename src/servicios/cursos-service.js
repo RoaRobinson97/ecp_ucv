@@ -87,23 +87,33 @@ class CourseService {
     }
 
     /**
-     * Obtiene un curso por ID.
+     * Obtiene un curso por ID y le inyecta sus publicaciones.
      */
     async getCourseById(courseId) {
         try {
-            // MODO MOCK
+            // --- MODO MOCK ---
             if (CONFIG.USE_MOCK_DATA) {
                 const course = await ApiService.get('courses', courseId);
                 if (!course) throw new Error(`Curso ${courseId} no encontrado.`);
-                // ... lógica de mock para publicaciones ...
+                
+                // ✨ INYECCIÓN DE PUBLICACIONES PARA MODO MOCK
+                try {
+                    const allPublications = await ApiService.get('publications') || [];
+                    // Filtramos las que pertenecen a este curso
+                    course.publications = allPublications.filter(pub => String(pub.courseId) === String(courseId));
+                } catch (pubError) {
+                    console.warn("No se pudieron cargar las publicaciones en mock:", pubError);
+                    course.publications = [];
+                }
+
                 return course;
             }
 
-            // MODO REAL
+            // --- MODO REAL ---
             const backendCourse = await ApiService.get('courses', courseId);
             if (!backendCourse) throw new Error(`Curso ${courseId} no encontrado.`);
 
-            // ✨ También aplicamos el Mapeo aquí para un solo curso
+            // ✨ Aplicamos el Mapeo aquí para un solo curso
             const courseAdapted = {
                 id: String(backendCourse.id),
                 titulo: backendCourse.nombre || backendCourse.titulo,
@@ -112,11 +122,22 @@ class CourseService {
                 slug: backendCourse.slug || `curso-${backendCourse.id}`,
                 
                 // Agrega el resto de campos detallados
-                contenido: backendCourse.contenido,
-                objetivos: backendCourse.objetivos,
+                proposito: backendCourse.proposito,
+                fundamentacion: backendCourse.fundamentacion,
                 duracion: backendCourse.duracion,
-                // ... mapear el resto según lo que necesite tu página de detalle
-                publications: [] // Si el backend aún no manda publicaciones, array vacío
+                estructuraCostos: backendCourse.estructuraCostos,
+                perfilDocente: backendCourse.perfilDocente,
+                perfiles: backendCourse.perfiles,
+                exigencias: backendCourse.exigencias,
+                estructuraCurricular: backendCourse.estructuraCurricular,
+                evaluacion: backendCourse.evaluacion,
+                cronograma: backendCourse.cronograma,
+                codigo_proveedor: backendCourse.codigo_proveedor,
+                userId: backendCourse.userId || backendCourse.user_id,
+                estado_gestion: backendCourse.estado_gestion || backendCourse.status,
+                
+                // Asumimos que el backend real devolverá las publicaciones anidadas o un array vacío
+                publications: backendCourse.publications || backendCourse.publicaciones || [] 
             };
 
             return courseAdapted;
@@ -136,21 +157,44 @@ class CourseService {
         }
 
         // MODO REAL (Probablemente un POST multipart/form-data)
-        // Nota: BaseApiService.post por defecto es JSON. 
-        // Para archivos necesitarías un método especial o ajustar headers, 
-        // pero por ahora lo dejamos simple.
         throw new Error("Endpoint real de subida de archivos no configurado aún.");
     }
 
     async getCoursesByUserId(userId, { page = 1, limit = 9 } = {}) {
-        // ... (Lógica similar a getAllCourses, agregando filtro si la API lo soporta)
-        // Por ahora, reutilizamos la lógica genérica o lanzamos error si no hay endpoint
         return this.getAllCourses({ page, limit }); 
     }
 
-    async getCoursesByProviderCode(providerCode, { page = 1, limit = 9 } = {}) {
-         // ... (Igual que arriba)
-         return this.getAllCourses({ page, limit });
+    async getCoursesBycodigo_proveedor(codigo_proveedor, { page = 1, limit = 9 } = {}) {
+        console.log('este es el codigo de ', codigo_proveedor)
+        try {
+            // --- MODO MOCK ---
+            if (CONFIG.USE_MOCK_DATA) {
+                const allCourses = await ApiService.get('courses') || [];
+                
+                // Filtrar por el código del proveedor
+                const filteredCourses = allCourses.filter(
+                    course => course.codigo_proveedor === codigo_proveedor
+                );
+
+                const totalCourses = filteredCourses.length;
+                const totalPages = Math.ceil(totalCourses / limit) || 1;
+                const start = (page - 1) * limit;
+                const end = start + limit;
+
+                return { 
+                    courses: filteredCourses.slice(start, end), 
+                    totalPages, 
+                    totalCourses 
+                };
+            }
+
+            // --- MODO REAL ---
+            return this.getAllCourses({ page, limit }); 
+
+        } catch (error) {
+            console.error("Error en getCoursesBycodigo_proveedor:", error);
+            throw error;
+        }
     }
 }
 

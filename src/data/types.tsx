@@ -25,17 +25,63 @@ export interface Course {
   estructuraCurricular?: string;
   evaluacion?: string;
   cronograma?: string;
-  providerCode?: string;
+  codigo_proveedor?: string;
   userId?: string;
   estado_gestion?: 'pendiente' | 'aprobado' | 'rechazado' | 'cerrado' | 'abierto' | 'solicitud-cierre';
   publications?: Publication[]; 
+  documento_legal_id: string;
+}
+
+export interface Solicitud {
+  id: string;
+  userId: string;        
+  tipo: TipoSolicitud;    
+  estado: EstadoSolicitud; // 'pendiente' | 'aprobado' | 'rechazado'
+  fechaCreacion: string;
+  fechaActualizacion?: string;
+  motivoRechazo?: string;
+  payload?: any; 
 }
 
 export type TipoSolicitud = 'codigo-proveedor' | 'formulacion-curso-directa' | 'formulacion-curso-indirecta' | 'cierre-cohorte'
+export type EstadoSolicitud = 'pendiente' | 'aprobada' | 'rechazada'
 
-export interface SolicitudCierre {
-  id: string;
-  tipo: TipoSolicitud
+export interface PayloadCodigoProveedor {
+  tipoPersona: 'natural' | 'juridica';
+  nombreProveedor: string; 
+  nombreUsuario?: string;  
+  biografia: string;
+  avatarUrl?: string;
+  documentos: {
+    cedula?: string;
+    rif?: string;
+    islr?: string;
+    curriculum?: string;
+    titulo?: string;
+    registroMercantil?: string;
+  };
+}
+
+// En tu archivo de tipos (ej. types.ts o el que estés usando)
+
+export interface PayloadFormulacionCurso {
+  titulo: string;
+  nombreProveedor?: string; 
+  denominacion?: string;
+  proposito: string;
+  fundamentacion: string;
+  duracion: string;
+  estructuraCostos: string;
+  exigencias: string;
+  perfilDocente: string;
+  perfiles: string;
+  estructuraCurricular: string;
+  evaluacion: string;
+  cronograma: string;
+  descripcion?: string;
+  enteAvalante?: string;
+  archivoProyectoUrl?: string;
+  contratoId?: string; 
 }
 
 export interface User {
@@ -49,23 +95,22 @@ export interface User {
   email: string;
   rol: UserRole;
   codigo_proveedor? : string
-  // email?: string;
-  // role: UserRole;
-  // name: string;
-  // bio?: string;
-  // avatarUrl?: string;
-  // documentStatus?: string;
-  // courses?: Course[]; 
-  // providerCode?: string;
-  // providerType?: 'con-fines-de-lucro' | 'sin-fines-de-lucro';
-  // contactEmails?: string[]; 
-  // contactPhones?: string[]; 
+  avatarUrl?: string;
+  biografia?: string;
 }
 
 export interface Provider {
   id: string;
+  user_id: string;
   codigo_proveedor: string;
   nombre_proveedor: string;
   biografia?: string;
   avatarUrl?: string;
+  tipo_proveedor: string;
+  // ✨ NUEVOS CAMPOS DE CONTACTO
+  emails_contacto?: string[]; 
+  telefonos_contacto?: string[];
+  sitio_web?: string;
 }
+
+export type FullProvider = User & Provider;

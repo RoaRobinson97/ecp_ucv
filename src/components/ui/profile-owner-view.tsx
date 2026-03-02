@@ -1,114 +1,66 @@
 "use client";
 
+import React, { useState, useEffect } from 'react';
 import { 
     Box, Heading, Text, Divider, useColorModeValue, VStack, Avatar,
-    Table, Thead, Tbody, Tr, Th, Td, TableContainer, Badge,
-    HStack, // ✨ Añadido para alinear iconos y texto
-    Icon    // ✨ Añadido para mostrar iconos
+    Table, Thead, Tbody, Tr, Th, Td, TableContainer, Badge, HStack, Icon 
 } from '@chakra-ui/react';
-import React from 'react';
+import { MdEmail, MdPerson } from 'react-icons/md';
+import { User, Course, FullProvider } from "@/data/types"; 
+import { courseService } from '@/servicios/cursos-service';
 
-// ✨ ADICIÓN: Importamos los tipos globales
-import { User, Course } from "@/data/types"; 
-import { MdEmail, MdPhone } from 'react-icons/md'; // ✨ Añadido para iconos
+export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mode: string }) {
+    const [myCourses, setMyCourses] = useState<Course[]>([]);
+    const brandColor = "teal.500";
+    const isProveedor = user.rol === 'proveedor';
 
-// --------------------------------------------------------
-// Componente ProfileOwnerView
-// --------------------------------------------------------
+    useEffect(() => {
+        async function loadMyCourses() {
+            if (isProveedor) {
+                try {
+                    const result = await courseService.getCoursesByUserId(user.id);
+                    setMyCourses(result.courses);
+                } catch (e) { console.error(e); }
+            }
+        }
+        loadMyCourses();
+    }, [user.id, isProveedor]);
 
-export function ProfileOwnerView({ user, mode }: { user: User, mode: string }) {
-    const cardBg = useColorModeValue("white", "gray.700");
-    const textColor = useColorModeValue("gray.600", "gray.400");
-    const mutedTextColor = useColorModeValue("gray.500", "gray.400"); // Color para el contacto
-
-    const avatarUrl = user.avatarUrl ?? `https://i.pravatar.cc/150?u=${user.name}`;
-    const bio = user.bio ?? "Este usuario aún no ha definido su biografía.";
-    const courses = user.courses ?? [];
-    const documentStatus = user.documentStatus ?? "N/A";
+    const displayName = (isProveedor && 'nombre_proveedor' in user)
+        ? (user as FullProvider).nombre_proveedor : `${user.nombres} ${user.apellidos}`;
 
     return (
-        <Box p={6} bg={cardBg} shadow="xl" rounded="lg" border="3px" borderColor="teal.500" maxW="3xl" mx="auto">
+        <Box p={6} bg={useColorModeValue("white", "gray.700")} shadow="xl" rounded="lg" borderTop="6px solid" borderColor={brandColor} maxW="3xl" mx="auto">
             
-            <Heading size="xl" mb={4}>Mi Perfil y Documentación Legal</Heading>
-            <Text fontSize="lg" color="teal.500" fontWeight="bold">Modo: {mode}</Text>
+            <HStack justify="space-between" mb={4}>
+                <Heading size="xl">{isProveedor ? "Perfil de Proveedor" : "Mi Perfil"}</Heading>
+                <Badge colorScheme="teal">{mode}</Badge>
+            </HStack>
             <Divider my={4} />
-
-            {/* SECCIÓN 1: PERFIL VISUAL (Actualizado con Contacto) */}
             <VStack spacing={4} align="center" mb={6}>
-                <Avatar size="xl" name={user.name} src={avatarUrl} />
-                <Heading size="lg">{user.name}</Heading>
-                
-                {/* Biografía */}
-                <Box textAlign="center" maxW="md">
-                    <Text color={textColor} fontSize="md" fontStyle="italic">Biografía:</Text>
-                    <Text fontSize="md">{bio}</Text>
-                </Box>
-
-                {/* ✨ ADICIÓN: Información de Contacto Pública */}
-                <VStack align="stretch" spacing={1} pt={4}>
-                    {(user.contactEmails && user.contactEmails.length > 0) && (
-                        <HStack spacing={2} fontSize="sm" color={mutedTextColor} justify="center">
-                            <Icon as={MdEmail} color="teal.500" boxSize={5} />
-                            <Text>{user.contactEmails.join(', ')}</Text>
-                        </HStack>
-                    )}
-                    {(user.contactPhones && user.contactPhones.length > 0) && (
-                        <HStack spacing={2} fontSize="sm" color={mutedTextColor} justify="center">
-                            <Icon as={MdPhone} color="teal.500" boxSize={5} />
-                            <Text>{user.contactPhones.join(', ')}</Text>
-                        </HStack>
-                    )}
-                </VStack>
-                {/* --- FIN DE LA ADICIÓN --- */}
-
+                <Avatar size="2xl" name={displayName as string} src={(user as any).avatarUrl} border="4px solid" borderColor={brandColor} />
+                <Heading size="lg">{displayName as string}</Heading>
+                <HStack><Icon as={MdEmail} color={brandColor} /><Text>{user.email}</Text></HStack>
             </VStack>
 
-            <Divider my={6} />
-
-            {/* SECCIÓN 2: TABLA DE CURSOS (Sin cambios) */}
-            <Heading size="md" mb={3}>Cursos a mi cargo</Heading>
-            <Text mb={3} color={textColor} fontSize="sm">
-                Estos son los cursos asignados. La columna Estado indica si el curso está activo para el usuario.
-            </Text>
-            
-            {courses.length > 0 ? (
-                <TableContainer mb={6}>
-                    <Table variant="simple" size="sm">
-                        <Thead>
-                            <Tr>
-                                <Th>ID</Th>
-                                <Th>Título del Curso</Th>
-                                <Th>Duración</Th>
-                                <Th>Estado</Th>
-                            </Tr>
-                        </Thead>
-                        <Tbody>
-                            {courses.map(course => (
-                                <Tr key={course.id}>
-                                    <Td>{course.id}</Td>
-                                    <Td fontWeight="medium">{course.titulo}</Td>
-                                    <Td>{course.duracion}</Td>
-                                    <Td>
-                                        <Badge colorScheme="green">Asignado</Badge>
-                                    </Td>
-                                </Tr>
-                            ))}
-                        </Tbody>
-                    </Table>
-                </TableContainer>
-            ) : (
-                <Text textAlign="center" color={textColor} fontStyle="italic" mt={4}>
-                    Aún no tienes cursos asignados.
-                </Text>
+            {isProveedor && (
+                <>
+                    <Heading size="md" mb={3}>Mis Cursos Asignados</Heading>
+                    <TableContainer border="1px" borderColor="gray.100" rounded="md">
+                        <Table variant="simple" size="sm">
+                            <Thead bg="gray.50"><Tr><Th>Título</Th><Th>Estado</Th></Tr></Thead>
+                            <Tbody>
+                                {myCourses.map(c => (
+                                    <Tr key={c.id}>
+                                        <Td fontWeight="medium">{c.titulo}</Td>
+                                        <Td><Badge colorScheme="green">{c.estado_gestion || 'Activo'}</Badge></Td>
+                                    </Tr>
+                                ))}
+                            </Tbody>
+                        </Table>
+                    </TableContainer>
+                </>
             )}
-            
-            <Divider my={6} />
-            
-            <Text mb={6} fontWeight="semibold" textAlign="center" fontSize="lg">
-                Documentos Legales: 
-                <Text as="span" color="orange.500" ml={2} fontWeight="bold">{documentStatus}</Text>
-            </Text>
-
         </Box>
     );
 }

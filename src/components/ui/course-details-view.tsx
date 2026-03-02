@@ -2,41 +2,25 @@
 
 "use client";
 
-import { Box, Heading, Text, VStack, Divider, SimpleGrid, Tag, Stat, StatLabel, StatNumber, useColorModeValue } from '@chakra-ui/react';
+import { 
+  Box, Heading, Text, VStack, SimpleGrid, useColorModeValue, HStack, Divider 
+} from '@chakra-ui/react';
+import { PayloadFormulacionCurso } from '@/data/types';
 
-// Interfaz que incluye todos los campos del formulario de curso.
 interface CourseDetailsViewProps {
-  solicitud: {
-    tipo: string;
-    descripcion: string; // Descripción general
-    // Campos del formulario
-    denominacion?: string;
-    proposito?: string;
-    fundamentacion?: string;
-    duracion?: string;
-    estructuraCostos?: string;
-    perfilDocente?: string;
-    perfiles?: string;
-    exigencias?: string;
-    estructuraCurricular?: string;
-    evaluacion?: string;
-    cronograma?: string;
-    // Campos específicos para los otros tipos de solicitud (mantener por compatibilidad)
-    descripcionCurso?: string;
-    propuesta?: string;
-    cambiosSolicitados?: string;
-  };
+  // Añadimos el "?" y un chequeo interno para evitar el "Cannot read properties of undefined"
+  payload?: PayloadFormulacionCurso; 
+  tipo?: string; 
 }
 
-// Componente auxiliar para mostrar un detalle clave
 const KeyDetail = ({ label, value }: { label: string; value?: string }) => {
   const labelColor = useColorModeValue("gray.700", "gray.300");
   const boxBg = useColorModeValue("white", "gray.700");
   const boxBorder = useColorModeValue("gray.200", "gray.600");
 
   return (
-    <VStack align="start" spacing={1}>
-      <Text fontWeight="bold" fontSize="md" color={labelColor}>{label}</Text>
+    <VStack align="start" spacing={1} w="100%">
+      <Text fontWeight="bold" fontSize="sm" color={labelColor} textTransform="uppercase">{label}</Text>
       <Box w="100%" p={3} bg={boxBg} border="1px" borderColor={boxBorder} rounded="md">
         <Text whiteSpace="pre-wrap" color={useColorModeValue("gray.800", "white")}>
           {value || 'No especificado'}
@@ -46,41 +30,74 @@ const KeyDetail = ({ label, value }: { label: string; value?: string }) => {
   );
 };
 
-export function CourseDetailsView({ solicitud }: CourseDetailsViewProps) {
-  const getTitle = () => {
-    // Reemplaza las partes iniciales para crear un título de vista de detalles.
-    return solicitud.tipo.replace('Formulación de ', 'Detalles de ').replace('Actualización de ', 'Detalles de ');
-  };
+const DividerWithLabel = ({ label }: { label: string }) => (
+    <HStack w="100%" py={4}>
+        <Box h="1px" bg="gray.300" flex={1} />
+        <Text fontSize="xs" fontWeight="bold" color="gray.400" textTransform="uppercase" letterSpacing="wider" px={2}>
+            {label}
+        </Text>
+        <Box h="1px" bg="gray.300" flex={1} />
+    </HStack>
+);
 
-  const containerBg = useColorModeValue("gray.50", "gray.800");
+export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: CourseDetailsViewProps) {
+  
+  // Si por alguna razón el payload no llega, mostramos un aviso en lugar de romper la app
+  if (!payload) {
+    return (
+      <Box p={5} textAlign="center">
+        <Text color="red.500">Error: No se encontraron datos del curso.</Text>
+      </Box>
+    );
+  }
+
+  const getTitle = () => {
+    // 1. Quitamos los guiones y ponemos espacios: "formulacion-curso-directa" -> "formulacion curso directa"
+    let tituloLimpio = tipo.replace(/-/g, ' ');
+
+    // 2. Ponemos la primera letra en mayúscula para que se vea bien
+    tituloLimpio = tituloLimpio.charAt(0).toUpperCase() + tituloLimpio.slice(1);
+
+    // 3. Aplicamos tu lógica de reemplazo para la vista de detalles
+    return tituloLimpio
+      .replace('Formulacion', 'Detalles de Formulacion')
+      .replace('curso directa', 'Directa');
+};
+
+  const containerBg = useColorModeValue("gray.50", "gray.900");
 
   return (
     <Box mb={10}>
-      <Heading as="h2" size="xl" mb={6}>{getTitle()}</Heading>
+      <Heading as="h2" size="lg" mb={6} color="teal.600">{getTitle()}</Heading>
 
-      <VStack spacing={6} align="stretch" p={4} bg={containerBg} rounded="lg" shadow="sm">
+      <VStack spacing={6} align="stretch" p={6} bg={containerBg} rounded="xl" shadow="md" borderWidth="1px">
         
-        {/* Detalles del curso (aplica a Formulaciones y Actualizaciones) */}
-        <KeyDetail label="Denominación o Título del Curso" value={solicitud.denominacion} />
-        <KeyDetail label="Propósito General (Objetivo Principal)" value={solicitud.proposito} />
-        <KeyDetail label="Fundamentación y Justificación" value={solicitud.fundamentacion} />
-        <KeyDetail label="Duración Total (en horas)" value={solicitud.duracion} />
-        <KeyDetail label="Estructura de Costos y Recursos" value={solicitud.estructuraCostos} />
-        <KeyDetail label="Perfil del Docente o Facilitador Requerido" value={solicitud.perfilDocente} />
-        <KeyDetail label="Perfiles de Ingreso y Egreso de Participantes" value={solicitud.perfiles} />
-        <KeyDetail label="Exigencias en Materiales y Servicios" value={solicitud.exigencias} />
-        <KeyDetail label="Estructura Curricular Detallada por Competencias y Módulos" value={solicitud.estructuraCurricular} />
-        <KeyDetail label="Estrategias de Evaluación y Criterios de Aprobación" value={solicitud.evaluacion} />
-        <KeyDetail label="Cronograma de Ejecución Anual (Tentativo)" value={solicitud.cronograma} />
+        <KeyDetail label="Denominación o Título del Curso" value={payload.titulo || payload.denominacion} />
         
-        {/* // Campos específicos para otros tipos de solicitud (si fueran relevantes)
-          // Se pueden añadir aquí si la vista debe ser genérica para otros tipos de solicitud.
-          <KeyDetail label="Descripción del Curso Existente" value={solicitud.descripcionCurso} />
-          <KeyDetail label="Propuesta de Actualización" value={solicitud.propuesta} />
-          <KeyDetail label="Cambios Solicitados" value={solicitud.cambiosSolicitados} /> 
-        */}
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+            <KeyDetail label="Duración Total" value={payload.duracion} />
+            <KeyDetail label="Propósito General" value={payload.proposito} />
+        </SimpleGrid>
+
+        <KeyDetail label="Fundamentación y Justificación" value={payload.fundamentacion} />
+        <KeyDetail label="Estructura de Costos" value={payload.estructuraCostos} />
+        
+        <DividerWithLabel label="Perfil Académico" />
+        
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+            <KeyDetail label="Docente Requerido" value={payload.perfilDocente} />
+            <KeyDetail label="Ingreso / Egreso" value={payload.perfiles} />
+        </SimpleGrid>
+
+        <KeyDetail label="Materiales y Servicios" value={payload.exigencias} />
+        
+        <DividerWithLabel label="Plan de Estudios" />
+
+        <KeyDetail label="Estructura Curricular" value={payload.estructuraCurricular} />
+        <KeyDetail label="Evaluación" value={payload.evaluacion} />
+        <KeyDetail label="Cronograma Tentativo" value={payload.cronograma} />
+        
       </VStack>
-    
     </Box>
   );
 }

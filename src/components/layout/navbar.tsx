@@ -30,25 +30,22 @@ import {
 
 export const Navbar = () => {
     const { isAuthenticated, logout, user, isHydrated } = useAuth();
-    console.log(user)
-    // Assuming providerCode is now primarily derived from 'user' object in authContext
+    // Assuming codigo_proveedor is now primarily derived from 'user' object in authContext
     const { courses, isCohortOpen } = useGlobalData();
 
     const menuButtonColor = useColorModeValue("primary.500", "whiteAlpha.900");
 
-    // Get providerCode directly from the authenticated user object
-    const providerCode = user?.codigo_proveedor;
+    // Get codigo_proveedor directly from the authenticated user object
+    const codigo_proveedor = user?.codigo_proveedor;
 
     // Visibility conditions for buttons
-    const showFormulateButton = isAuthenticated && providerCode && courses.length === 0;
-    const showCohortButton = !isCohortOpen && isAuthenticated && providerCode && courses.length > 0;
+    const showFormulateButton = isAuthenticated && codigo_proveedor && courses.length === 0;
+    const showCohortButton = !isCohortOpen && isAuthenticated && codigo_proveedor && courses.length > 0;
     const showLoginRegisterButtons = !isAuthenticated;
-    const showSolicitudButton = isAuthenticated && !providerCode && user?.rol === 'visitante';
-    console.log(isAuthenticated, providerCode, user?.rol)
+    const showSolicitudButton = isAuthenticated && !codigo_proveedor && user?.rol === 'visitante';
     const showAdminPanelLink = isAuthenticated && (user?.rol === 'admin' || user?.rol === 'coordinador');
-    (console.log(user))
     // Condition for the "Mis Cursos" button
-    const showMisCursosButton = isAuthenticated && !!providerCode;
+    const showMisCursosButton = isAuthenticated && !!codigo_proveedor;
 
     const courseId = courses.length > 0 ? courses[0].id : null;
 
@@ -74,7 +71,7 @@ export const Navbar = () => {
                     {isHydrated && isAuthenticated ? (
                         <>
                             {/* --- Provider Specific Buttons --- */}
-                            {providerCode && (
+                            {codigo_proveedor && (
                                 <HStack spacing={{ base: 2, md: 4 }}>
                                     {showFormulateButton && (
                                         <NextLink href="/formulacion-de-curso" passHref>
@@ -102,7 +99,7 @@ export const Navbar = () => {
 
                             {/* --- NEW "Mis Cursos" Button for Providers --- */}
                             {showMisCursosButton && user?.id && ( // Aseguramos que user.id exista
-                                <NextLink href={`/mis-cursos?providerCode=${user.codigo_proveedor}`} passHref> 
+                                <NextLink href={`/mis-cursos?codigo_proveedor=${user.codigo_proveedor}`} passHref> 
                                     <GhostButton size={"md"}>Mis Cursos</GhostButton> 
                                 </NextLink>
                             )}

@@ -2,34 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-    Box,
-    Heading,
-    Text,
-    Flex,
-    VStack,
-    Divider,
-    Link as ChakraLink,
-    Spinner,
-    Alert,
-    AlertIcon,
-    useColorModeValue,
-    Card,
-    CardHeader,
-    CardBody,
-    Grid,
-    GridItem,
-    Badge,
-    Avatar,
-    Stack,
-    // IconButton, // Descomentar si añades botones de acción a publicaciones
+    Box, Heading, Text, Flex, VStack, Divider, Link as ChakraLink,
+    Spinner, Alert, AlertIcon, useColorModeValue, Card, CardHeader,
+    CardBody, Grid, GridItem, Badge, Avatar, Stack,
+    Button, Input, Textarea, FormControl, FormLabel, useToast
 } from "@chakra-ui/react";
 import NextLink from 'next/link';
-// import { EditIcon, DeleteIcon } from '@chakra-ui/icons'; // Descomentar para acciones
 import { courseService } from '@/servicios/cursos-service';
-import { userService } from '@/servicios/users-service'; // Importamos userService
+import { userService } from '@/servicios/users-service';
 import { useAuth } from '@/app/context/auth-context';
 import CohortManagementPanel from '@/components/formularios/gestion-cohorte-form';
-import { Course, User, Publication } from '@/data/types'; // Importamos Publication
+import { Course, Publication, FullProvider } from '@/data/types';
+import { ApiService } from '@/servicios/BaseApiService'; 
 
 // --- Helper Functions for Status Display ---
 type CourseStatus = Course['estado_gestion'];
@@ -56,20 +40,16 @@ const formatStatusText = (status?: CourseStatus): string => {
     }
 };
 
-// ✨ ADICIÓN: Helper para formatear el tipo de proveedor
-const formatProviderType = (type?: User['providerType']): string => {
+const formatProviderType = (type?: string): string => {
     switch (type) {
         case 'con-fines-de-lucro': return 'Organización con Fines de Lucro';
         case 'sin-fines-de-lucro': return 'Organización Sin Fines de Lucro';
         default: return 'Tipo no especificado';
     }
 };
-// --- End Helper Functions ---
-
 
 // --- KeyDetail Component ---
 const KeyDetail = ({ label, value }: { label: string; value?: string | null }) => {
-// ... (Componente KeyDetail sin cambios)
     const labelColor = useColorModeValue("gray.600", "gray.400");
     const valueColor = useColorModeValue("gray.800", "white");
     const boxBg = useColorModeValue("gray.100", "gray.700");
@@ -86,11 +66,9 @@ const KeyDetail = ({ label, value }: { label: string; value?: string | null }) =
         </Box>
     );
 };
-// --- End KeyDetail Component ---
 
 // --- Publication Card Component ---
 const PublicationCard = ({ publication }: { publication: Publication }) => {
-// ... (Componente PublicationCard sin cambios)
     const cardBg = useColorModeValue("white", "gray.700");
     const dividerColor = useColorModeValue("gray.200", "gray.600");
     const dateColor = useColorModeValue("gray.500", "gray.400");
@@ -118,26 +96,31 @@ const PublicationCard = ({ publication }: { publication: Publication }) => {
         </Card>
     );
 };
-// --- End Publication Card Component ---
-
 
 export default function CourseClientPage({ courseId }: { courseId: string }) {
-    // --- Hooks ---
     const [course, setCourse] = useState<Course | null>(null);
-    const [provider, setProvider] = useState<User | null>(null);
+    const [provider, setProvider] = useState<FullProvider | null>(null);    
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { user: loggedInUser, isHydrated } = useAuth();
+    const toast = useToast(); 
+
+    // ✨ Estados para el formulario de publicación
+    const [isAddingPub, setIsAddingPub] = useState(false);
+    const [newPubTitle, setNewPubTitle] = useState('');
+    const [newPubContent, setNewPubContent] = useState('');
+    const [isSubmittingPub, setIsSubmittingPub] = useState(false);
+    
+    // ✨ HOOKS DE COLOR AL NIVEL SUPERIOR (CORRECCIÓN AQUÍ)
     const cardBg = useColorModeValue("white", "gray.800");
     const headingColor = useColorModeValue("teal.600", "teal.300");
     const subHeadingColor = useColorModeValue("gray.700", "gray.200");
     const dividerColor = useColorModeValue("gray.200", "gray.600");
-    const linkColor = "teal.500";
     const mutedTextColor = useColorModeValue("gray.500", "gray.400");
-    // --- End Hooks ---
+    const linkColor = "teal.500";
+    const formCardBg = useColorModeValue("gray.50", "gray.700"); // Hook subido
 
     useEffect(() => {
-        // ... (useEffect sin cambios)
         if (!isHydrated) return;
 
         const fetchCourseAndProviderData = async () => {
@@ -146,18 +129,27 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
 
                 const courseData = await courseService.getCourseById(courseId) as Course;
                 if (!courseData) throw new Error('Curso no encontrado.');
+
+                try {
+                    const allPublications = await ApiService.get('publications') as Publication[];
+                    if (allPublications) {
+                        courseData.publications = allPublications.filter(pub => pub.courseId === String(courseId));
+                    }
+                } catch (pubError) {
+                    console.warn("No se pudieron cargar las publicaciones:", pubError);
+                    courseData.publications = [];
+                }
+
                 setCourse(courseData);
 
                 const providerUserId = courseData.userId;
                 if (providerUserId && typeof providerUserId === 'string') {
                     try {
-                        const providerData = await userService.getUserById(providerUserId) as User;
+                        const providerData = await userService.getProviderDetails(providerUserId) as FullProvider;
                         setProvider(providerData);
                     } catch (providerError: any) {
                         console.warn("Could not fetch provider details:", providerError.message);
                     }
-                } else {
-                    console.warn("Course does not have a valid associated userId.");
                 }
 
             } catch (err: any) {
@@ -169,9 +161,44 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
         fetchCourseAndProviderData();
     }, [courseId, isHydrated]);
 
-    // --- Loading, Error, Not Found States ---
+    const handleAddPublication = async () => {
+        if (!newPubTitle.trim() || !newPubContent.trim()) {
+            toast({ title: "Campos vacíos", description: "El título y contenido son requeridos.", status: "warning", duration: 3000 });
+            return;
+        }
+
+        setIsSubmittingPub(true);
+        try {
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            const newPublication: Publication = {
+                id: `pub-new-${Date.now()}`,
+                courseId: courseId,
+                titulo: newPubTitle,
+                contenido: newPubContent,
+                fecha: new Date().toISOString()
+            };
+
+            setCourse(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    publications: [newPublication, ...(prev.publications || [])]
+                };
+            });
+
+            setNewPubTitle('');
+            setNewPubContent('');
+            setIsAddingPub(false);
+            toast({ title: "Publicación creada", status: "success", duration: 3000 });
+        } catch (error) {
+            toast({ title: "Error al publicar", status: "error", duration: 3000 });
+        } finally {
+            setIsSubmittingPub(false);
+        }
+    };
+
     if (!isHydrated || loading) {
-    // ... (Estado de carga sin cambios)
         return (
             <Flex justify="center" align="center" minH="80vh">
                 <Spinner thickness="4px" speed="0.65s" emptyColor="gray.200" color="teal.500" size="xl" />
@@ -179,7 +206,6 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
         );
     }
     if (error) {
-    // ... (Estado de error sin cambios)
         return (
             <Box maxW="4xl" mx="auto" p={8} my={8}>
                 <Alert status="error" rounded="md">
@@ -191,68 +217,48 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
         );
     }
     if (!course) {
-    // ... (Estado 'no encontrado' sin cambios)
         return <Text textAlign="center" mt={10}>No se encontró información para este curso.</Text>;
     }
-    // --- End States ---
 
-    // --- Authorization Logic ---
-    // ... (Lógica de autorización sin cambios)
-    const isOwner = loggedInUser?.role === 'proveedor' && loggedInUser?.id === course.userId;
-    const isAdminOrCoordinator = loggedInUser?.role === 'admin' || loggedInUser?.role === 'coordinador';
+    const isOwner = loggedInUser?.rol === 'proveedor' && loggedInUser?.id === course.userId;
+    const isAdminOrCoordinator = loggedInUser?.rol === 'admin' || loggedInUser?.rol === 'coordinador';
     const canSeePrivateDetails = isOwner || isAdminOrCoordinator;
     const canManageCohort = isOwner && course.estado_gestion !== 'cerrado';
+    
+    const canCreatePublication = isOwner && course.estado_gestion === 'abierto';
+
     let displayStatus: CourseStatus | undefined = undefined;
     if (canSeePrivateDetails) {
         displayStatus = course.estado_gestion;
     } else if (course.estado_gestion === 'abierto' || course.estado_gestion === 'cerrado') {
         displayStatus = course.estado_gestion;
     }
-    // --- End Authorization Logic ---
 
-
-    // --- Main Render ---
     return (
         <Box maxW="5xl" mx="auto" p={{ base: 4, md: 8 }} my={8}>
             <VStack spacing={8} align="stretch">
 
-                {/* --- Provider Info Card --- */}
                 {provider && (
-                    <Card
-                        direction={{ base: 'column', sm: 'row' }}
-                        overflow='hidden'
-                        variant='outline'
-                        bg={cardBg}
-                        mb={6}
-                        borderColor={dividerColor}
-                        shadow="sm"
-                    >
+                    <Card direction={{ base: 'column', sm: 'row' }} overflow='hidden' variant='outline' bg={cardBg} mb={6} borderColor={dividerColor} shadow="sm">
                         <Flex align="center" p={4}>
-                            <Avatar size='xl' name={provider.name} src={provider.avatarUrl} mr={4} />
+                            <Avatar size='xl' name={provider.nombre_proveedor} src={provider.avatarUrl} mr={4} />
                         </Flex>
                         <Stack flex={1}>
                             <CardBody>
                                 <Text fontSize="sm" color={mutedTextColor} mb={1}>Ofrecido por:</Text>
-                                <Heading size='lg' color={subHeadingColor} mb={1}>{provider.name}</Heading>
+                                <Heading size='lg' color={subHeadingColor} mb={1}>{provider.nombre_proveedor}</Heading>
                                 
-                                {/* ✨ ADICIÓN: Badge para el tipo de proveedor */}
-                                {provider.providerType && (
+                                {provider.tipo_proveedor && (
                                     <Badge 
-                                        colorScheme={provider.providerType === 'con-fines-de-lucro' ? 'blue' : 'green'}
-                                        variant="solid"
-                                        fontSize="xs"
-                                        px={2}
-                                        py={0.5}
-                                        rounded="md"
-                                        mb={2}
+                                        colorScheme={provider.tipo_proveedor === 'con-fines-de-lucro' ? 'blue' : 'green'}
+                                        variant="solid" fontSize="xs" px={2} py={0.5} rounded="md" mb={2}
                                     >
-                                        {formatProviderType(provider.providerType)}
+                                        {formatProviderType(provider.tipo_proveedor)}
                                     </Badge>
                                 )}
-                                {/* --- FIN DE LA ADICIÓN --- */}
 
                                 <Text py='1' fontSize="sm" color={mutedTextColor}>
-                                    {provider.bio || 'Proveedor de contenido educativo.'}
+                                    {provider.biografia || 'Proveedor de contenido educativo.'}
                                 </Text>
                                 <ChakraLink as={NextLink} href={`/profile/${provider.id}`} color={linkColor} fontWeight="medium" fontSize="sm">
                                     Ver perfil completo
@@ -261,41 +267,26 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
                         </Stack>
                     </Card>
                 )}
-                {/* --- End Provider Info Card --- */}
 
-
-                {/* --- Course Header --- */}
                 <Box textAlign="center">
-                {/* ... (Header del curso sin cambios) */}
                     <Heading as="h1" size={{ base: "xl", md: "2xl" }} color={headingColor} mb={3}>
                         {course.titulo}
                     </Heading>
                     {displayStatus && (
-                        <Badge
-                            colorScheme={getStatusColorScheme(displayStatus)}
-                            variant="solid"
-                            fontSize="xs"
-                            px={3} py={1} borderRadius="full" textTransform="uppercase"
-                        >
+                        <Badge colorScheme={getStatusColorScheme(displayStatus)} variant="solid" fontSize="xs" px={3} py={1} borderRadius="full" textTransform="uppercase">
                             {formatStatusText(displayStatus)}
                         </Badge>
                     )}
-                    {canSeePrivateDetails && course.providerCode && (
+                    {canSeePrivateDetails && course.codigo_proveedor && (
                         <Text fontSize="xs" color={mutedTextColor} mt={2}>
-                            (Código: {course.providerCode})
+                            (Código: {course.codigo_proveedor})
                         </Text>
                     )}
                 </Box>
-                {/* --- End Course Header --- */}
 
-
-                {/* --- Course Details Grid in a Card --- */}
                 <Card bg={cardBg} variant="outline" borderColor={dividerColor} shadow="sm">
                     <CardBody>
-                        <Grid
-                            templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
-                            gap={{ base: 6, md: 8 }}
-                        >
+                        <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={{ base: 6, md: 8 }}>
                             <GridItem colSpan={{ base: 1, md: 2 }}>
                                 <Heading as="h2" size="md" mb={4} borderBottomWidth="1px" pb={2} borderColor={dividerColor} color={subHeadingColor}>
                                     Descripción General
@@ -326,38 +317,81 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
                         </Grid>
                     </CardBody>
                 </Card>
-                {/* --- End Course Details Grid --- */}
 
-
-                {/* --- Cohort Management Panel (Conditional) --- */}
                 {canManageCohort && <CohortManagementPanel course={course} />}
-                {/* --- End Cohort Panel --- */}
 
-                {/* --- Publications Section --- */}
-                {course.publications && course.publications.length > 0 && (
+                {((course.publications && course.publications.length > 0) || canCreatePublication) && (
                     <Box mt={8}>
-                        <Heading as="h2" size="lg" mb={6} borderBottomWidth="1px" pb={2} borderColor={dividerColor} color={headingColor}>
-                            Publicaciones Recientes
-                        </Heading>
-                        <VStack spacing={4} align="stretch">
-                            {course.publications
-                                .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-                                .map(pub => (
-                                    <PublicationCard key={pub.id} publication={pub} />
-                                ))}
-                        </VStack>
+                        <Flex justify="space-between" align="center" mb={6} borderBottomWidth="1px" pb={2} borderColor={dividerColor}>
+                            <Heading as="h2" size="lg" color={headingColor}>
+                                Publicaciones
+                            </Heading>
+                            {canCreatePublication && (
+                                <Button 
+                                    size="sm" 
+                                    colorScheme="teal" 
+                                    variant={isAddingPub ? "outline" : "solid"}
+                                    onClick={() => setIsAddingPub(!isAddingPub)}
+                                >
+                                    {isAddingPub ? 'Cancelar' : '+ Nueva Publicación'}
+                                </Button>
+                            )}
+                        </Flex>
+
+                        {canCreatePublication && isAddingPub && (
+                            <Card bg={formCardBg} variant="outline" borderColor={dividerColor} mb={6}>
+                                <CardBody>
+                                    <VStack spacing={4} align="stretch">
+                                        <FormControl isRequired>
+                                            <FormLabel fontSize="sm" fontWeight="semibold">Título de la publicación</FormLabel>
+                                            <Input 
+                                                bg="white"
+                                                value={newPubTitle} 
+                                                onChange={(e) => setNewPubTitle(e.target.value)}
+                                                placeholder="Ej: Nuevo material disponible para la Semana 2" 
+                                            />
+                                        </FormControl>
+                                        <FormControl isRequired>
+                                            <FormLabel fontSize="sm" fontWeight="semibold">Mensaje o contenido</FormLabel>
+                                            <Textarea 
+                                                bg="white"
+                                                value={newPubContent}
+                                                onChange={(e) => setNewPubContent(e.target.value)}
+                                                placeholder="Escribe aquí las novedades para los estudiantes..." 
+                                                rows={4}
+                                            />
+                                        </FormControl>
+                                        <Flex justify="flex-end">
+                                            <Button colorScheme="teal" isLoading={isSubmittingPub} onClick={handleAddPublication}>
+                                                Publicar
+                                            </Button>
+                                        </Flex>
+                                    </VStack>
+                                </CardBody>
+                            </Card>
+                        )}
+
+                        {course.publications && course.publications.length > 0 ? (
+                            <VStack spacing={4} align="stretch">
+                                {course.publications
+                                    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+                                    .map(pub => (
+                                        <PublicationCard key={pub.id} publication={pub} />
+                                    ))}
+                            </VStack>
+                        ) : (
+                            <Text color={mutedTextColor} fontSize="sm" textAlign="center" py={4}>
+                                Aún no hay publicaciones en este curso.
+                            </Text>
+                        )}
                     </Box>
                 )}
-                {/* --- End Publications Section --- */}
 
-
-                {/* --- Footer Info --- */}
                 <VStack spacing={1} mt={4}>
                     <Text textAlign="center" color={mutedTextColor} fontSize="xs">
                         ID del Curso: {course.id}
                     </Text>
                 </VStack>
-                {/* --- End Footer Info --- */}
 
             </VStack>
         </Box>

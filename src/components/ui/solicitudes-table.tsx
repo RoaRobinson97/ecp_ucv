@@ -1,40 +1,15 @@
 "use client";
 
 import {
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
-  Box,
-  Text,
-  Badge,
-  RadioGroup,
-  Stack,
-  Radio,
-  Link as ChakraLink,
-  Tooltip,
-  HStack, 
+  Table, Thead, Tbody, Tr, Th, Td, TableContainer, Tabs, TabList, Tab,
+  TabPanels, TabPanel, Box, Text, Badge, RadioGroup, Stack, Radio,
+  Link as ChakraLink, Tooltip, HStack,
 } from '@chakra-ui/react';
-import { FaFileAlt } from 'react-icons/fa'; 
+import { FaFileSignature } from 'react-icons/fa'; 
 import NextLink from 'next/link';
+import { useRouter } from 'next/navigation'; 
 import React, { useState, useMemo } from 'react';
-
-interface Solicitud {
-  id: string;
-  tipo: string;
-  fecha: string;
-  estado: string;
-  nombre: string;
-  isLegal?: boolean; 
-}
+import { Solicitud, EstadoSolicitud } from '@/data/types';
 
 interface SolicitudesTableProps {
   educacionContinua: Solicitud[];
@@ -42,45 +17,44 @@ interface SolicitudesTableProps {
 }
 
 const tipoColorMap: { [key: string]: string } = {
-  'Código de Proveedor': 'blue',
-  'Formulación de Curso - Directa': 'purple',
-  'Formulación de Curso - Indirecta': 'pink',
-  'Actualización de Curso': 'red',
-  'Solicitud de Evento': 'green',
-  'Solicitud de Recurso': 'orange',
+  'codigo-proveedor': 'blue',
+  'formulacion-curso-directa': 'purple',
+  'formulacion-curso-indirecta': 'pink',
+  'cierre-cohorte': 'orange',
 };
 
-const getBadgeColorScheme = (estado: string) => {
-  switch (estado.toLowerCase()) {
-    case 'pendiente':
-      return 'orange';
-    case 'aprobada':
-      return 'green';
-    case 'rechazada':
-      return 'red';
-    default:
-      return 'gray';
+const getBadgeColorScheme = (estado: EstadoSolicitud) => {
+  switch (estado) {
+    case 'pendiente': return 'orange';
+    case 'aprobada': return 'green';
+    case 'rechazada': return 'red';
+    default: return 'gray';
   }
 };
 
-const LegalSeal = ({ isLegal }: { isLegal?: boolean }) => {
-  const legalStatus = !!isLegal; 
+const LegalSeal = ({ hasContract, userId }: { hasContract: boolean, userId: string }) => {
+  const router = useRouter();
+  const tooltipLabel = hasContract ? 'Contrato legal vinculado (Ver Perfil)' : 'Sin contrato legal (Ir al Perfil)';
 
-  const tooltipLabel = legalStatus 
-    ? 'Documentación legal en vigencia' 
-    : 'Documentación legal no vigente';
-  
-  const sealColor = 'gray.500';
-  const sealOpacity = legalStatus ? 1 : 0.4;
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault(); 
+    e.stopPropagation(); 
+    router.push(`/profile/${userId}`);
+  };
 
   return (
-    <Box display="inline" ml={2} lineHeight="1"> 
+    <Box 
+      display="inline" 
+      ml={2} 
+      lineHeight="1"
+      onClick={handleClick}
+      cursor="pointer"
+      // ✨ HOVER ELIMINADO AQUÍ TAMBIÉN POR SI ACASO
+    >
       <Tooltip label={tooltipLabel} placement="top" hasArrow>
-        <FaFileAlt
-          color={sealColor} 
-          opacity={sealOpacity} 
-          cursor="pointer" 
-        />
+        <Box opacity={hasContract ? 1 : 0.3} color={hasContract ? "teal.600" : "gray.400"}>
+            <FaFileSignature />
+        </Box>
       </Tooltip>
     </Box>
   );
@@ -88,82 +62,76 @@ const LegalSeal = ({ isLegal }: { isLegal?: boolean }) => {
 
 export function SolicitudesTable({ educacionContinua, grupoExtension }: SolicitudesTableProps) {
   const [filter, setFilter] = useState('Todos');
-  const [legalFilter, setLegalFilter] = useState('Todos'); 
+  const [legalFilter, setLegalFilter] = useState('Todos');
 
+  const isCourseTypeSelected = filter.includes('formulacion') || filter === 'Todos';
   const educacionContinuaTypes = useMemo(() => ['Todos', ...new Set(educacionContinua.map(sol => sol.tipo))], [educacionContinua]);
-  const grupoExtensionTypes = useMemo(() => ['Todos', ...new Set(grupoExtension.map(sol => sol.tipo))], [grupoExtension]);
-
-  const courseTypes = ['Formulación de Curso - Directa', 'Formulación de Curso - Indirecta'];
-  // CAMBIO: isCourseTypeSelected se basa en el filtro actual
-  const isCourseTypeSelected = courseTypes.includes(filter);
-
 
   const renderTable = (solicitudes: Solicitud[]) => {
-    
     let filteredSolicitudes = solicitudes;
 
-    // 1. Filtro por tipo
-    filteredSolicitudes = filter === 'Todos'
-      ? filteredSolicitudes
-      : filteredSolicitudes.filter(sol => sol.tipo === filter);
+    if (filter !== 'Todos') {
+      filteredSolicitudes = filteredSolicitudes.filter(sol => sol.tipo === filter);
+    }
 
-
-    // 2. Filtro por estado legal, solo si un tipo de curso está seleccionado
-    if (isCourseTypeSelected && legalFilter !== 'Todos') {
+    if (legalFilter !== 'Todos') {
       const isLegalRequired = legalFilter === 'Vigente';
-
       filteredSolicitudes = filteredSolicitudes.filter(sol => {
-        const currentLegalStatus = !!sol.isLegal;
-        return currentLegalStatus === isLegalRequired;
+          const hasContract = !!(sol.payload?.contratoId || sol.payload?.numContrato);
+          return hasContract === isLegalRequired;
       });
     }
 
     return (
       <TableContainer minH="500px">
-        {/* CORRECCIÓN DE HYDRACIÓN: Eliminar el whitespace entre <Table> y <Thead>, y <Thead> y <Tbody> */}
-        <Table variant="simple"><Thead>
+        <Table variant="simple">
+          <Thead>
             <Tr>
               <Th>ID</Th>
               <Th>Tipo</Th>
-              <Th>Nombre</Th>
+              <Th>Solicitante</Th>
+              <Th>Nombre / Título</Th>
               <Th>Fecha</Th>
               <Th>Estado</Th>
             </Tr>
-        </Thead><Tbody>
+          </Thead>
+          <Tbody>
             {filteredSolicitudes.length > 0 ? (
               filteredSolicitudes.map((sol) => {
-                const isCourse = sol.tipo.includes('Formulación de Curso');
-                const showSeal = isCourse && sol.estado.toLowerCase() === 'aprobada';
-
+                const isCourse = sol.tipo.includes('formulacion');
+                const hasContract = !!(sol.payload?.contratoId || sol.payload?.numContrato);
+                const solicitante = (sol as any).solicitante || 'Desconocido';
+                
                 return (
-                <NextLink key={sol.id} href={`/admin/solicitudes/${sol.id}`} passHref legacyBehavior>
-                  <ChakraLink
-                    as="tr"
-                    _hover={{ bg: 'rowhover', cursor: 'pointer' }} 
-                    style={{ display: 'table-row' }}
-                  >
-                    <Td>{sol.id}</Td>
-                    <Td>
-                      <Badge colorScheme={tipoColorMap[sol.tipo] || 'gray'}>{sol.tipo}</Badge>
-                    </Td>
-                    <Td>{sol.nombre}</Td>
-                    <Td>{sol.fecha}</Td>
-                    <Td display={'flex'} flexDir={'row'} alignItems={'center'} >
-                      <Badge colorScheme={getBadgeColorScheme(sol.estado)}>{sol.estado}</Badge>
-                      {showSeal && <LegalSeal isLegal={sol.isLegal} />}
-                    </Td>
-                  </ChakraLink>
-                </NextLink>
+                  <NextLink key={sol.id} href={`/admin/solicitudes/${sol.id}`} passHref legacyBehavior>
+                    <ChakraLink as="tr" _hover={{ cursor: 'pointer', textDecoration: 'none' }} style={{ display: 'table-row' }}>
+                      <Td fontWeight="bold">{sol.id}</Td>
+                      <Td>
+                        <Badge colorScheme={tipoColorMap[sol.tipo] || 'gray'}>
+                          {sol.tipo.replace(/-/g, ' ').toUpperCase()}
+                        </Badge>
+                      </Td>
+                      <Td fontWeight="medium" color="gray.600">{solicitante}</Td>
+                      <Td>{sol.payload?.nombreProveedor || sol.payload?.titulo || 'Sin nombre'}</Td>
+                      <Td>{sol.fechaCreacion}</Td>
+                      <Td>
+                        <HStack spacing={2}>
+                          <Badge colorScheme={getBadgeColorScheme(sol.estado)}>{sol.estado}</Badge>
+                          
+                          {/* Pasamos el userId al sello */}
+                          {isCourse && <LegalSeal hasContract={hasContract} userId={sol.userId} />}
+                          
+                        </HStack>
+                      </Td>
+                    </ChakraLink>
+                  </NextLink>
                 );
               })
             ) : (
-              <Tr>
-                <Td colSpan={5} textAlign="center" py={10}>
-                  <Text>No hay solicitudes de este tipo.</Text>
-                </Td>
-              </Tr>
+              <Tr><Td colSpan={6} textAlign="center" py={10}>No hay solicitudes.</Td></Tr>
             )}
-        </Tbody></Table>
+          </Tbody>
+        </Table>
       </TableContainer>
     );
   };
@@ -173,66 +141,43 @@ export function SolicitudesTable({ educacionContinua, grupoExtension }: Solicitu
       <Stack direction={{ base: 'column', md: 'row' }} spacing={4}>
         {types.map(tipo => (
           <Radio key={tipo} value={tipo}>
-            {tipo}
+            {tipo === 'Todos' ? 'Todos' : tipo
+              .replace('codigo-proveedor', 'Proveedor')
+              .replace('formulacion-curso-directa', 'Formulación Directa')
+              .replace('formulacion-curso-indirecta', 'Formulación Indirecta')
+              .replace('cierre-cohorte', 'Cierre de Cohorte')
+            }
           </Radio>
         ))}
       </Stack>
     </RadioGroup>
   );
 
-  const renderLegalFilter = () => (
-    <Box mt={4}>
-      <Text mb={2} fontWeight="bold">Filtrar por Documentación Legal:</Text>
-      <RadioGroup onChange={setLegalFilter} value={legalFilter}>
-        <Stack direction={{ base: 'column', md: 'row' }} spacing={4}>
-          <Radio value="Todos">Todos</Radio>
-          <Radio value="Vigente">Documentacion Legal Vigente</Radio>
-          <Radio value="No Vigente">Documentacion Legal No Vigente</Radio>
-        </Stack>
-      </RadioGroup>
-    </Box>
-  );
-
-  // Al cambiar la pestaña, reseteamos ambos filtros
-  const handleTabChange = () => {
-    setFilter('Todos');
-    setLegalFilter('Todos');
-  };
-  
-  // Al cambiar el filtro de tipo, reseteamos el filtro legal para evitar estados incoherentes
-  const handleTypeFilterChange = (newFilter: string) => {
-    setFilter(newFilter);
-    setLegalFilter('Todos');
-  }
-
   return (
-    <Tabs variant="enclosed" onChange={handleTabChange}>
+    <Tabs variant="enclosed" onChange={() => { setFilter('Todos'); setLegalFilter('Todos'); }}>
       <TabList>
         <Tab>Educación Continua ({educacionContinua.length})</Tab>
-        <Tab>Grupo de Extensión ({grupoExtension.length})</Tab>
       </TabList>
       <TabPanels>
         <TabPanel>
           <Box mb={6}>
-            <Text mb={2} fontWeight="bold">Filtrar por tipo de solicitud:</Text>
-            {renderFilters(educacionContinuaTypes, filter, handleTypeFilterChange)}
-          
-            {/* Mostrar filtro legal solo si se ha seleccionado un tipo de curso */}
-            {isCourseTypeSelected && renderLegalFilter()}
+            <Text mb={2} fontWeight="bold">Filtrar por tipo:</Text>
+            {renderFilters(educacionContinuaTypes, filter, setFilter)}
             
+            {isCourseTypeSelected && (
+              <Box mt={4} rounded="md">
+                <Text mb={2} fontWeight="bold">Filtrar por Documentación Legal:</Text>
+                <RadioGroup onChange={setLegalFilter} value={legalFilter}>
+                  <Stack direction="row" spacing={4}>
+                    <Radio value="Todos">Todos</Radio>
+                    <Radio value="Vigente">Vigente</Radio>
+                    <Radio value="No Vigente">No Vigente</Radio>
+                  </Stack>
+                </RadioGroup>
+              </Box>
+            )}
           </Box>
           {renderTable(educacionContinua)}
-        </TabPanel>
-        <TabPanel>
-          <Box mb={6}>
-            <Text mb={2} fontWeight="bold">Filtrar por tipo de solicitud:</Text>
-            {renderFilters(grupoExtensionTypes, filter, handleTypeFilterChange)}
-
-            {/* Mostrar filtro legal solo si se ha seleccionado un tipo de curso */}
-            {isCourseTypeSelected && renderLegalFilter()}
-            
-          </Box>
-          {renderTable(grupoExtension)}
         </TabPanel>
       </TabPanels>
     </Tabs>

@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData); // Guardamos el objeto completo
         
         // Guardamos el objeto User completo en la cookie (expira en 7 días)
-        // La cookie guardará { id: '...', email: '...', role: '...', name: '...', providerCode?: '...' }
+        // La cookie guardará { id: '...', email: '...', role: '...', name: '...', codigo_proveedor?: '...' }
         Cookies.set('auth', JSON.stringify(userData), { expires: 7 }); 
     };
 
