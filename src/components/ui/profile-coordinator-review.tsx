@@ -12,7 +12,7 @@ import {
 import { Course, User, FullProvider } from "@/data/types"; 
 import { MdVerifiedUser, MdCloudUpload, MdCheckCircle, MdInfo } from 'react-icons/md'; 
 import { courseService } from "@/servicios/cursos-service";
-import { userService } from "@/servicios/users-service"; // 👈 Importado
+import { userService } from "@/servicios/users-service"; 
 
 export function ProfileCoordinatorReview({ user, mode }: { user: User | FullProvider, mode: string }) {
     const [courses, setCourses] = useState<Course[]>([]);
@@ -37,7 +37,6 @@ export function ProfileCoordinatorReview({ user, mode }: { user: User | FullProv
         async function checkLegalStatus() {
             setIsValidatingLegal(true);
             try {
-                // Usamos el nuevo método con lógica de Mock 50/50
                 const hasContract = await userService.hasInitialContract(user.id);
                 setHasInitialContract(hasContract);
             } catch (error) {
@@ -81,7 +80,14 @@ export function ProfileCoordinatorReview({ user, mode }: { user: User | FullProv
         }
     };
 
-    const displayName = `${user.nombres} ${user.apellidos}`;
+    // ✨ LÓGICA DE NOMBRES Y AVATAR APLICADA AQUÍ:
+    const displayName = (isProvider && 'nombre_proveedor' in user)
+        ? (user as FullProvider).nombre_proveedor 
+        : `${user.nombres} ${user.apellidos}`;
+
+    const avatarUrl = (user as any).provider_avatar_url 
+        ?? (user as FullProvider).avatar_url 
+        ?? `https://i.pravatar.cc/150?u=${user.id}`;
 
     return (
         <Box p={8} bg={cardBg} shadow="2xl" rounded="lg" maxW="3xl" mx="auto" borderTop="6px solid" borderColor={brandColor}>
@@ -94,10 +100,11 @@ export function ProfileCoordinatorReview({ user, mode }: { user: User | FullProv
             </HStack>
 
             <VStack spacing={4} align="center" mb={6}>
-                <Avatar size="2xl" name={displayName} src={(user as any).avatarUrl} border="4px solid" borderColor={brandColor} />
+                {/* ✨ USAMOS LA VARIABLE avatarUrl AQUÍ */}
+                <Avatar size="2xl" name={displayName as string} src={avatarUrl} border="4px solid" borderColor={brandColor} />
                 
                 <VStack spacing={1}>
-                    <Heading size="lg" textAlign="center">{displayName}</Heading>
+                    <Heading size="lg" textAlign="center">{displayName as string}</Heading>
                     <Badge colorScheme="purple" variant="solid" px={3} rounded="full">
                         {isProvider ? 'PROVEEDOR' : 'USUARIO'}
                     </Badge>

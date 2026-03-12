@@ -44,13 +44,21 @@ export const LoginForm = () => {
         setError('');
 
         try {
-            // Se asume que authService.login retorna ahora el objeto User completo
-            // Utilizamos 'User' para tipar el resultado
+            // 1. El servicio valida y crea la cookie 'auth_token'
             const userData: User = await authService.login(formData.email, formData.password) as User;
             
-            // ✨ CAMBIO 2: Llamamos a 'login' con el objeto de usuario completo (userData)
+            // 2. Le avisamos a React que el usuario entró (para el Navbar, etc.)
             login(userData); 
-            router.push('/');
+            
+            // 3. ✨ Redirección inteligente y DURA
+            if (userData.rol === 'admin' || userData.rol === 'coordinador') {
+                window.location.href = '/admin/solicitudes';
+            } else if (userData.rol === 'proveedor') {
+                window.location.href = `/profile/${userData.id}`; 
+            } else {
+                window.location.href = '/'; // Estudiantes o visitantes van al inicio
+            }
+
         } catch (err: any) {
             setError(err.message);
         } finally {

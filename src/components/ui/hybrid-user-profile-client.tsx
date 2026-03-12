@@ -23,12 +23,7 @@ export function HybridUserProfileClient({ targetUser }: { targetUser: User | Ful
     const isViewingOwnProfile = user?.id === targetUser.id;
     const isTargetProveedor = targetUser.rol === "proveedor";
     const isViewerAdminOrCoord = user?.rol === "admin" || user?.rol === "coordinador";
-
-    // Lógica de visualización dinámica (Fallbacks)
-    const avatarUrl = (targetUser as FullProvider).avatarUrl ?? `https://i.pravatar.cc/150?u=${targetUser.id}`;
-    const bio = (targetUser as FullProvider).biografia ?? "Este usuario no tiene biografía.";
-    const displayName = (targetUser as FullProvider).nombre_proveedor ?? `${targetUser.nombres} ${targetUser.apellidos}`;
-
+    
     // --- ESCENARIO 1: EL DUEÑO (Vista Privada) ---
     if (isViewingOwnProfile) {
         return (

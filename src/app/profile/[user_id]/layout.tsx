@@ -1,4 +1,4 @@
-// app/profile-hybrid/[userId]/layout.tsx
+// app/profile-hybrid/[user_id]/layout.tsx
 import React from 'react';
 import { Box, Flex, Heading, Container } from '@chakra-ui/react';
 

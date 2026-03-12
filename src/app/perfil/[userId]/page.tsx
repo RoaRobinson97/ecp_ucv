@@ -1,4 +1,4 @@
-// app/profile-dynamic/[userId]/page.tsx
+// app/profile-dynamic/[user_id]/page.tsx
 
 import React from 'react';
 
@@ -6,18 +6,18 @@ import React from 'react';
 // El componente se genera en cada solicitud.
 export const dynamic = 'force-dynamic';
 
-async function getUserData(userId: string) {
+async function getUserData(user_id: string) {
   // Simulación de una llamada a la API o base de datos en el servidor
-  console.log(`Buscando datos del usuario ${userId} en el servidor...`);
+  console.log(`Buscando datos del usuario ${user_id} en el servidor...`);
   return {
-    name: `Usuario Dinámico ${userId}`,
-    bio: `Esta es la biografía del usuario ${userId}. Renderizado completamente en el servidor.`,
+    name: `Usuario Dinámico ${user_id}`,
+    bio: `Esta es la biografía del usuario ${user_id}. Renderizado completamente en el servidor.`,
   };
 }
 
-export default async function DynamicUserProfilePage({ params }: { params: { userId: string } }) {
-  const { userId } = params;
-  const user = await getUserData(userId);
+export default async function DynamicUserProfilePage({ params }: { params: { user_id: string } }) {
+  const { user_id } = params;
+  const user = await getUserData(user_id);
 
   return (
     <div className="flex flex-col items-center mt-20 p-8 bg-white shadow-lg rounded-lg max-w-lg mx-auto">

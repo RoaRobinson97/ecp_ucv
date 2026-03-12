@@ -1,5 +1,3 @@
-// components/ui/admin-actions.tsx
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -20,8 +18,12 @@ import {
   Select,
   FormLabel,
   FormControl,
+  Spinner, // Para el loading de facultades
 } from '@chakra-ui/react';
 import { CourseEvaluationForm } from '@/components/formularios/course-evaluation-form'; 
+
+import { solicitudesService } from '@/servicios/solicitudes-service';
+import { userService } from '@/servicios/users-service'; // ✨ Importado
 
 interface AdminActionsProps {
   solicitudId: string;
@@ -29,14 +31,7 @@ interface AdminActionsProps {
   adminOrganismo: string; 
 }
 
-// Opciones de clasificación (Mover aquí para que sean internas)
 const CLASIFICACION_REQUIERE_REMISION = 'Formación para el mejoramiento técnico/profesional';
-const FACULTADES_MOCK = [
-  { id: 'ing', name: 'Facultad de Ingeniería' },
-  { id: 'cien', name: 'Facultad de Ciencias y Tecnología' },
-  { id: 'hum', name: 'Facultad de Humanidades y Artes' },
-  { id: 'salud', name: 'Facultad de Ciencias de la Salud' },
-];
 
 const CLASSIFICATION_OPTIONS = [
   { value: 'Formación para todo público', description: 'Dirigido a explorar áreas de conocimiento general.' },
@@ -49,11 +44,13 @@ const CLASSIFICATION_OPTIONS = [
 export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: AdminActionsProps) {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  // Estado interno para la clasificación del curso
   const [currentClassification, setCurrentClassification] = useState('');
   const [selectedFaculty, setSelectedFaculty] = useState('');
 
-  // NUEVOS ESTADOS PARA EL FORMULARIO DE EVALUACIÓN
+  // ESTADOS DE FACULTADES
+  const [facultadesList, setFacultadesList] = useState<{id: string, name: string}[]>([]);
+  const [isLoadingFacultades, setIsLoadingFacultades] = useState(false);
+
   const [calificacion, setCalificacion] = useState('');
   const [observacionesEvaluacion, setObservacionesEvaluacion] = useState('');
   const [evaluationFile, setEvaluationFile] = useState<File | null>(null);
@@ -63,50 +60,58 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
   const toast = useToast();
   const router = useRouter(); 
   
-  // NUEVAS VARIABLES CONDICIONALES
-  const isIndirecta = solicitudTipo === 'Formulación de Curso - Indirecta';
-  const isDirecta = solicitudTipo === 'Formulación de Curso - Directa';
-  const isCourseRequest = solicitudTipo.startsWith('Formulación de Curso')
+  const normalizedTipo = solicitudTipo.toLowerCase();
+  const isIndirecta = normalizedTipo.includes('indirecta');
+  const isDirecta = normalizedTipo.includes('directa') || (normalizedTipo.includes('curso') && !isIndirecta);
+  const isCourseRequest = normalizedTipo.includes('curso');
+  
+  // EFECTO DE CARGA DE FACULTADES
+  useEffect(() => {
+    async function loadFacultades() {
+      setIsLoadingFacultades(true);
+      try {
+        const coordinadores = await userService.getCoordinadores();
+        const facultadesMapeadas = coordinadores.map((coord: any) => ({
+          id: coord.id,
+          name: coord.nombres
+        }));
+        setFacultadesList(facultadesMapeadas);
+      } catch (error) {
+        console.error("Error al cargar lista de facultades:", error);
+      } finally {
+        setIsLoadingFacultades(false);
+      }
+    }
+    
+    if (isCourseRequest) loadFacultades();
+  }, [isCourseRequest]);
 
-  // EFECTO para inicializar la clasificación si es Indirecta
+
   useEffect(() => {
     if (isIndirecta) {
       setCurrentClassification(CLASIFICACION_REQUIERE_REMISION);
     }
-    // Resetear la clasificación si el tipo de solicitud cambia a no-indirecta
     if (!isIndirecta && currentClassification === CLASIFICACION_REQUIERE_REMISION) {
       setCurrentClassification('');
     }
-  }, [isIndirecta, solicitudTipo]); 
+  }, [isIndirecta, solicitudTipo, currentClassification]); 
   
-
-  // Determina si la clasificación es la que potencialmente requiere remisión.
   const isClassifiedForRemission = isCourseRequest && currentClassification === CLASIFICACION_REQUIERE_REMISION;
-
-  // Determina si la revisión es "interna" (facultad seleccionada == organismo del admin).
   const isRemissionSelfHandled = isClassifiedForRemission && selectedFaculty === adminOrganismo;
-
-  // Lógica FINAL:
-  // Si es INDIRECTA, NO puede requerir remisión externa (isDirecta es false).
-  // Si es DIRECTA, requiere remisión externa SÓLO si es clasificado así Y NO es manejo interno.
   const requiresRemision = isDirecta && isClassifiedForRemission && !isRemissionSelfHandled; 
   
-  // Handler para la clasificación
   const handleClassificationChange = (value: string) => {
     setCurrentClassification(value);
-    // Limpiar facultad si la opción no requiere remisión
     if (value !== CLASIFICACION_REQUIERE_REMISION) {
       setSelectedFaculty('');
     }
   };
 
-
-  // Handler para Aprobar/Rechazar
   const handleAction = async (action: 'Aprobar' | 'Rechazar') => {
     setIsLoading(true);
     let success = false;
     
-    // VALIDACIÓN PARA APROBAR CURSOS
+    // 1. Validación de seguridad (Early return)
     if (action === 'Aprobar' && isCourseRequest) {
         if (!calificacion || !evaluationFile) {
             toast({
@@ -122,22 +127,30 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
     }
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
+      // ✨ 2. AQUÍ SE DECLARAN LAS VARIABLES (Para que no te dé error de Cannot find name)
+      const nuevoEstado = action === 'Aprobar' ? 'aprobada' : 'rechazada';
+      const motivoRechazo = action === 'Rechazar' ? message : null;
 
-      console.log(`Acción: ${action} en ${solicitudId}. Clasificación: ${currentClassification}`);
-      if (action === 'Aprobar') {
-        console.log('Datos de Evaluación:', {
-          Calificación: calificacion,
-          Observaciones: observacionesEvaluacion,
-          ArchivoEvidencia: evaluationFile ? evaluationFile.name : 'N/A'
-        });
+      // ✨ 3. BIFURCACIÓN DE LÓGICA (Con o sin archivo)
+      if (action === 'Aprobar' && isCourseRequest) {
+          // Flujo CON archivo (FormData)
+          const formData = new FormData();
+          formData.append('estado', 'aprobada');
+          formData.append('calificacion', calificacion);
+          
+          // Le decimos 'as Blob' para que TypeScript no pelee si el archivo es null
+          // (ya validamos arriba que no lo es)
+          formData.append('archivo_evaluacion', evaluationFile as Blob); 
+
+          await solicitudesService.updateStatusWithFile(solicitudId, formData);
       } else {
-        console.log('Motivo de Rechazo:', message);
+          // Flujo SIN archivo (Cierres, Rechazos, Proveedores)
+          await solicitudesService.updateStatus(solicitudId, nuevoEstado, motivoRechazo);
       }
 
       toast({
-        title: `Solicitud ${action} exitosamente.`,
-        description: `Procesada como ${currentClassification || solicitudTipo}.`,
+        title: `Solicitud ${action.toLowerCase()} exitosamente.`,
+        description: `El estado del expediente ha sido actualizado en el sistema.`,
         status: "success",
         duration: 5000,
         isClosable: true,
@@ -163,20 +176,19 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
     }
   };
 
-
-  // Handler para Remitir a Facultad
   const handleRemitir = async () => {
     setIsLoading(true);
     try {
       if (!selectedFaculty) throw new Error("Debe seleccionar una facultad.");
 
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
-      
-      console.log(`Remitir Solicitud ${solicitudId} a Facultad: ${selectedFaculty}`);
+      const nombreFacultad = facultadesList.find(f => f.id === selectedFaculty)?.name || selectedFaculty;
 
+      // LLAMADA REAL A LA BASE DE DATOS (Remitir)
+      await solicitudesService.updateStatus(solicitudId, 'remitida', `Remitido a: ${nombreFacultad}`);
+      
       toast({
         title: `Solicitud remitida exitosamente.`,
-        description: `Enviada a la Facultad ${FACULTADES_MOCK.find(f => f.id === selectedFaculty)?.name || selectedFaculty}.`,
+        description: `Enviada a ${nombreFacultad}.`,
         status: "info",
         duration: 5000,
         isClosable: true,
@@ -198,12 +210,10 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
     }
   };
 
-
   return (
     <Box mt={0} p={6} rounded="lg" bg={useColorModeValue('gray.100', 'gray.700')}>
       <Heading as="h3" size="md" mb={4}>Acciones del Administrador</Heading>
       
-      {/* 1. SECCIÓN DE CLASIFICACIÓN (Solo para DIRECTA) */}
       {isDirecta && (
         <VStack spacing={6} align="stretch" mb={8} p={4} rounded="md" border="1px" borderColor={useColorModeValue('gray.300', 'gray.600')}>
           <Heading as="h4" size="sm">Clasificación Administrativa del Curso</Heading>
@@ -221,20 +231,23 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
             </Stack>
           </RadioGroup>
 
-          {/* Selector de Facultad Condicional (Solo si clasificado para remisión) */}
           {isClassifiedForRemission && (
             <FormControl mt={4} isRequired>
               <FormLabel fontWeight="bold">Seleccionar Facultad para Remisión</FormLabel>
-              <Select 
-                placeholder="Selecciona la facultad de revisión"
-                value={selectedFaculty}
-                sx={{ cursor: 'pointer' }} 
-                onChange={(e) => setSelectedFaculty(e.target.value)}
-              >
-                {FACULTADES_MOCK.map((f) => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
-                ))}
-              </Select>
+              {isLoadingFacultades ? (
+                <Spinner size="sm" color="teal.500" />
+              ) : (
+                <Select 
+                  placeholder="Selecciona la facultad de revisión"
+                  value={selectedFaculty}
+                  sx={{ cursor: 'pointer' }} 
+                  onChange={(e) => setSelectedFaculty(e.target.value)}
+                >
+                  {facultadesList.map((f) => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </Select>
+              )}
               {isRemissionSelfHandled && (
               <Text mt={2} color="teal.600" fontWeight="semibold" fontSize="sm">
                 ℹ️ Esta solicitud es manejada **internamente** por su organismo. Proceda a Aprobar/Rechazar.
@@ -245,7 +258,6 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
         </VStack>
       )}
       
-      {/* Aviso de Clasificación Fija para INDIRECTA */}
       {isIndirecta && (
         <Box mb={8} p={4} rounded="md" border="1px" borderColor={useColorModeValue('teal.300', 'teal.600')} bg={useColorModeValue('teal.50', 'gray.800')}>
             <Heading as="h4" size="sm" mb={1} color="teal.500">Clasificación Administrativa (Fija)</Heading>
@@ -256,7 +268,6 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
         </Box>
       )}
 
-      {/* Mensaje de advertencia si es de curso pero no clasificado (Solo para DIRECTA) */}
       {isDirecta && !currentClassification && (
         <Text color="red.500" fontWeight="bold" mb={6}>
           ⚠ Es obligatorio seleccionar una clasificación para proceder con cualquier acción.
@@ -265,9 +276,6 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
       
       <Divider my={6} />
 
-      {/* 2. BOTONES DE ACCIÓN CONDICIONAL */}
-
-      {/* Caso: Requiere Remisión (Opción 4 en solicitud DIRECTA) */}
       {requiresRemision ? (
         <Box>
           <Text mb={4} fontWeight="bold">
@@ -277,19 +285,16 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
             colorScheme="blue"
             isLoading={isLoading}
             onClick={handleRemitir}
-            isDisabled={!selectedFaculty} // Deshabilitado si no hay facultad seleccionada
+            isDisabled={!selectedFaculty} 
           >
             Remitir Solicitud a Facultad
           </Button>
         </Box>
 
       ) : (
-        // Casos: Aprobar/Rechazar (Opciones 1, 2, 3, INDIRECTA, o si NO es solicitud de curso)
-        
         <Box>
             {isCourseRequest && (
                 <Box mb={8}>
-                    {/* El formulario de evaluación se muestra siempre que sea de curso y no requiera remisión */}
                     <CourseEvaluationForm 
                         calificacion={calificacion}
                         setCalificacion={setCalificacion}
@@ -301,7 +306,6 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
                 </Box>
             )}
             <VStack spacing={4} align="stretch" mb={4}>
-                {/* Botón de Rechazar */}
                 <Heading as="h4" size="sm">Rechazar Solicitud</Heading>
                 <Text fontSize="sm" color="gray.500" fontStyle="italic">
                     * Para rechazar la solicitud, debes incluir una razón o las observaciones.
@@ -318,7 +322,6 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
                     colorScheme="red"
                     isLoading={isLoading}
                     onClick={() => handleAction('Rechazar')}
-                    // Deshabilitado si: 1) no hay mensaje, O 2) es un curso DIRECTA y no está clasificado
                     isDisabled={!message || (isDirecta && !currentClassification)} 
                 >
                     Rechazar
@@ -327,13 +330,11 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
             
             <Divider my={6} />
 
-            {/* Botón de Aprobar */}
             <Box>
                 <Button
                     colorScheme="green"
                     isLoading={isLoading}
                     onClick={() => handleAction('Aprobar')}
-                    // Deshabilitado si: 1) es un curso DIRECTA y no está clasificado, O 2) faltan datos de evaluación obligatorios
                     isDisabled={(isDirecta && !currentClassification) || (isCourseRequest && (!calificacion || !evaluationFile))} 
                 >
                     Aprobar

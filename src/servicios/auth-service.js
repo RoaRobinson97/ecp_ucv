@@ -22,11 +22,27 @@ class AuthService {
         throw new Error("Error de configuración del sistema.");
       }
 
+      // Buscamos el usuario en tu base de datos falsa
       const user = users.find(u => u.email === email && u.password === password);
 
-      if (user) {
+     if (user) {
         console.log("Mock Login Exitoso:", user);
+        
+        const payloadStr = JSON.stringify(user);
+        
+        // 1. Lo pasamos a Base64 normal
+        let base64Payload = btoa(unescape(encodeURIComponent(payloadStr)));
+        
+        // ✨ 2. LO CONVERTIMOS A BASE64URL (Esto evita que la cookie se rompa)
+        base64Payload = base64Payload.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        
+        const fakeJwt = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${base64Payload}.MockSignature12345`;
+
+        // Guardamos la cookie
+        document.cookie = `auth_token=${fakeJwt}; path=/; max-age=86400`; 
+
         return user;
+      
       } else {
         throw new Error("El correo electrónico o la contraseña son incorrectos.");
       }
@@ -36,14 +52,22 @@ class AuthService {
       try {
         console.log("Usando API REAL para login...");
         
-        // Enviamos 'username' o 'nombre_usuario' según lo que espere tu backend.
-        // Asumo 'username' por estándar, pero si falla usa 'nombre_usuario'.
         const response = await ApiService.post('auth/login', { 
             username: email, 
             password: password 
         });
         
         console.log("API Login Exitoso:", response);
+
+        // ✨ ATENCIÓN PARA PRODUCCIÓN ✨
+        // Si tu backend real devuelve el JWT en el body (ej: response.token), 
+        // tienes que guardarlo en la cookie aquí también, a menos que tu backend 
+        // ya envíe la cabecera 'Set-Cookie' automáticamente.
+        if (response.token || response.access_token) {
+           const realToken = response.token || response.access_token;
+           document.cookie = `auth_token=${realToken}; path=/; max-age=86400; Secure; samesite=strict`;
+        }
+
         return response; 
 
       } catch (error) {
@@ -55,21 +79,20 @@ class AuthService {
 
   /**
    * Registra un nuevo usuario
-   * @param {object} userData - Datos que vienen del RegisterForm (first_name, ci, etc.)
+   * @param {object} userData - Datos que vienen del RegisterForm
    */
   async register(userData) {
     console.log(`Intentando registrar: ${userData.username || userData.email}`);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (CONFIG.USE_MOCK_DATA) {
-      // --- MODO MOCK (Mapeo a estructura Frontend) ---
+      // --- MODO MOCK ---
       const users = MOCKED_DB.users;
       const incomingEmail = userData.username || userData.email;
       
       const existingUser = users.find(u => u.email === incomingEmail);
       if (existingUser) throw new Error("Correo ya registrado.");
 
-      // Adaptamos para guardar en el Mock (simulando la DB)
       const newUser = {
         id: `ec-user-${users.length + 100}`,
         nombres: userData.first_name,
@@ -88,29 +111,24 @@ class AuthService {
       return newUser;
 
     } else {
-      // --- MODO API REAL (Mapeo a estructura Backend) ---
+      // --- MODO API REAL ---
       try {
         console.log("Usando API REAL para registro...");
         
-        // ✨ AQUÍ ESTÁ EL CASTEO QUE FALTABA
-        // Transformamos lo que manda el Formulario -> A lo que pide Postman
         const payloadParaBackend = {
             documento_identidad: userData.ci,
             primer_nombre:       userData.first_name,
-            apellido:            userData.last_name, // Postman dice 'apellido' (singular)
+            apellido:            userData.last_name, 
             fecha_nacimiento:    userData.date_of_birth,
             genero:              userData.gender,
             nivel_educacion:     userData.education_level,
             direccion:           userData.address,
-            nombre_usuario:      userData.username, // Postman dice 'nombre_usuario'
+            nombre_usuario:      userData.username, 
             password:            userData.password
         };
         
         console.log('los datos pa ver ', payloadParaBackend)
 
-        // Enviamos el payload transformado
-        // ⚠️ Asegúrate que la URL sea la correcta. Si en postman es /users usa 'users'.
-        // Si es /auth/register, cambia 'users' por 'auth/register'.
         const response = await ApiService.post('users', payloadParaBackend);
 
         console.log("Registro API Exitoso:", response);

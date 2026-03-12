@@ -34,7 +34,10 @@ export function UserProfileClient({ user }: { user: User | FullProvider }) {
         ? (user as FullProvider).biografia 
         : (user.biografia || "Usuario de la plataforma.");
 
-    const avatarUrl = (user as any).avatarUrl ?? `https://i.pravatar.cc/150?u=${user.id}`;
+    // ✨ LÓGICA DE AVATAR APLICADA AQUÍ:
+    const avatarUrl = (user as any).provider_avatar_url 
+        ?? (user as FullProvider).avatar_url 
+        ?? `https://i.pravatar.cc/150?u=${user.id}`;
 
     // Extraer arreglos de contacto si es proveedor
     const extraEmails = (isProvider && 'emails_contacto' in user) ? (user as FullProvider).emails_contacto : [];
@@ -69,10 +72,11 @@ export function UserProfileClient({ user }: { user: User | FullProvider }) {
         <Box p={8} bg={cardBg} shadow="xl" rounded="lg" maxW="2xl" mx="auto" borderTop="4px solid" borderColor={brandColor}>
             
             <VStack spacing={4} align="center" mb={6}>
-                <Avatar size="2xl" name={displayName} src={avatarUrl} border="2px solid" borderColor={brandColor} />
+                {/* ✨ USAMOS LA VARIABLE avatarUrl AQUÍ */}
+                <Avatar size="2xl" name={displayName as string} src={avatarUrl} border="2px solid" borderColor={brandColor} />
                 
                 <VStack spacing={1}>
-                    <Heading size="xl" textAlign="center">{displayName}</Heading>
+                    <Heading size="xl" textAlign="center">{displayName as string}</Heading>
                     
                     {isProvider && 'tipo_proveedor' in user && (
                         <Badge colorScheme="teal" variant="subtle" px={2} py={1} rounded="md">

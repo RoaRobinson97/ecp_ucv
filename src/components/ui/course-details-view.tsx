@@ -80,12 +80,12 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
         </SimpleGrid>
 
         <KeyDetail label="Fundamentación y Justificación" value={payload.fundamentacion} />
-        <KeyDetail label="Estructura de Costos" value={payload.estructuraCostos} />
+        <KeyDetail label="Estructura de Costos" value={payload.estructura_costos} />
         
         <DividerWithLabel label="Perfil Académico" />
         
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-            <KeyDetail label="Docente Requerido" value={payload.perfilDocente} />
+            <KeyDetail label="Docente Requerido" value={payload.perfil_docente} />
             <KeyDetail label="Ingreso / Egreso" value={payload.perfiles} />
         </SimpleGrid>
 
@@ -93,7 +93,7 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
         
         <DividerWithLabel label="Plan de Estudios" />
 
-        <KeyDetail label="Estructura Curricular" value={payload.estructuraCurricular} />
+        <KeyDetail label="Estructura Curricular" value={payload.estructura_curricular} />
         <KeyDetail label="Evaluación" value={payload.evaluacion} />
         <KeyDetail label="Cronograma Tentativo" value={payload.cronograma} />
         

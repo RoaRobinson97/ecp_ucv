@@ -1,5 +1,7 @@
 // /src/data/base-api-service.js
 
+// ✨ 1. Importamos la librería para leer cookies en el cliente
+import Cookies from 'js-cookie'; 
 import { CONFIG } from '../config/config';          // Configuración global (ej: USE_MOCK_DATA, API_URL)
 import { MOCKED_DB, generateMockId } from '../data/mock-data'; // Datos simulados y lógica de ID
 
@@ -15,8 +17,9 @@ class BaseApiService {
             ...customHeaders 
         };
 
+        // ✨ 2. Extraemos el token directamente de la cookie segura
         if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('token'); 
+            const token = Cookies.get('auth_token'); 
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             }
@@ -40,8 +43,11 @@ class BaseApiService {
                 // Manejo especial para 401 (Token vencido o inválido)
                 if (response.status === 401) {
                     console.error("Token inválido o expirado.");
-                    // Opcional: Redirigir al login
-                    // window.location.href = '/login'; 
+                    // Si el token expira, limpiamos y mandamos al login
+                    if (typeof window !== 'undefined') {
+                        Cookies.remove('auth_token');
+                        window.location.href = '/login?error=expired'; 
+                    }
                 }
 
                 const errorBody = await response.json().catch(() => ({ message: response.statusText }));
@@ -102,7 +108,6 @@ class BaseApiService {
         throw new Error(`MOCK: Método ${method} no soportado.`);
     }
 
-
     async #executeRequest(method, entityName, id = null, data = null, queryParams = null) {
         if (CONFIG.USE_MOCK_DATA) {
             return await this.#mockDataFetch(method, entityName, id, data);
@@ -135,12 +140,12 @@ class BaseApiService {
         return await this.#executeRequest('GET', entityName, idOrParams);
     }
     
-    async post(entityName, data) {
-        return await this.#executeRequest('POST', entityName, null, data);
+    async post(entityName, data, isFormData = false) {
+        return await this.#executeRequest('POST', entityName, null, data, null, isFormData);
     }
 
-    async put(entityName, id, data) {
-        return await this.#executeRequest('PUT', entityName, id, data);
+    async put(entityName, id, data, isFormData = false) {
+        return await this.#executeRequest('PUT', entityName, id, data, null, isFormData);
     }
     
     async delete(entityName, id) {

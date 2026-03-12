@@ -2,41 +2,19 @@
 
 import React, { useState, useCallback } from 'react';
 import {
-  Box,
-  Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Textarea,
-  VStack,
-  Heading,
-  Text,
-  useToast,
-  RadioGroup,
-  Radio,
-  HStack,
-  FormHelperText,
-  Divider,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Slider,
-  SliderTrack,
-  SliderFilledTrack,
-  SliderThumb,
-  Avatar,
-  Icon,
-  useDisclosure
+  Box, Button, FormControl, FormLabel, Input, Textarea, VStack,
+  Heading, Text, useToast, RadioGroup, Radio, HStack, FormHelperText,
+  Divider, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody,
+  ModalFooter, Slider, SliderTrack, SliderFilledTrack, SliderThumb,
+  Avatar, Icon, useDisclosure
 } from "@chakra-ui/react";
 // Librería para recortar imágenes
 import Cropper from 'react-easy-crop';
 import { useAuth } from "@/app/context/auth-context";
-import { useGlobalData } from "@/app/context/global-data-context";
 import { useRouter } from "next/navigation";
 import { FaCamera } from 'react-icons/fa';
+
+import { solicitudesService } from '@/servicios/solicitudes-service';
 
 // --- UTILIDAD PARA RECORTAR LA IMAGEN (Canvas) ---
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -77,23 +55,59 @@ async function getCroppedImg(imageSrc: string, pixelCrop: any) {
 }
 // --- FIN UTILIDAD ---
 
-const FileUploadControl = ({ id, label, accept }: { id: string, label: string, accept?: string }) => (
+const FileUploadControl = ({ id, label, accept, onChange, file }: { 
+  id: string, 
+  label: string, 
+  accept?: string,
+  onChange: (file: File | null) => void,
+  file: File | null 
+}) => (
   <FormControl id={id}>
-    <FormLabel fontSize="sm" fontWeight="medium">{label}</FormLabel>
-    <Input type="file" p={1} accept={accept} />
+    <FormLabel fontSize="sm" fontWeight="medium">
+      {label} {file && <Text as="span" color="green.500" ml={2}>(✓ Cargado)</Text>}
+    </FormLabel>
+    <Input 
+      type="file" 
+      p={1} 
+      accept={accept} 
+      onChange={(e) => onChange(e.target.files ? e.target.files[0] : null)}
+      sx={{
+        '::file-selector-button': {
+          height: 8,
+          padding: 0,
+          mr: 4,
+          background: 'none',
+          border: 'none',
+          fontWeight: 'bold',
+        },
+      }}
+    />
   </FormControl>
 );
 
 export const SolicitudForm = () => {
-  const { setcodigo_proveedor } = useGlobalData();
+
+  const { user } = useAuth();
   const router = useRouter();
   const toast = useToast();
 
-  // Estados del formulario
   const [personType, setPersonType] = useState<"natural" | "juridica" | "">("natural");
   const [providerName, setProviderName] = useState("");
   const [bio, setBio] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const [legalDocs, setLegalDocs] = useState<{ [key: string]: File | null }>({
+    cedula: null,
+    rif: null,
+    islr: null,
+    cv: null,
+    titulo: null,
+    regMercantil: null
+  });
+
+  const handleDocChange = (key: string, file: File | null) => {
+    setLegalDocs(prev => ({ ...prev, [key]: file }));
+  };
 
   // --- ESTADOS PARA EL EDITOR DE IMAGEN ---
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -109,18 +123,13 @@ export const SolicitudForm = () => {
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      const imageDataUrl = await readFile(file);
-      setImageSrc(imageDataUrl as string);
-      onOpen();
-    }
-  };
-
-  const readFile = (file: File) => {
-    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.addEventListener('load', () => resolve(reader.result), false);
+      reader.addEventListener('load', () => {
+        setImageSrc(reader.result as string);
+        onOpen();
+      });
       reader.readAsDataURL(file);
-    });
+    }
   };
 
   // 2. Guardar coordenadas
@@ -136,7 +145,7 @@ export const SolicitudForm = () => {
         if (croppedImageBlob) {
           const previewUrl = URL.createObjectURL(croppedImageBlob);
           setFinalProfileImage(previewUrl);
-          setFinalImageFile(croppedImageBlob);
+          setFinalImageFile(croppedImageBlob); 
           onClose();
         }
       }
@@ -145,28 +154,66 @@ export const SolicitudForm = () => {
     }
   }, [imageSrc, croppedAreaPixels, onClose]);
 
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    
+    if (!user) {
+        toast({ title: "Error", description: "Debes iniciar sesión.", status: "error" });
+        return;
+    }
+
+    if (!legalDocs.cedula || !legalDocs.rif) {
+        toast({ title: "Faltan documentos", description: "Cédula y RIF son obligatorios.", status: "warning" });
+        return;
+    }
+
     setIsLoading(true);
 
     try {
-      console.log("Enviando datos:", { providerName, bio, personType, finalImageFile });
+      const formData = new FormData();
       
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const newcodigo_proveedor = "ORG123";
-      setcodigo_proveedor(newcodigo_proveedor);
+      formData.append('userId', user.id);
+      formData.append('tipo', 'codigo-proveedor');
+      formData.append('estado', 'pendiente');
+      formData.append('tipoPersona', personType);
+      formData.append('nombreProveedor', providerName);
+      formData.append('biografia', bio);
+
+      if (finalImageFile) {
+          formData.append('avatar', finalImageFile, 'avatar.jpg');
+      }
+
+      if (legalDocs.cedula) formData.append('cedula', legalDocs.cedula);
+      if (legalDocs.rif) formData.append('rif', legalDocs.rif);
+      if (legalDocs.islr) formData.append('islr', legalDocs.islr);
+      if (legalDocs.titulo) formData.append('titulo', legalDocs.titulo);
+      
+      if (personType === 'natural' && legalDocs.cv) {
+          formData.append('curriculum', legalDocs.cv);
+      }
+      if (personType === 'juridica' && legalDocs.regMercantil) {
+          formData.append('registroMercantil', legalDocs.regMercantil);
+      }
+
+      await solicitudesService.createSolicitud(formData); 
 
       toast({
-        title: "Solicitud enviada.",
+        title: "Solicitud enviada exitosamente.",
+        description: "Tus documentos han sido subidos para revisión.",
         status: "success",
-        duration: 5000,
+        duration: 6000,
         isClosable: true,
       });
 
-      router.push(`/`);
-    } catch (error) {
-      toast({ title: "Error", status: "error" });
+      router.push(`/profile/${user.id}`); 
+      
+    } catch (error: any) {
+      console.error(error);
+      toast({ 
+        title: "Error al subir los documentos", 
+        description: error.message || "Fallo en el servidor.",
+        status: "error" 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -204,8 +251,8 @@ export const SolicitudForm = () => {
                 <FormLabel>Nombre del Proveedor / Organización</FormLabel>
                 <Input 
                   placeholder="Ej: Academia de Artes Visuales" 
-                  value={providerName}
-                  onChange={(e) => setProviderName(e.target.value)}
+                  value={providerName} 
+                  onChange={(e) => setProviderName(e.target.value)} 
                 />
                 <FormHelperText>Visible para estudiantes.</FormHelperText>
               </FormControl>
@@ -214,9 +261,9 @@ export const SolicitudForm = () => {
                 <FormLabel>Biografía</FormLabel>
                 <Textarea 
                   placeholder="Describe tu experiencia..." 
-                  rows={4}
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
+                  rows={4} 
+                  value={bio} 
+                  onChange={(e) => setBio(e.target.value)} 
                 />
               </FormControl>
 
@@ -226,8 +273,8 @@ export const SolicitudForm = () => {
                   <Avatar 
                     size="xl" 
                     src={finalProfileImage || undefined} 
-                    icon={<Icon as={FaCamera} fontSize="1.5rem" />}
-                    bg="gray.200"
+                    icon={<Icon as={FaCamera} fontSize="1.5rem" />} 
+                    bg="gray.200" 
                   />
                   <Box>
                     <Input 
@@ -235,7 +282,7 @@ export const SolicitudForm = () => {
                       accept="image/png, image/jpeg, image/jpg" 
                       onChange={onFileChange} 
                       display="none" 
-                      id="file-upload"
+                      id="file-upload" 
                     />
                     <label htmlFor="file-upload">
                       <Button as="span" size="sm" colorScheme="teal" variant="outline" cursor="pointer">
@@ -250,31 +297,39 @@ export const SolicitudForm = () => {
 
             <Divider />
 
-            {/* DOCUMENTACIÓN LEGAL (COMPLETA) */}
+            {/* DOCUMENTACIÓN LEGAL */}
             {personType === "natural" && (
               <VStack spacing={4} align="stretch" w="full">
                 <Heading size="md" color="gray.700">Documentación (Persona Natural)</Heading>
-                <FileUploadControl id="cedula" label="Cédula de Identidad" />
-                <FileUploadControl id="rif-natural" label="Registro de Información Fiscal (RIF)" />
-                <FileUploadControl id="islr-natural" label="Certificados de Declaración ISLR" />
-                <FileUploadControl id="cv-natural" label="Resumen curricular del facilitador(es)" />
-                <FileUploadControl id="titulo-natural" label="Copia del título" />
+                <FileUploadControl id="cedula" label="Cédula de Identidad" accept=".pdf" onChange={(f) => handleDocChange('cedula', f)} file={legalDocs.cedula} />
+                <FileUploadControl id="rif-natural" label="Registro de Información Fiscal (RIF)" accept=".pdf" onChange={(f) => handleDocChange('rif', f)} file={legalDocs.rif} />
+                <FileUploadControl id="islr-natural" label="Certificados de Declaración ISLR" accept=".pdf" onChange={(f) => handleDocChange('islr', f)} file={legalDocs.islr} />
+                <FileUploadControl id="cv-natural" label="Resumen curricular del facilitador(es)" accept=".pdf" onChange={(f) => handleDocChange('cv', f)} file={legalDocs.cv} />
+                <FileUploadControl id="titulo-natural" label="Copia del título" accept=".pdf" onChange={(f) => handleDocChange('titulo', f)} file={legalDocs.titulo} />
               </VStack>
             )}
 
             {personType === "juridica" && (
               <VStack spacing={4} align="stretch" w="full">
                 <Heading size="md" color="gray.700">Documentación (Persona Jurídica)</Heading>
-                <FileUploadControl id="reg-mercantil" label="Registro Mercantil" />
-                <FileUploadControl id="cedula-legal" label="Cédula de Identidad del representante legal" />
-                <FileUploadControl id="rif-juridico" label="Registro de Información Fiscal (RIF)" />
-                <FileUploadControl id="islr-juridico" label="Certificado de Declaración ISLR" />
-                <FileUploadControl id="cv-juridico" label="Resumen curricular del facilitador(es)" />
-                <FileUploadControl id="titulo-juridico" label="Copia del título" />
+                <FileUploadControl id="reg-mercantil" label="Registro Mercantil" accept=".pdf" onChange={(f) => handleDocChange('regMercantil', f)} file={legalDocs.regMercantil} />
+                <FileUploadControl id="cedula-legal" label="Cédula de Identidad del representante legal" accept=".pdf" onChange={(f) => handleDocChange('cedula', f)} file={legalDocs.cedula} />
+                <FileUploadControl id="rif-juridico" label="Registro de Información Fiscal (RIF)" accept=".pdf" onChange={(f) => handleDocChange('rif', f)} file={legalDocs.rif} />
+                <FileUploadControl id="islr-juridico" label="Certificado de Declaración ISLR" accept=".pdf" onChange={(f) => handleDocChange('islr', f)} file={legalDocs.islr} />
+                <FileUploadControl id="cv-juridico" label="Resumen curricular del facilitador(es)" accept=".pdf" onChange={(f) => handleDocChange('cv', f)} file={legalDocs.cv} />
+                <FileUploadControl id="titulo-juridico" label="Copia del título" accept=".pdf" onChange={(f) => handleDocChange('titulo', f)} file={legalDocs.titulo} />
               </VStack>
             )}
             
-            <Button type="submit" colorScheme="teal" size="lg" width="full" mt={4} isLoading={isLoading} isDisabled={!personType || !providerName || !bio || !finalImageFile}>
+            <Button 
+              type="submit" 
+              colorScheme="teal" 
+              size="lg" 
+              width="full" 
+              mt={4} 
+              isLoading={isLoading} 
+              isDisabled={!personType || !providerName.trim() || !bio.trim() || !legalDocs.cedula || !legalDocs.rif}
+            >
               Enviar Solicitud
             </Button>
           </VStack>

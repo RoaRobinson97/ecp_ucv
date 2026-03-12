@@ -105,20 +105,18 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
     const { user: loggedInUser, isHydrated } = useAuth();
     const toast = useToast(); 
 
-    // ✨ Estados para el formulario de publicación
     const [isAddingPub, setIsAddingPub] = useState(false);
     const [newPubTitle, setNewPubTitle] = useState('');
     const [newPubContent, setNewPubContent] = useState('');
     const [isSubmittingPub, setIsSubmittingPub] = useState(false);
     
-    // ✨ HOOKS DE COLOR AL NIVEL SUPERIOR (CORRECCIÓN AQUÍ)
     const cardBg = useColorModeValue("white", "gray.800");
     const headingColor = useColorModeValue("teal.600", "teal.300");
     const subHeadingColor = useColorModeValue("gray.700", "gray.200");
     const dividerColor = useColorModeValue("gray.200", "gray.600");
     const mutedTextColor = useColorModeValue("gray.500", "gray.400");
     const linkColor = "teal.500";
-    const formCardBg = useColorModeValue("gray.50", "gray.700"); // Hook subido
+    const formCardBg = useColorModeValue("gray.50", "gray.700"); 
 
     useEffect(() => {
         if (!isHydrated) return;
@@ -133,7 +131,7 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
                 try {
                     const allPublications = await ApiService.get('publications') as Publication[];
                     if (allPublications) {
-                        courseData.publications = allPublications.filter(pub => pub.courseId === String(courseId));
+                        courseData.publications = allPublications.filter(pub => pub.course_id === String(courseId));
                     }
                 } catch (pubError) {
                     console.warn("No se pudieron cargar las publicaciones:", pubError);
@@ -142,7 +140,7 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
 
                 setCourse(courseData);
 
-                const providerUserId = courseData.userId;
+                const providerUserId = courseData.user_id;
                 if (providerUserId && typeof providerUserId === 'string') {
                     try {
                         const providerData = await userService.getProviderDetails(providerUserId) as FullProvider;
@@ -173,7 +171,7 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
 
             const newPublication: Publication = {
                 id: `pub-new-${Date.now()}`,
-                courseId: courseId,
+                course_id: courseId,
                 titulo: newPubTitle,
                 contenido: newPubContent,
                 fecha: new Date().toISOString()
@@ -220,7 +218,7 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
         return <Text textAlign="center" mt={10}>No se encontró información para este curso.</Text>;
     }
 
-    const isOwner = loggedInUser?.rol === 'proveedor' && loggedInUser?.id === course.userId;
+    const isOwner = loggedInUser?.rol === 'proveedor' && loggedInUser?.id === course.user_id;
     const isAdminOrCoordinator = loggedInUser?.rol === 'admin' || loggedInUser?.rol === 'coordinador';
     const canSeePrivateDetails = isOwner || isAdminOrCoordinator;
     const canManageCohort = isOwner && course.estado_gestion !== 'cerrado';
@@ -234,6 +232,11 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
         displayStatus = course.estado_gestion;
     }
 
+    // ✨ LÓGICA DE AVATAR APLICADA AQUÍ (Para la tarjeta del proveedor):
+    const providerAvatarUrl = provider 
+        ? ((provider as any).provider_avatar_url ?? provider.avatar_url ?? `https://i.pravatar.cc/150?u=${provider.id}`) 
+        : undefined;
+
     return (
         <Box maxW="5xl" mx="auto" p={{ base: 4, md: 8 }} my={8}>
             <VStack spacing={8} align="stretch">
@@ -241,7 +244,8 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
                 {provider && (
                     <Card direction={{ base: 'column', sm: 'row' }} overflow='hidden' variant='outline' bg={cardBg} mb={6} borderColor={dividerColor} shadow="sm">
                         <Flex align="center" p={4}>
-                            <Avatar size='xl' name={provider.nombre_proveedor} src={provider.avatarUrl} mr={4} />
+                            {/* ✨ USAMOS LA VARIABLE providerAvatarUrl AQUÍ */}
+                            <Avatar size='xl' name={provider.nombre_proveedor} src={providerAvatarUrl} mr={4} />
                         </Flex>
                         <Stack flex={1}>
                             <CardBody>
@@ -295,14 +299,14 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
                             <GridItem><KeyDetail label="Propósito" value={course.proposito} /></GridItem>
                             <GridItem><KeyDetail label="Fundamentación" value={course.fundamentacion} /></GridItem>
                             <GridItem><KeyDetail label="Duración" value={course.duracion} /></GridItem>
-                            <GridItem><KeyDetail label="Estructura de Costos" value={course.estructuraCostos} /></GridItem>
+                            <GridItem><KeyDetail label="Estructura de Costos" value={course.estructura_costos} /></GridItem>
 
                             <GridItem colSpan={{ base: 1, md: 2 }} pt={6}>
                                 <Heading as="h2" size="md" mb={4} borderBottomWidth="1px" pb={2} borderColor={dividerColor} color={subHeadingColor}>
                                     Perfiles y Exigencias
                                 </Heading>
                             </GridItem>
-                            <GridItem><KeyDetail label="Perfil del Docente" value={course.perfilDocente} /></GridItem>
+                            <GridItem><KeyDetail label="Perfil del Docente" value={course.perfil_docente} /></GridItem>
                             <GridItem><KeyDetail label="Perfiles de Ingreso/Egreso" value={course.perfiles} /></GridItem>
                             <GridItem colSpan={{ base: 1, md: 2 }}><KeyDetail label="Exigencias" value={course.exigencias} /></GridItem>
 
@@ -311,7 +315,7 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
                                     Aspectos Curriculares y Logísticos
                                 </Heading>
                             </GridItem>
-                            <GridItem><KeyDetail label="Estructura Curricular" value={course.estructuraCurricular} /></GridItem>
+                            <GridItem><KeyDetail label="Estructura Curricular" value={course.estructura_curricular} /></GridItem>
                             <GridItem><KeyDetail label="Estrategias de Evaluación" value={course.evaluacion} /></GridItem>
                             <GridItem colSpan={{ base: 1, md: 2 }}><KeyDetail label="Cronograma Anual" value={course.cronograma} /></GridItem>
                         </Grid>

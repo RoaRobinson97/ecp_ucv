@@ -5,12 +5,12 @@ import { HybridUserProfileClient } from "@/components/ui/hybrid-user-profile-cli
 import { userService } from "@/servicios/users-service"; 
 import { FullProvider, User } from "@/data/types";
 
-export default async function HybridUserProfilePage({ params }: { params: { userId: string } }) {
-  const { userId } = params;
+export default async function HybridUserProfilePage({ params }: { params: { user_id: string } }) {
+  const { user_id } = params;
 
   try {
 
-    const targetUser = await userService.getProviderDetails(userId) as FullProvider | User;
+    const targetUser = await userService.getProviderDetails(user_id) as FullProvider | User;
     console.log(targetUser)
 
     if (!targetUser) {

@@ -18,7 +18,8 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
         async function loadMyCourses() {
             if (isProveedor) {
                 try {
-                    const result = await courseService.getCoursesByUserId(user.id);
+                    console.log('Este es el user id desde vista proveedor', user.id)
+                    const result = await courseService.getCoursesBycodigo_proveedor(user.codigo_proveedor);
                     setMyCourses(result.courses);
                 } catch (e) { console.error(e); }
             }
@@ -29,6 +30,10 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
     const displayName = (isProveedor && 'nombre_proveedor' in user)
         ? (user as FullProvider).nombre_proveedor : `${user.nombres} ${user.apellidos}`;
 
+    const avatarUrl = (user as any).provider_avatar_url 
+        ?? (user as FullProvider).avatar_url 
+        ?? `https://i.pravatar.cc/150?u=${user.id}`;
+
     return (
         <Box p={6} bg={useColorModeValue("white", "gray.700")} shadow="xl" rounded="lg" borderTop="6px solid" borderColor={brandColor} maxW="3xl" mx="auto">
             
@@ -38,7 +43,8 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
             </HStack>
             <Divider my={4} />
             <VStack spacing={4} align="center" mb={6}>
-                <Avatar size="2xl" name={displayName as string} src={(user as any).avatarUrl} border="4px solid" borderColor={brandColor} />
+                {/* ✨ USAMOS LA VARIABLE avatarUrl AQUÍ */}
+                <Avatar size="2xl" name={displayName as string} src={avatarUrl} border="4px solid" borderColor={brandColor} />
                 <Heading size="lg">{displayName as string}</Heading>
                 <HStack><Icon as={MdEmail} color={brandColor} /><Text>{user.email}</Text></HStack>
             </VStack>

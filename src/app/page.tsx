@@ -8,31 +8,30 @@ import { PrimaryButton } from "@/components/ui/buttons";
 import { ClientContent } from '../components/ui/client-components';
 import { courseService } from '../servicios/cursos-service'; 
 
-interface Course {
-  id: string;
-  slug: string;
-  titulo: string;
-  descripcion: string;
-  image: string | null;
-}
+// ✨ IMPORTA TU INTERFAZ GLOBAL EN LUGAR DE REESCRIBIRLA
+import { Course } from '@/data/types';
+
+// ✨ REVALIDACIÓN DE CACHÉ (ISR)
+// Esto le dice a Next.js: "Vuelve a consultar la base de datos en el fondo cada 60 segundos"
+// Así tu página es ultra rápida, pero siempre se mantiene actualizada.
+export const revalidate = 60; 
 
 export default async function HomePage() {
     
     let coursesForClient: Course[] = []; 
+    let hasError = false; 
     
     try {
-        // 👇 AQUÍ ESTÁ EL ÚNICO CAMBIO: limit: 6 se convierte en limit: 3
         const { courses } = await courseService.getAllCourses({ page: 1, limit: 3 }) as { courses: Course[] };
-        
         coursesForClient = courses;
 
     } catch (error) {
         console.error("Fallo al cargar cursos en HomePage:", error);
+        hasError = true; 
     }
 
     return (
         <Box minH="100vh">
-            {/* Encabezado del contenido principal */}
             <Box 
                 textAlign="center" 
                 backgroundImage="url('/background-1.jpg')"
@@ -58,8 +57,7 @@ export default async function HomePage() {
                 </Box>
             </Box>
 
-            {/* Renderiza el contenido que depende de los datos */}
-            <ClientContent courses={coursesForClient} />
+            <ClientContent courses={coursesForClient} hasError={hasError} />
         </Box>
     );
 }

@@ -2,8 +2,8 @@ export type UserRole = 'admin' | 'coordinador' | 'proveedor' | 'visitante';
 
 export interface Publication {
   id: string;
-  courseId: string;
-  cohortId?: string; 
+  course_id: string;
+  cohort_id?: string; 
   titulo: string;
   contenido: string; 
   fecha: string; 
@@ -18,26 +18,26 @@ export interface Course {
   proposito?: string;
   fundamentacion?: string;
   duracion?: string;
-  estructuraCostos?: string;
-  perfilDocente?: string;
+  estructura_costos?: string;
+  perfil_docente?: string;
   perfiles?: string;
   exigencias?: string;
-  estructuraCurricular?: string;
+  estructura_curricular?: string;
   evaluacion?: string;
   cronograma?: string;
   codigo_proveedor?: string;
-  userId?: string;
+  user_id?: string;
   estado_gestion?: 'pendiente' | 'aprobado' | 'rechazado' | 'cerrado' | 'abierto' | 'solicitud-cierre';
   publications?: Publication[]; 
-  documento_legal_id: string;
+  documento_legal_id?: string;
 }
 
 export interface Solicitud {
   id: string;
-  userId: string;        
+  user_id: string;        
   tipo: TipoSolicitud;    
   estado: EstadoSolicitud; // 'pendiente' | 'aprobado' | 'rechazado'
-  fechaCreacion: string;
+  fecha_creacion: string;
   fechaActualizacion?: string;
   motivoRechazo?: string;
   payload?: any; 
@@ -51,7 +51,7 @@ export interface PayloadCodigoProveedor {
   nombreProveedor: string; 
   nombreUsuario?: string;  
   biografia: string;
-  avatarUrl?: string;
+  avatar_url?: string;
   documentos: {
     cedula?: string;
     rif?: string;
@@ -71,17 +71,30 @@ export interface PayloadFormulacionCurso {
   proposito: string;
   fundamentacion: string;
   duracion: string;
-  estructuraCostos: string;
+  estructura_costos: string;
   exigencias: string;
-  perfilDocente: string;
+  perfil_docente: string;
   perfiles: string;
-  estructuraCurricular: string;
+  estructura_curricular: string;
   evaluacion: string;
   cronograma: string;
   descripcion?: string;
-  enteAvalante?: string;
-  archivoProyectoUrl?: string;
-  contratoId?: string; 
+  archivo_proyecto_url?: string;
+  contrato_id?: string; 
+}
+
+export interface PayloadCierreCohorte {
+  curso_id: string;
+  titulo_curso: string;
+  nombre_cohorte: string;
+  fecha_inicio: string;
+  fecha_fin: string;
+  estudiantes_inscritos: number;
+  estudiantes_aprobados: number;
+  observaciones?: string;
+  archivo_participantes_url: string; // Excel
+  archivo_vouchers_url: string;      // PDF o ZIP
+  archivo_encuesta_url: string;      // PDF o Excel
 }
 
 export interface User {
@@ -95,7 +108,6 @@ export interface User {
   email: string;
   rol: UserRole;
   codigo_proveedor? : string
-  avatarUrl?: string;
   biografia?: string;
 }
 
@@ -105,9 +117,8 @@ export interface Provider {
   codigo_proveedor: string;
   nombre_proveedor: string;
   biografia?: string;
-  avatarUrl?: string;
+  provider_avatar_url?: string;
   tipo_proveedor: string;
-  // ✨ NUEVOS CAMPOS DE CONTACTO
   emails_contacto?: string[]; 
   telefonos_contacto?: string[];
   sitio_web?: string;

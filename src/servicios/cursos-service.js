@@ -125,15 +125,15 @@ class CourseService {
                 proposito: backendCourse.proposito,
                 fundamentacion: backendCourse.fundamentacion,
                 duracion: backendCourse.duracion,
-                estructuraCostos: backendCourse.estructuraCostos,
-                perfilDocente: backendCourse.perfilDocente,
+                estructura_costos: backendCourse.estructura_costos,
+                perfil_docente: backendCourse.perfil_docente,
                 perfiles: backendCourse.perfiles,
                 exigencias: backendCourse.exigencias,
-                estructuraCurricular: backendCourse.estructuraCurricular,
+                estructura_curricular: backendCourse.estructura_curricular,
                 evaluacion: backendCourse.evaluacion,
                 cronograma: backendCourse.cronograma,
                 codigo_proveedor: backendCourse.codigo_proveedor,
-                userId: backendCourse.userId || backendCourse.user_id,
+                user_id: backendCourse.user_id || backendCourse.user_id,
                 estado_gestion: backendCourse.estado_gestion || backendCourse.status,
                 
                 // Asumimos que el backend real devolverá las publicaciones anidadas o un array vacío
@@ -160,8 +160,36 @@ class CourseService {
         throw new Error("Endpoint real de subida de archivos no configurado aún.");
     }
 
-    async getCoursesByUserId(userId, { page = 1, limit = 9 } = {}) {
-        return this.getAllCourses({ page, limit }); 
+    async getCoursesByUserId(user_id, { page = 1, limit = 9 } = {}) {
+        try {
+            // --- MODO MOCK ---
+            if (CONFIG.USE_MOCK_DATA) {
+                const allCourses = await ApiService.get('courses') || [];
+                
+                // Filtrar por el código del proveedor
+                const filteredCourses = allCourses.filter(
+                    course => course.user_id === user_id
+                );
+
+                const totalCourses = filteredCourses.length;
+                const totalPages = Math.ceil(totalCourses / limit) || 1;
+                const start = (page - 1) * limit;
+                const end = start + limit;
+
+                return { 
+                    courses: filteredCourses.slice(start, end), 
+                    totalPages, 
+                    totalCourses 
+                };
+            }
+
+            // --- MODO REAL ---
+            return this.getAllCourses({ page, limit, user_id });
+
+        } catch (error) {
+            console.error("Error en getCoursesBycodigo_proveedor:", error);
+            throw error;
+        }
     }
 
     async getCoursesBycodigo_proveedor(codigo_proveedor, { page = 1, limit = 9 } = {}) {
@@ -189,7 +217,7 @@ class CourseService {
             }
 
             // --- MODO REAL ---
-            return this.getAllCourses({ page, limit }); 
+            return this.getAllCourses({ page, limit, codigo_proveedor });
 
         } catch (error) {
             console.error("Error en getCoursesBycodigo_proveedor:", error);

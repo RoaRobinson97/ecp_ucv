@@ -12,15 +12,14 @@ import {
   Alert,
   AlertIcon,
   useToast,
-  Select, // ✨ Importamos Select de Chakra UI
+  Select, 
+  FormControl, FormLabel, Input, FormErrorMessage 
 } from "@chakra-ui/react";
 import { useAuth } from "@/app/context/auth-context";
 import { useRouter } from "next/navigation";
-import { FormControl, FormLabel, Input, FormErrorMessage } from "@/components/ui/form-controls";
 import { authService } from '@/servicios/auth-service';
 import { User } from '@/data/types';
 
-// ✨ Definimos las opciones para los dropdowns
 const genderOptions = [
   { value: "masculino", label: "Masculino" },
   { value: "femenino", label: "Femenino" },
@@ -36,12 +35,11 @@ const educationOptions = [
   { value: "postgrado", label: "Postgrado" }
 ];
 
-// ✨ Actualizamos la configuración de campos
 const formFields = [
   { id: "firstName", label: "Nombres", type: "text", isRequired: true },
   { id: "lastName", label: "Apellidos", type: "text", isRequired: true },
   { id: "cedula", label: "Cédula / CI", type: "text", isRequired: true },
-  { id: "date_of_birth", label: "Fecha de Nacimiento", type: "date", isRequired: true }, // Nuevo
+  { id: "date_of_birth", label: "Fecha de Nacimiento", type: "date", isRequired: true }, 
   { 
     id: "gender", 
     label: "Género", 
@@ -49,7 +47,7 @@ const formFields = [
     options: genderOptions, 
     isRequired: true,
     placeholder: "Selecciona tu género"
-  }, // Nuevo Dropdown
+  }, 
   { 
     id: "education_level", 
     label: "Nivel Educativo", 
@@ -57,14 +55,13 @@ const formFields = [
     options: educationOptions, 
     isRequired: true,
     placeholder: "Selecciona nivel educativo"
-  }, // Nuevo Dropdown
-  { id: "address", label: "Dirección", type: "text", isRequired: true }, // Nuevo
+  }, 
+  { id: "address", label: "Dirección", type: "text", isRequired: true }, 
   { id: "email", label: "Email", type: "email", isRequired: true },
   { id: "password", label: "Contraseña", type: "password", isRequired: true },
 ];
 
 export const RegisterForm = () => {
-  // ✨ Estado inicial actualizado con todos los campos
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -86,7 +83,6 @@ export const RegisterForm = () => {
   const router = useRouter();
   const toast = useToast();
 
-  // Maneja cambios en Inputs y Selects
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prevData => ({
@@ -109,34 +105,41 @@ export const RegisterForm = () => {
     setIsLoading(true);
 
     try {
-      // ✨ Mapeamos los datos del formulario al JSON exacto que pide tu backend
       const payload = {
-        ci: formData.cedula,
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        date_of_birth: formData.date_of_birth,
-        gender: formData.gender,
-        education_level: formData.education_level,
-        address: formData.address,
-        username: formData.email, // Mapeamos email a username
-        password: formData.password
+        cedula: formData.cedula,
+        nombres: formData.firstName,
+        apellidos: formData.lastName,
+        fecha_de_nacimiento: formData.date_of_birth,
+        genero: formData.gender, 
+        nivel_educativo: formData.education_level,
+        direccion: formData.address,
+        email: formData.email,
+        password: formData.password,
+        rol: 'visitante' 
       };
 
-      const newUser = await authService.register(payload) as User;
+      // 1. Registramos al usuario (Lo guarda en la BD)
+      await authService.register(payload);
       
+      // 2. ✨ AUTO-LOGIN SILENCIOSO: Obligamos al sistema a generar la cookie 'auth_token'
+      const loggedUser = await authService.login(formData.email, formData.password) as User;
+
       toast({
         title: "Cuenta Creada con Éxito.",
-        description: "Hemos creado tu cuenta. Serás redirigido automáticamente.",
+        description: "Iniciando sesión automáticamente...",
         status: "success",
-        duration: 4000,
+        duration: 3000,
         isClosable: true,
       });
 
-      login(newUser);
-      router.push("/");
+      // 3. Le avisamos a React
+      login(loggedUser);
+      
+      // 4. ✨ Redirección dura para forzar a Next.js a leer la cookie fresca en el servidor
+      window.location.href = "/";
 
     } catch (err: any) {
-      setServerError(err.message);
+      setServerError(err.message || "Ocurrió un error al registrar el usuario.");
     } finally {
       setIsLoading(false);
     }
@@ -166,13 +169,11 @@ export const RegisterForm = () => {
             </Alert>
           )}
 
-          {/* ✨ Renderizado dinámico de campos (Input o Select) */}
           {formFields.map((field) => (
             <FormControl key={field.id} id={field.id} isRequired={field.isRequired}>
               <FormLabel>{field.label}</FormLabel>
               
               {field.type === 'select' ? (
-                // Renderizar Dropdown (Select)
                 <Select
                   name={field.id}
                   value={formData[field.id as keyof typeof formData]}
@@ -186,7 +187,6 @@ export const RegisterForm = () => {
                   ))}
                 </Select>
               ) : (
-                // Renderizar Input normal (text, email, password, date)
                 <Input
                   type={field.type}
                   name={field.id}
@@ -197,7 +197,6 @@ export const RegisterForm = () => {
             </FormControl>
           ))}
 
-          {/* Confirmar Contraseña (se mantiene igual, fuera del loop) */}
           <FormControl id="confirmPassword" isRequired isInvalid={!!passwordError}>
             <FormLabel>Confirmar Contraseña</FormLabel>
             <Input

@@ -77,15 +77,15 @@ export function UsersTable({ educacionContinuaUsers, grupoExtensionUsers }: User
   };
 
   // 🛑 NUEVO HANDLER DE NAVEGACIÓN
-  const handleUserClick = (userId: string) => {
+  const handleUserClick = (user_id: string) => {
     // Redirige a la página dinámica del usuario: /usuario/[id]
-    router.push(`/profile/${userId}`);
+    router.push(`/profile/${user_id}`);
   };
 
-  const handleSaveRole = (userId: string) => {
+  const handleSaveRole = (user_id: string) => {
     setCurrentUsers(prevUsers => 
       prevUsers.map(user => 
-        user.id === userId ? { ...user, rol: selectedRole } : user
+        user.id === user_id ? { ...user, rol: selectedRole } : user
       )
     );
 

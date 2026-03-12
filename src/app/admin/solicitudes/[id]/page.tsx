@@ -4,31 +4,38 @@ import {
   Box, Heading, Text, Divider, VStack, Container, Badge, HStack, SimpleGrid, Stat, StatLabel, StatNumber
 } from '@chakra-ui/react';
 import { redirect, notFound } from 'next/navigation';
+import { cookies } from 'next/headers'; 
 
 // Importamos los tipos y el SERVICIO
 import { 
   PayloadCodigoProveedor, 
-  PayloadFormulacionCurso
+  PayloadFormulacionCurso,
+  PayloadCierreCohorte, // ✨ IMPORTANTE: Traer el nuevo tipo
+  User
 } from '@/data/types';
 import { solicitudesService } from '@/servicios/solicitudes-service';
+import { userService } from '@/servicios/users-service';
 
 // Vistas específicas
 import { CodigoProveedorView } from '@/components/ui/codigo-proveedor-view';
 import { CourseDetailsView } from '@/components/ui/course-details-view';
 import { AdminActions } from '@/components/ui/admin-actions';
-
-// Ya no necesitamos la función mock interna porque usamos el service
+import { CierreCohorteView } from '@/components/ui/cierre-cohorte-view'; // ✨ LA NUEVA VISTA
 
 export default async function SolicitudDetallePage({ params }: { params: { id: string } }) {
   
-  // Seguridad (Mantenida)
-  const userRole = 'admin'; 
-  if (userRole !== 'admin') redirect('/login?error=unauthorized');
+  // ✨ SEGURIDAD REAL (Eliminamos el hardcodeo inútil)
+  const cookieStore = await cookies();
+  const token = cookieStore.get('auth_token')?.value;
+  const currentUser = userService.getUserFromToken(token) as User | null;
 
-  // ✨ LA CLAVE: Ahora buscamos en la base de datos completa a través del servicio
+  if (!currentUser || !['admin', 'coordinador'].includes(currentUser.rol)) {
+      redirect('/login?error=unauthorized');
+  }
+
+  // Ahora buscamos en la base de datos completa a través del servicio
   const solicitud = await solicitudesService.getSolicitudById(params.id);
 
-  // Si no existe en el MOCKED_DB completo, entonces sí manda 404
   if (!solicitud) notFound();
 
   const getStatusColor = (estado: string) => {
@@ -59,10 +66,9 @@ export default async function SolicitudDetallePage({ params }: { params: { id: s
 
         {/* STATS RÁPIDOS */}
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-          {/* Limpiamos el slug para mostrar texto humano */}
           <StatCard label="Categoría de Trámite" value={solicitud.tipo.replace(/-/g, ' ').toUpperCase()} color="purple.500" />
-          <StatCard label="Fecha de Registro" value={solicitud.fechaCreacion} color="blue.500" />
-          <StatCard label="ID de Usuario" value={solicitud.userId} color="teal.500" />
+          <StatCard label="Fecha de Registro" value={solicitud.fecha_creacion} color="blue.500" />
+          <StatCard label="ID de Usuario" value={solicitud.user_id} color="teal.500" />
         </SimpleGrid>
 
         <Divider />
@@ -71,6 +77,9 @@ export default async function SolicitudDetallePage({ params }: { params: { id: s
         <Box p={8} bg="white" shadow="sm" borderWidth="1px" rounded="xl">
           {solicitud.tipo === 'codigo-proveedor' ? (
             <CodigoProveedorView payload={solicitud.payload as PayloadCodigoProveedor} />
+          ) : solicitud.tipo === 'cierre-cohorte' ? (
+            // ✨ AQUÍ RENDERIZAMOS EL CIERRE
+            <CierreCohorteView payload={solicitud.payload as PayloadCierreCohorte} />
           ) : (
             <CourseDetailsView 
               payload={solicitud.payload as PayloadFormulacionCurso} 
