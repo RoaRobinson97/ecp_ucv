@@ -206,8 +206,8 @@ class SolicitudesService {
             tipo: s.tipo,
             estado: s.estado || s.status,
             fecha_creacion: s.fecha_creacion || s.fechaCreacion || s.created_at,
-            fecha_actualizacion: s.fecha_actualizacion || s.fechaActualizacion, 
-            motivo_rechazo: s.motivo_rechazo || s.motivoRechazo, 
+            fecha_actualizacion: s.fecha_actualizacion || s.fecha_actualizacion, 
+            motivo_rechazo: s.motivo_rechazo || s.motivo_rechazo, 
             payload: s.payload || {}
         };
     }

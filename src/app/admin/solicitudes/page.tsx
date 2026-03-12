@@ -56,14 +56,14 @@ export default async function SolicitudesPage() {
         const userIdString = String(sol.user_id);
         const user = userMap[userIdString];
         
-        const nombreUsuario = user ? `${user.nombres} ${user.apellidos}` : 'Usuario Desconocido';
+        const nombre_usuario = user ? `${user.nombres} ${user.apellidos}` : 'Usuario Desconocido';
         const payloadData = sol.payload as Record<string, any>;
-        const nombreProveedor = payloadData?.nombreProveedor;
+        const nombre_proveedor = payloadData?.nombre_proveedor;
 
         return {
           ...sol,
-          solicitante: nombreProveedor || nombreUsuario,
-          nombre: payloadData?.nombreProveedor || payloadData?.titulo || 'Sin nombre',
+          solicitante: nombre_proveedor || nombre_usuario,
+          nombre: payloadData?.nombre_proveedor || payloadData?.titulo || 'Sin nombre',
           fecha: sol.fecha_creacion
         };
       });

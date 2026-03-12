@@ -129,7 +129,7 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
     try {
       // ✨ 2. AQUÍ SE DECLARAN LAS VARIABLES (Para que no te dé error de Cannot find name)
       const nuevoEstado = action === 'Aprobar' ? 'aprobada' : 'rechazada';
-      const motivoRechazo = action === 'Rechazar' ? message : null;
+      const motivo_rechazo = action === 'Rechazar' ? message : null;
 
       // ✨ 3. BIFURCACIÓN DE LÓGICA (Con o sin archivo)
       if (action === 'Aprobar' && isCourseRequest) {
@@ -145,7 +145,7 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
           await solicitudesService.updateStatusWithFile(solicitudId, formData);
       } else {
           // Flujo SIN archivo (Cierres, Rechazos, Proveedores)
-          await solicitudesService.updateStatus(solicitudId, nuevoEstado, motivoRechazo);
+          await solicitudesService.updateStatus(solicitudId, nuevoEstado, motivo_rechazo);
       }
 
       toast({

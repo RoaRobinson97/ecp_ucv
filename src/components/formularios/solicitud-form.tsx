@@ -175,8 +175,8 @@ export const SolicitudForm = () => {
       formData.append('userId', user.id);
       formData.append('tipo', 'codigo-proveedor');
       formData.append('estado', 'pendiente');
-      formData.append('tipoPersona', personType);
-      formData.append('nombreProveedor', providerName);
+      formData.append('tipo_persona', personType);
+      formData.append('nombre_proveedor', providerName);
       formData.append('biografia', bio);
 
       if (finalImageFile) {
@@ -192,7 +192,7 @@ export const SolicitudForm = () => {
           formData.append('curriculum', legalDocs.cv);
       }
       if (personType === 'juridica' && legalDocs.regMercantil) {
-          formData.append('registroMercantil', legalDocs.regMercantil);
+          formData.append('registro_mercantil', legalDocs.regMercantil);
       }
 
       await solicitudesService.createSolicitud(formData); 

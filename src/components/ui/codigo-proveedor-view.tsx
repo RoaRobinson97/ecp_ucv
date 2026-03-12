@@ -8,7 +8,7 @@ interface CodigoProveedorViewProps {
 }
 
 export function CodigoProveedorView({ payload }: CodigoProveedorViewProps) {
-  const { documentos, tipoPersona } = payload;
+  const { documentos, tipo_persona } = payload;
 
   // Función para renderizar cada tarjeta de documento de forma específica
   const DocumentCard = ({ title, url }: { title: string, url?: string }) => {
@@ -42,9 +42,9 @@ export function CodigoProveedorView({ payload }: CodigoProveedorViewProps) {
       <VStack align="stretch" spacing={6}>
         <Box>
           <Heading size="md" mb={2}>Información del Solicitante</Heading>
-          <Text><strong>Nombre:</strong> {payload.nombreProveedor}</Text>
-          <Badge colorScheme={tipoPersona === 'natural' ? 'blue' : 'purple'}>
-            Persona {tipoPersona.toUpperCase()}
+          <Text><strong>Nombre:</strong> {payload.nombre_proveedor}</Text>
+          <Badge colorScheme={tipo_persona === 'natural' ? 'blue' : 'purple'}>
+            Persona {tipo_persona.toUpperCase()}
           </Badge>
         </Box>
 
@@ -56,8 +56,8 @@ export function CodigoProveedorView({ payload }: CodigoProveedorViewProps) {
           <DocumentCard title="ISLR" url={documentos.islr} />
           <DocumentCard title="Curriculum Vitae" url={documentos.curriculum} />
           <DocumentCard title="Título Profesional" url={documentos.titulo} />
-          {tipoPersona === 'juridica' && (
-            <DocumentCard title="Registro Mercantil" url={documentos.registroMercantil} />
+          {tipo_persona === 'juridica' && (
+            <DocumentCard title="Registro Mercantil" url={documentos.registro_mercantil} />
           )}
         </SimpleGrid>
       </VStack>

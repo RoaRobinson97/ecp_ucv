@@ -1004,9 +1004,9 @@ const MOCK_SOLICITUDES_DATA: any[] = [
     estado: 'pendiente',
     fecha_creacion: '2026-02-01',
     payload: {
-      tipoPersona: 'natural',
-      nombreProveedor: 'Andrés Ríos Consultores',
-      nombreUsuario: 'Andrés Ríos', // ✨ NUEVO
+      tipo_persona: 'natural',
+      nombre_proveedor: 'Andrés Ríos Consultores',
+      nombre_usuario: 'Andrés Ríos', // ✨ NUEVO
       biografia: 'Consultoría en optimización de procesos industriales.',
       documentos: { 
         cedula: '/docs/cedula_andres.pdf', 
@@ -1025,7 +1025,7 @@ const MOCK_SOLICITUDES_DATA: any[] = [
     fecha_creacion: '2026-02-03',
     payload: {
       titulo: 'Diseño Gráfico Esencial - #1',
-      nombreProveedor: 'Academia Visual Pro', // ✨ NUEVO
+      nombre_proveedor: 'Academia Visual Pro', // ✨ NUEVO
       duracion: '35 horas',
       proposito: 'Dominar fundamentos visuales.',
       fundamentacion: 'Necesidad de digitalización empresarial.',
@@ -1046,10 +1046,10 @@ const MOCK_SOLICITUDES_DATA: any[] = [
     tipo: 'formulacion-curso-indirecta',
     estado: 'rechazada',
     fecha_creacion: '2026-01-20',
-    motivoRechazo: 'El ente avalante no posee convenio vigente con la universidad.',
+    motivo_rechazo: 'El ente avalante no posee convenio vigente con la universidad.',
     payload: {
       titulo: 'Blockchain aplicado a Logística',
-      nombreProveedor: 'Tech Solutions & Logistics', // ✨ NUEVO
+      nombre_proveedor: 'Tech Solutions & Logistics', // ✨ NUEVO
       enteAvalante: 'CryptoTrade International',
       archivo_proyecto_url: '/convenios/blockchain_v1.pdf',
       duracion: '45 horas',
@@ -1096,13 +1096,13 @@ const MOCK_SOLICITUDES_DATA: any[] = [
     estado: 'pendiente',
     fecha_creacion: '2026-02-06',
     payload: {
-      tipoPersona: 'juridica',
-      nombreUsuario: 'Carla Soto', // ✨ NUEVO
+      tipo_persona: 'juridica',
+      nombre_usuario: 'Carla Soto', // ✨ NUEVO
       biografia: 'Agencia especializada en desarrollo de aplicaciones móviles.',
       documentos: { 
         cedula: '/docs/legal_carla.pdf', 
         rif: '/docs/rif_sototech.pdf', 
-        registroMercantil: '/docs/reg_mercantil.pdf' 
+        registro_mercantil: '/docs/reg_mercantil.pdf' 
       }
     }
   },
@@ -1116,7 +1116,7 @@ const MOCK_SOLICITUDES_DATA: any[] = [
     fecha_creacion: '2026-01-10',
     payload: {
       titulo: 'Fotografía Creativa - #4',
-      nombreProveedor: 'Luis Méndez Fotografía', // ✨ NUEVO
+      nombre_proveedor: 'Luis Méndez Fotografía', // ✨ NUEVO
       duracion: '25 horas',
       proposito: 'Explorar técnicas de composición avanzada.',
       fundamentacion: 'Mercado de contenido digital en auge.',
@@ -1140,7 +1140,7 @@ const MOCK_SOLICITUDES_DATA: any[] = [
     fecha_creacion: '2026-02-07',
     payload: {
       titulo: 'Agilidad Organizacional con Scrum',
-      nombreProveedor: 'Gestión Ágil Consultores', // ✨ NUEVO
+      nombre_proveedor: 'Gestión Ágil Consultores', // ✨ NUEVO
       enteAvalante: 'Agile Institute South America',
       archivo_proyecto_url: '/proyectos/agilidad_scrum.pdf',
       duracion: '32 horas',
@@ -1188,7 +1188,7 @@ const MOCK_SOLICITUDES_DATA: any[] = [
     fecha_creacion: '2026-02-08',
     payload: {
       titulo: 'Marketing para Emprendedores',
-      nombreProveedor: 'Growth Hacking Vzla', // ✨ NUEVO
+      nombre_proveedor: 'Growth Hacking Vzla', // ✨ NUEVO
       duracion: '20 horas',
       proposito: 'Vender a través de redes sociales.',
       fundamentacion: 'Necesidad de autoempleo.',
@@ -1210,9 +1210,9 @@ const MOCK_SOLICITUDES_DATA: any[] = [
     estado: 'pendiente',
     fecha_creacion: '2026-02-09',
     payload: {
-      tipoPersona: 'natural',
-      nombreProveedor: 'Emilia Reyes - Artes Plásticas',
-      nombreUsuario: 'Emilia Reyes', // ✨ NUEVO
+      tipo_persona: 'natural',
+      nombre_proveedor: 'Emilia Reyes - Artes Plásticas',
+      nombre_usuario: 'Emilia Reyes', // ✨ NUEVO
       biografia: 'Escultora con especialización en técnicas de resina.',
       documentos: { 
         cedula: '/docs/emilia_c.pdf', 

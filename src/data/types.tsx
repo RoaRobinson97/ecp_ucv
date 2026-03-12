@@ -38,8 +38,8 @@ export interface Solicitud {
   tipo: TipoSolicitud;    
   estado: EstadoSolicitud; // 'pendiente' | 'aprobado' | 'rechazado'
   fecha_creacion: string;
-  fechaActualizacion?: string;
-  motivoRechazo?: string;
+  fecha_actualizacion?: string;
+  motivo_rechazo?: string;
   payload?: any; 
 }
 
@@ -47,9 +47,9 @@ export type TipoSolicitud = 'codigo-proveedor' | 'formulacion-curso-directa' | '
 export type EstadoSolicitud = 'pendiente' | 'aprobada' | 'rechazada'
 
 export interface PayloadCodigoProveedor {
-  tipoPersona: 'natural' | 'juridica';
-  nombreProveedor: string; 
-  nombreUsuario?: string;  
+  tipo_persona: 'natural' | 'juridica';
+  nombre_proveedor: string; 
+  nombre_usuario?: string;  
   biografia: string;
   avatar_url?: string;
   documentos: {
@@ -58,7 +58,7 @@ export interface PayloadCodigoProveedor {
     islr?: string;
     curriculum?: string;
     titulo?: string;
-    registroMercantil?: string;
+    registro_mercantil?: string;
   };
 }
 
@@ -66,7 +66,7 @@ export interface PayloadCodigoProveedor {
 
 export interface PayloadFormulacionCurso {
   titulo: string;
-  nombreProveedor?: string; 
+  nombre_proveedor?: string; 
   denominacion?: string;
   proposito: string;
   fundamentacion: string;
