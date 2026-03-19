@@ -96,7 +96,7 @@ export default async function SolicitudDetallePage({ params }: { params: { id: s
           <AdminActions 
             solicitudId={solicitud.id} 
             solicitudTipo={solicitud.tipo} 
-            adminOrganismo="DEU" 
+            currentUserId={currentUser?.id} // ✨ LE PASAMOS EL ID REAL
           />
         </Box>
 

@@ -18,17 +18,17 @@ import {
   Select,
   FormLabel,
   FormControl,
-  Spinner, // Para el loading de facultades
+  Spinner, 
 } from '@chakra-ui/react';
 import { CourseEvaluationForm } from '@/components/formularios/course-evaluation-form'; 
 
 import { solicitudesService } from '@/servicios/solicitudes-service';
-import { userService } from '@/servicios/users-service'; // ✨ Importado
+import { userService } from '@/servicios/users-service';
 
 interface AdminActionsProps {
   solicitudId: string;
   solicitudTipo: string;
-  adminOrganismo: string; 
+  currentUserId?: string; // ✨ Ahora recibimos el ID del usuario logueado
 }
 
 const CLASIFICACION_REQUIERE_REMISION = 'Formación para el mejoramiento técnico/profesional';
@@ -40,14 +40,12 @@ const CLASSIFICATION_OPTIONS = [
   { value: CLASIFICACION_REQUIERE_REMISION, description: 'Profundiza en áreas técnicas/profesionales y requiere competencias específicas de ingreso.' },
 ];
 
-
-export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: AdminActionsProps) {
+export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: AdminActionsProps) {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentClassification, setCurrentClassification] = useState('');
   const [selectedFaculty, setSelectedFaculty] = useState('');
 
-  // ESTADOS DE FACULTADES
   const [facultadesList, setFacultadesList] = useState<{id: string, name: string}[]>([]);
   const [isLoadingFacultades, setIsLoadingFacultades] = useState(false);
 
@@ -65,7 +63,6 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
   const isDirecta = normalizedTipo.includes('directa') || (normalizedTipo.includes('curso') && !isIndirecta);
   const isCourseRequest = normalizedTipo.includes('curso');
   
-  // EFECTO DE CARGA DE FACULTADES
   useEffect(() => {
     async function loadFacultades() {
       setIsLoadingFacultades(true);
@@ -86,18 +83,18 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
     if (isCourseRequest) loadFacultades();
   }, [isCourseRequest]);
 
-
   useEffect(() => {
     if (isIndirecta) {
       setCurrentClassification(CLASIFICACION_REQUIERE_REMISION);
     }
-    if (!isIndirecta && currentClassification === CLASIFICACION_REQUIERE_REMISION) {
-      setCurrentClassification('');
-    }
-  }, [isIndirecta, solicitudTipo, currentClassification]); 
+  }, [isIndirecta]);
   
   const isClassifiedForRemission = isCourseRequest && currentClassification === CLASIFICACION_REQUIERE_REMISION;
-  const isRemissionSelfHandled = isClassifiedForRemission && selectedFaculty === adminOrganismo;
+  
+  // ✨ LA LÓGICA MAGISTRAL: Comparamos la facultad seleccionada con el ID del usuario actual
+  const isRemissionSelfHandled = isClassifiedForRemission && selectedFaculty === currentUserId;
+  
+  // ✨ Si es auto-manejada (se eligió a sí mismo), YA NO requiere remisión.
   const requiresRemision = isDirecta && isClassifiedForRemission && !isRemissionSelfHandled; 
   
   const handleClassificationChange = (value: string) => {
@@ -111,7 +108,6 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
     setIsLoading(true);
     let success = false;
     
-    // 1. Validación de seguridad (Early return)
     if (action === 'Aprobar' && isCourseRequest) {
         if (!calificacion || !evaluationFile) {
             toast({
@@ -127,24 +123,17 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
     }
     
     try {
-      // ✨ 2. AQUÍ SE DECLARAN LAS VARIABLES (Para que no te dé error de Cannot find name)
       const nuevoEstado = action === 'Aprobar' ? 'aprobada' : 'rechazada';
       const motivo_rechazo = action === 'Rechazar' ? message : null;
 
-      // ✨ 3. BIFURCACIÓN DE LÓGICA (Con o sin archivo)
       if (action === 'Aprobar' && isCourseRequest) {
-          // Flujo CON archivo (FormData)
           const formData = new FormData();
           formData.append('estado', 'aprobada');
           formData.append('calificacion', calificacion);
-          
-          // Le decimos 'as Blob' para que TypeScript no pelee si el archivo es null
-          // (ya validamos arriba que no lo es)
           formData.append('archivo_evaluacion', evaluationFile as Blob); 
 
           await solicitudesService.updateStatusWithFile(solicitudId, formData);
       } else {
-          // Flujo SIN archivo (Cierres, Rechazos, Proveedores)
           await solicitudesService.updateStatus(solicitudId, nuevoEstado, motivo_rechazo);
       }
 
@@ -183,7 +172,6 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
 
       const nombreFacultad = facultadesList.find(f => f.id === selectedFaculty)?.name || selectedFaculty;
 
-      // LLAMADA REAL A LA BASE DE DATOS (Remitir)
       await solicitudesService.updateStatus(solicitudId, 'remitida', `Remitido a: ${nombreFacultad}`);
       
       toast({
@@ -248,10 +236,13 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
                   ))}
                 </Select>
               )}
+              {/* ✨ AVISO CLARO CUANDO SE ELIGE A SÍ MISMO */}
               {isRemissionSelfHandled && (
-              <Text mt={2} color="teal.600" fontWeight="semibold" fontSize="sm">
-                ℹ️ Esta solicitud es manejada **internamente** por su organismo. Proceda a Aprobar/Rechazar.
-              </Text>
+              <Box mt={3} p={3} bg="blue.50" borderLeft="4px solid" borderColor="blue.500" rounded="md">
+                <Text color="blue.700" fontWeight="semibold" fontSize="sm">
+                  ℹ️ Has seleccionado tu propia coordinación. Por lo tanto, no necesitas remitir la solicitud. Procede a evaluarla y aprobarla/rechazarla a continuación.
+                </Text>
+              </Box>
             )}
             </FormControl>
           )}
@@ -276,6 +267,7 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
       
       <Divider my={6} />
 
+      {/* ✨ RENDERIZADO CONDICIONAL: Si requiere remisión (y NO es a sí mismo), muestra botón de remitir */}
       {requiresRemision ? (
         <Box>
           <Text mb={4} fontWeight="bold">
@@ -292,6 +284,7 @@ export function AdminActions({ solicitudId, solicitudTipo, adminOrganismo }: Adm
         </Box>
 
       ) : (
+        /* ✨ Si NO requiere remisión (porque es curso normal o se eligió a sí mismo), muestra evaluación */
         <Box>
             {isCourseRequest && (
                 <Box mb={8}>
