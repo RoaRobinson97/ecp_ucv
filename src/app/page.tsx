@@ -1,95 +1,63 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+// /app/page.tsx (HomePage)
 
-export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+import React from 'react';
+import { Box } from "@chakra-ui/react";
+import NextLink from 'next/link';
+import { Heading, Paragraph } from "@/components/ui/tipografia";
+import { PrimaryButton } from "@/components/ui/buttons";
+import { ClientContent } from '../components/ui/client-components';
+import { courseService } from '../servicios/cursos-service'; 
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+// ✨ IMPORTA TU INTERFAZ GLOBAL EN LUGAR DE REESCRIBIRLA
+import { Course } from '@/data/types';
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+// ✨ REVALIDACIÓN DE CACHÉ (ISR)
+// Esto le dice a Next.js: "Vuelve a consultar la base de datos en el fondo cada 60 segundos"
+// Así tu página es ultra rápida, pero siempre se mantiene actualizada.
+export const revalidate = 60; 
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+export default async function HomePage() {
+    
+    let coursesForClient: Course[] = []; 
+    let hasError = false; 
+    
+    try {
+        const { courses } = await courseService.getAllCourses({ page: 1, limit: 3 }) as { courses: Course[] };
+        coursesForClient = courses;
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
+    } catch (error) {
+        console.error("Fallo al cargar cursos en HomePage:", error);
+        hasError = true; 
+    }
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+    return (
+        <Box minH="100vh">
+            <Box 
+                textAlign="center" 
+                backgroundImage="url('/background-1.jpg')"
+                backgroundSize="cover"
+                backgroundPosition="center"
+                backgroundRepeat="no-repeat"
+                color="white"
+            >
+                <Box 
+                    bgColor={'#33333399'} 
+                    py={10} 
+                    px={6} 
+                >
+                    <Heading as="h1" size="2xl" mb={4}>
+                        Cursos Certificados por la UCV
+                    </Heading>
+                    <Paragraph fontSize="lg" maxW="600px" mx="auto" mb={6}>
+                        Valida y eleva tu formación académica. Nuestra plataforma te permite certificar tus cursos online a través de la Universidad Central de Venezuela, o si eres un educador, solicitar la validación de tu contenido.
+                    </Paragraph>
+                    <NextLink href="/cursos" passHref>
+                        <PrimaryButton size="md">Ver Cursos</PrimaryButton>
+                    </NextLink>
+                </Box>
+            </Box>
+
+            <ClientContent courses={coursesForClient} hasError={hasError} />
+        </Box>
+    );
 }
