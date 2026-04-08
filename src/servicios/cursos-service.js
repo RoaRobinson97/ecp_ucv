@@ -156,8 +156,10 @@ class CourseService {
              return { success: true };
         }
 
-        // MODO REAL (Probablemente un POST multipart/form-data)
-        throw new Error("Endpoint real de subida de archivos no configurado aún.");
+        // --- MODO REAL ---
+        // Enviamos el FormData con los archivos (notas, vouchers) al endpoint del backend de Go.
+        // El tercer parámetro "true" indica que es multipart/form-data
+        return await ApiService.post(`courses/${courseId}/closures`, files, true);
     }
 
     async getCoursesByUserId(user_id, { page = 1, limit = 9 } = {}) {

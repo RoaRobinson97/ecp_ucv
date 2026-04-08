@@ -263,10 +263,23 @@ class SolicitudesService {
                 return await ApiService.put('solicitudes', id, updateData);
             }
 
-            // Nota: Si el backend real exige subir archivos en la aprobación, 
-            // tendrás que mapear este FormData al endpoint POST adecuado igual que en updateStatus.
-            console.warn("updateStatusWithFile en MODO REAL no está adaptado a las rutas de Go todavía.");
-            return await ApiService.put('solicitudes', id, formData, true);
+            // --- MODO REAL ---
+            const tipo = formData.get('tipo_inyectado') || formData.get('tipo');
+            const nuevoEstado = formData.get('estado');
+            const action = nuevoEstado === 'aprobada' ? 'approve' : 'reject';
+            
+            let basePath = '';
+            if (tipo === 'codigo-proveedor') {
+                basePath = 'provider-requests';
+            } else if (tipo?.includes('curso')) {
+                basePath = 'course-requests';
+                formData.append('tipo_curso', 'unassigned'); // Requisito del struct de Go para aprobar cursos
+            } else {
+                throw new Error("No se puede determinar la ruta del backend para el tipo: " + tipo);
+            }
+
+            // Se envía a POST /provider-requests/{id}/approve (por ejemplo)
+            return await ApiService.post(`${basePath}/${id}/${action}`, formData, true);
         } catch (error) {
             console.error("Error al actualizar estado con archivo:", error);
             throw error;
