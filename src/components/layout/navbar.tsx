@@ -18,36 +18,40 @@ import {
 import React from "react";
 import NextLink from 'next/link';
 import { FaUserCircle } from "react-icons/fa";
-// Import User type if needed, AuthUser likely covers it if User is exported from auth-context
 import { useAuth, AuthUser } from "../../app/context/auth-context";
 import { useGlobalData } from "../../app/context/global-data-context";
 import { ColorModeSwitcher } from "../ui/color-mode-switcher";
 import {
     PrimaryButton,
     SecondaryButton,
-    GhostButton, // Added GhostButton for "Mis Cursos" example
+    GhostButton, 
 } from "../ui/buttons";
 
 export const Navbar = () => {
     const { isAuthenticated, logout, user, isHydrated } = useAuth();
-    // Assuming codigo_proveedor is now primarily derived from 'user' object in authContext
     const { courses, isCohortOpen } = useGlobalData();
 
     const menuButtonColor = useColorModeValue("primary.500", "whiteAlpha.900");
 
-    // Get codigo_proveedor directly from the authenticated user object
     const codigo_proveedor = user?.codigo_proveedor;
+
+    // ✨ CORRECCIÓN: Extraemos los roles de forma segura (como arreglo)
+    const userRoles = user?.roles || user?.Roles || [];
 
     // Visibility conditions for buttons
     const showFormulateButton = isAuthenticated && codigo_proveedor && courses.length === 0;
     const showCohortButton = !isCohortOpen && isAuthenticated && codigo_proveedor && courses.length > 0;
     const showLoginRegisterButtons = !isAuthenticated;
-    const showSolicitudButton = isAuthenticated && !codigo_proveedor && user?.rol === 'visitante';
-    const showAdminPanelLink = isAuthenticated && (user?.rol === 'admin' || user?.rol === 'coordinador');
-    // Condition for the "Mis Cursos" button
+    
+    // ✨ CORRECCIÓN: Buscamos en el arreglo en lugar del viejo string 'user?.rol'
+    const showSolicitudButton = isAuthenticated && !codigo_proveedor && userRoles.includes('visitante');
+    
+    // ✨ CORRECCIÓN: Usamos includes() y agregamos 'course_admin'
+    const showAdminPanelLink = isAuthenticated && (userRoles.includes('course_admin') || userRoles.includes('coordinador') || userRoles.includes('course_admin'));
     const showMisCursosButton = isAuthenticated && !!codigo_proveedor;
 
     const courseId = courses.length > 0 ? courses[0].id : null;
+    console.log(user)
 
     return (
         <Box bg={"navbar"} px={{ base: 4, md: 8 }} py={3} shadow="md">
@@ -98,7 +102,7 @@ export const Navbar = () => {
                             )}
 
                             {/* --- NEW "Mis Cursos" Button for Providers --- */}
-                            {showMisCursosButton && user?.id && ( // Aseguramos que user.id exista
+                            {showMisCursosButton && user?.id && ( 
                                 <NextLink href={`/mis-cursos?codigo_proveedor=${user.codigo_proveedor}`} passHref> 
                                     <GhostButton size={"md"}>Mis Cursos</GhostButton> 
                                 </NextLink>

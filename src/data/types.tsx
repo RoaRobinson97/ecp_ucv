@@ -1,4 +1,12 @@
-export type UserRole = 'admin' | 'coordinador' | 'proveedor' | 'visitante';
+export type UserRole = 
+  | 'root' 
+  | 'deu_admin' 
+  | 'faculty_admin' 
+  | 'course_admin' 
+  | 'course_manager' 
+  | 'visitante' 
+  | 'group_admin' 
+  | 'group_helper';
 
 export interface Publication {
   id: string;
@@ -48,6 +56,7 @@ export type EstadoSolicitud = 'pendiente' | 'aprobada' | 'rechazada'
 
 export interface PayloadCodigoProveedor {
   tipo_persona: 'natural' | 'juridica';
+  es_interno: string | boolean; // ✨ AÑADIDO PARA LA UCV
   nombre_proveedor: string; 
   nombre_usuario?: string;  
   biografia: string;
@@ -61,8 +70,6 @@ export interface PayloadCodigoProveedor {
     registro_mercantil?: string;
   };
 }
-
-// En tu archivo de tipos (ej. types.ts o el que estés usando)
 
 export interface PayloadFormulacionCurso {
   titulo: string;
@@ -98,16 +105,26 @@ export interface PayloadCierreCohorte {
 }
 
 export interface User {
-  id: string;
-  nombres: string
-  apellidos: string;
-  cedula: string;
-  fecha_de_nacimiento: string;
-  nivel_educativo: string;
-  direccion: string;
-  email: string;
-  rol: UserRole;
-  codigo_proveedor? : string
+  // ✨ Mapeo defensivo para soportar la respuesta de Login de Go
+  id?: string; 
+  ID?: string; // Go a veces exporta las llaves en mayúscula
+  
+  // Nombres y correos ahora son opcionales porque el Login de Go NO los devuelve
+  nombres?: string;
+  apellidos?: string;
+  Name?: string; // ✨ El nombre concatenado que devuelve el Login de Go
+  cedula?: string;
+  fecha_de_nacimiento?: string;
+  nivel_educativo?: string;
+  direccion?: string;
+  email?: string;
+  
+  // ✨ El cambio crucial: de string a arreglo
+  rol?: UserRole; // Lo dejo opcional para no romper tu MOCK_DATA viejo
+  roles?: UserRole[]; // El arreglo real que manda el backend
+  Roles?: UserRole[]; // Por si Go lo manda con la primera letra mayúscula
+  
+  codigo_proveedor? : string;
   biografia?: string;
 }
 

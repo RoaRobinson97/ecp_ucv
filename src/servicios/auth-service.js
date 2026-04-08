@@ -4,6 +4,25 @@ import { MOCKED_DB } from '../data/mock-data';
 import { ApiService } from './BaseApiService'; 
 import { CONFIG } from '../config/config';
 
+/**
+ * Convierte 'YYYY-MM-DD' (de Next.js/HTML) a 'D-M-YYYY' (lo que pide Go)
+ * eliminando ceros a la izquierda (ej: 05 -> 5).
+ */
+function formatDateForBackend(htmlDate) {
+    if (!htmlDate) return "";
+    
+    // htmlDate viene como "2009-05-15"
+    const parts = htmlDate.split('-'); // ["2009", "05", "15"]
+    
+    if (parts.length !== 3) return htmlDate;
+
+    const year = parts[0];
+    const month = parseInt(parts[1], 10); // Quita el cero: "05" -> 5
+    const day = parseInt(parts[2], 10);   // Quita el cero: "15" -> 15
+
+    return `${day}-${month}-${year}`; // Retorna "15-5-2009"
+}
+
 class AuthService {
 
   /**
@@ -22,27 +41,19 @@ class AuthService {
         throw new Error("Error de configuración del sistema.");
       }
 
-      // Buscamos el usuario en tu base de datos falsa
       const user = users.find(u => u.email === email && u.password === password);
 
-     if (user) {
+      if (user) {
         console.log("Mock Login Exitoso:", user);
         
         const payloadStr = JSON.stringify(user);
-        
-        // 1. Lo pasamos a Base64 normal
         let base64Payload = btoa(unescape(encodeURIComponent(payloadStr)));
-        
-        // ✨ 2. LO CONVERTIMOS A BASE64URL (Esto evita que la cookie se rompa)
         base64Payload = base64Payload.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-        
         const fakeJwt = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${base64Payload}.MockSignature12345`;
-
-        // Guardamos la cookie
+        
         document.cookie = `auth_token=${fakeJwt}; path=/; max-age=86400`; 
 
         return user;
-      
       } else {
         throw new Error("El correo electrónico o la contraseña son incorrectos.");
       }
@@ -52,19 +63,17 @@ class AuthService {
       try {
         console.log("Usando API REAL para login...");
         
+        // Llave 'usuario' exigida por el backend, no 'username' ni 'email'
         const response = await ApiService.post('auth/login', { 
-            username: email, 
+            usuario: email, 
             password: password 
         });
         
         console.log("API Login Exitoso:", response);
 
-        // ✨ ATENCIÓN PARA PRODUCCIÓN ✨
-        // Si tu backend real devuelve el JWT en el body (ej: response.token), 
-        // tienes que guardarlo en la cookie aquí también, a menos que tu backend 
-        // ya envíe la cabecera 'Set-Cookie' automáticamente.
-        if (response.token || response.access_token) {
-           const realToken = response.token || response.access_token;
+        // Captura del JWT
+        if (response.token || response.access_token || response.Token) {
+           const realToken = response.token || response.access_token || response.Token;
            document.cookie = `auth_token=${realToken}; path=/; max-age=86400; Secure; samesite=strict`;
         }
 
@@ -115,19 +124,20 @@ class AuthService {
       try {
         console.log("Usando API REAL para registro...");
         
+        // Mapeo exacto contra las estructuras de Golang
         const payloadParaBackend = {
-            documento_identidad: userData.ci,
-            primer_nombre:       userData.first_name,
-            apellido:            userData.last_name, 
-            fecha_nacimiento:    userData.date_of_birth,
-            genero:              userData.gender,
-            nivel_educacion:     userData.education_level,
-            direccion:           userData.address,
-            nombre_usuario:      userData.username, 
-            password:            userData.password
+            cedula: userData.ci,
+            nombres: userData.first_name,
+            apellidos: userData.last_name, 
+            fecha_de_nacimiento: formatDateForBackend(userData.date_of_birth),
+            genero: userData.gender.toLowerCase(),
+            nivel_educativo: userData.education_level,
+            direccion: userData.address,
+            email: userData.username || userData.email, 
+            password: userData.password
         };
         
-        console.log('los datos pa ver ', payloadParaBackend)
+        console.log('Payload a enviar:', payloadParaBackend);
 
         const response = await ApiService.post('users', payloadParaBackend);
 

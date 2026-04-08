@@ -8,15 +8,13 @@ import {
   ModalFooter, Slider, SliderTrack, SliderFilledTrack, SliderThumb,
   Avatar, Icon, useDisclosure
 } from "@chakra-ui/react";
-// Librería para recortar imágenes
 import Cropper from 'react-easy-crop';
 import { useAuth } from "@/app/context/auth-context";
 import { useRouter } from "next/navigation";
 import { FaCamera } from 'react-icons/fa';
-
 import { solicitudesService } from '@/servicios/solicitudes-service';
 
-// --- UTILIDAD PARA RECORTAR LA IMAGEN (Canvas) ---
+// --- UTILIDAD PARA RECORTAR LA IMAGEN ---
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image();
@@ -29,80 +27,44 @@ async function getCroppedImg(imageSrc: string, pixelCrop: any) {
   const image = await createImage(imageSrc);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-
   if (!ctx) return null;
-
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
-
-  ctx.drawImage(
-    image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
-    0,
-    0,
-    pixelCrop.width,
-    pixelCrop.height
-  );
-
+  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
   return new Promise<Blob>((resolve) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob);
-    }, 'image/jpeg', 0.95);
+    canvas.toBlob((blob) => { if (blob) resolve(blob); }, 'image/jpeg', 0.95);
   });
 }
 // --- FIN UTILIDAD ---
 
 const FileUploadControl = ({ id, label, accept, onChange, file }: { 
-  id: string, 
-  label: string, 
-  accept?: string,
-  onChange: (file: File | null) => void,
-  file: File | null 
+  id: string, label: string, accept?: string, onChange: (file: File | null) => void, file: File | null 
 }) => (
   <FormControl id={id}>
     <FormLabel fontSize="sm" fontWeight="medium">
       {label} {file && <Text as="span" color="green.500" ml={2}>(✓ Cargado)</Text>}
     </FormLabel>
     <Input 
-      type="file" 
-      p={1} 
-      accept={accept} 
+      type="file" p={1} accept={accept} 
       onChange={(e) => onChange(e.target.files ? e.target.files[0] : null)}
-      sx={{
-        '::file-selector-button': {
-          height: 8,
-          padding: 0,
-          mr: 4,
-          background: 'none',
-          border: 'none',
-          fontWeight: 'bold',
-        },
-      }}
+      sx={{ '::file-selector-button': { height: 8, padding: 0, mr: 4, background: 'none', border: 'none', fontWeight: 'bold' } }}
     />
   </FormControl>
 );
 
 export const SolicitudForm = () => {
-
   const { user } = useAuth();
   const router = useRouter();
   const toast = useToast();
 
-  const [personType, setPersonType] = useState<"natural" | "juridica" | "">("natural");
+  const [personType, setPersonType] = useState<"natural" | "juridica">("natural");
+  const [isInternal, setIsInternal] = useState<"true" | "false">("false"); // ✨ NUEVO ESTADO UCV
   const [providerName, setProviderName] = useState("");
   const [bio, setBio] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const [legalDocs, setLegalDocs] = useState<{ [key: string]: File | null }>({
-    cedula: null,
-    rif: null,
-    islr: null,
-    cv: null,
-    titulo: null,
-    regMercantil: null
+    cedula: null, rif: null, islr: null, cv: null, titulo: null, regMercantil: null
   });
 
   const handleDocChange = (key: string, file: File | null) => {
@@ -115,55 +77,50 @@ export const SolicitudForm = () => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-  
   const [finalProfileImage, setFinalProfileImage] = useState<string | null>(null); 
   const [finalImageFile, setFinalImageFile] = useState<Blob | null>(null);
 
-  // 1. Seleccionar archivo
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       const reader = new FileReader();
-      reader.addEventListener('load', () => {
-        setImageSrc(reader.result as string);
-        onOpen();
-      });
+      reader.addEventListener('load', () => { setImageSrc(reader.result as string); onOpen(); });
       reader.readAsDataURL(file);
     }
   };
 
-  // 2. Guardar coordenadas
-  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
-    setCroppedAreaPixels(croppedAreaPixels);
-  }, []);
+  const onCropComplete = useCallback((_: any, croppedAreaPixels: any) => { setCroppedAreaPixels(croppedAreaPixels); }, []);
 
-  // 3. Procesar recorte
   const showCroppedImage = useCallback(async () => {
     try {
       if (imageSrc && croppedAreaPixels) {
         const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
         if (croppedImageBlob) {
-          const previewUrl = URL.createObjectURL(croppedImageBlob);
-          setFinalProfileImage(previewUrl);
+          setFinalProfileImage(URL.createObjectURL(croppedImageBlob));
           setFinalImageFile(croppedImageBlob); 
           onClose();
         }
       }
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
   }, [imageSrc, croppedAreaPixels, onClose]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     
-    if (!user) {
+    // ✨ ARREGLO DE TYPESCRIPT: Convertimos todo a un string seguro
+    const finalUserId = String(user?.id || user?.ID || "");
+
+    if (!user || !finalUserId) {
         toast({ title: "Error", description: "Debes iniciar sesión.", status: "error" });
         return;
     }
 
-    if (!legalDocs.cedula || !legalDocs.rif) {
-        toast({ title: "Faltan documentos", description: "Cédula y RIF son obligatorios.", status: "warning" });
+    if (!finalImageFile || !legalDocs.cedula || !legalDocs.rif || !legalDocs.islr || !legalDocs.cv) {
+        toast({ 
+            title: "Documentación incompleta", 
+            description: "Foto de perfil, Cédula, RIF, ISLR y Currículum son obligatorios para el servidor.", 
+            status: "warning" 
+        });
         return;
     }
 
@@ -172,28 +129,22 @@ export const SolicitudForm = () => {
     try {
       const formData = new FormData();
       
-      formData.append('userId', user.id);
-      formData.append('tipo', 'codigo-proveedor');
+      formData.append('userId', finalUserId);
+      formData.append('tipo', 'codigo-proveedor'); // Esto lo ignora Go, pero te sirve a ti
       formData.append('estado', 'pendiente');
       formData.append('tipo_persona', personType);
+      formData.append('es_interno', isInternal); // ✨ ENVIAMOS LA RELACIÓN CON LA UCV
       formData.append('nombre_proveedor', providerName);
       formData.append('biografia', bio);
 
-      if (finalImageFile) {
-          formData.append('avatar', finalImageFile, 'avatar.jpg');
-      }
-
+      if (finalImageFile) formData.append('avatar', finalImageFile, 'avatar.jpg');
       if (legalDocs.cedula) formData.append('cedula', legalDocs.cedula);
       if (legalDocs.rif) formData.append('rif', legalDocs.rif);
       if (legalDocs.islr) formData.append('islr', legalDocs.islr);
       if (legalDocs.titulo) formData.append('titulo', legalDocs.titulo);
       
-      if (personType === 'natural' && legalDocs.cv) {
-          formData.append('curriculum', legalDocs.cv);
-      }
-      if (personType === 'juridica' && legalDocs.regMercantil) {
-          formData.append('registro_mercantil', legalDocs.regMercantil);
-      }
+      if (personType === 'natural' && legalDocs.cv) formData.append('curriculum', legalDocs.cv);
+      if (personType === 'juridica' && legalDocs.regMercantil) formData.append('registro_mercantil', legalDocs.regMercantil);
 
       await solicitudesService.createSolicitud(formData); 
 
@@ -205,15 +156,11 @@ export const SolicitudForm = () => {
         isClosable: true,
       });
 
-      router.push(`/profile/${user.id}`); 
+      router.push(`/profile/${finalUserId}`); 
       
     } catch (error: any) {
       console.error(error);
-      toast({ 
-        title: "Error al subir los documentos", 
-        description: error.message || "Fallo en el servidor.",
-        status: "error" 
-      });
+      toast({ title: "Error al subir los documentos", description: error.message || "Fallo en el servidor.", status: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -230,7 +177,6 @@ export const SolicitudForm = () => {
         <form onSubmit={handleSubmit}>
           <VStack spacing={6}>
             
-            {/* TIPO DE PERSONA */}
             <FormControl id="person-type" as="fieldset" isRequired>
               <FormLabel as="legend" fontWeight="bold">Tipo de Persona</FormLabel>
               <RadioGroup onChange={(value: any) => setPersonType(value)} value={personType}>
@@ -243,47 +189,37 @@ export const SolicitudForm = () => {
 
             <Divider />
 
-            {/* PERFIL PÚBLICO */}
+            {/* ✨ NUEVO: RELACIÓN UCV */}
+            <FormControl id="internal-type" as="fieldset" isRequired>
+              <FormLabel as="legend" fontWeight="bold">¿El proveedor pertenece a la UCV?</FormLabel>
+              <RadioGroup onChange={(value: any) => setIsInternal(value)} value={isInternal}>
+                <HStack spacing="24px">
+                  <Radio value="true" colorScheme="teal">Sí, pertenece (Interno)</Radio>
+                  <Radio value="false" colorScheme="teal">No (Externo)</Radio>
+                </HStack>
+              </RadioGroup>
+            </FormControl>
+
+            <Divider />
+
             <VStack spacing={4} align="stretch" w="full">
               <Heading size="md" color="gray.700">Perfil Público</Heading>
-              
               <FormControl id="providerName" isRequired>
                 <FormLabel>Nombre del Proveedor / Organización</FormLabel>
-                <Input 
-                  placeholder="Ej: Academia de Artes Visuales" 
-                  value={providerName} 
-                  onChange={(e) => setProviderName(e.target.value)} 
-                />
-                <FormHelperText>Visible para estudiantes.</FormHelperText>
+                <Input placeholder="Ej: Academia de Artes" value={providerName} onChange={(e) => setProviderName(e.target.value)} />
               </FormControl>
 
               <FormControl id="bio" isRequired>
                 <FormLabel>Biografía</FormLabel>
-                <Textarea 
-                  placeholder="Describe tu experiencia..." 
-                  rows={4} 
-                  value={bio} 
-                  onChange={(e) => setBio(e.target.value)} 
-                />
+                <Textarea placeholder="Describe tu experiencia..." rows={4} value={bio} onChange={(e) => setBio(e.target.value)} />
               </FormControl>
 
               <FormControl>
                 <FormLabel>Imagen de Perfil (Cuadrada)</FormLabel>
                 <HStack spacing={4} align="center">
-                  <Avatar 
-                    size="xl" 
-                    src={finalProfileImage || undefined} 
-                    icon={<Icon as={FaCamera} fontSize="1.5rem" />} 
-                    bg="gray.200" 
-                  />
+                  <Avatar size="xl" src={finalProfileImage || undefined} icon={<Icon as={FaCamera} fontSize="1.5rem" />} bg="gray.200" />
                   <Box>
-                    <Input 
-                      type="file" 
-                      accept="image/png, image/jpeg, image/jpg" 
-                      onChange={onFileChange} 
-                      display="none" 
-                      id="file-upload" 
-                    />
+                    <Input type="file" accept="image/png, image/jpeg, image/jpg" onChange={onFileChange} display="none" id="file-upload" />
                     <label htmlFor="file-upload">
                       <Button as="span" size="sm" colorScheme="teal" variant="outline" cursor="pointer">
                         {finalProfileImage ? "Cambiar Imagen" : "Subir Imagen"}
@@ -297,14 +233,13 @@ export const SolicitudForm = () => {
 
             <Divider />
 
-            {/* DOCUMENTACIÓN LEGAL */}
             {personType === "natural" && (
               <VStack spacing={4} align="stretch" w="full">
                 <Heading size="md" color="gray.700">Documentación (Persona Natural)</Heading>
                 <FileUploadControl id="cedula" label="Cédula de Identidad" accept=".pdf" onChange={(f) => handleDocChange('cedula', f)} file={legalDocs.cedula} />
                 <FileUploadControl id="rif-natural" label="Registro de Información Fiscal (RIF)" accept=".pdf" onChange={(f) => handleDocChange('rif', f)} file={legalDocs.rif} />
                 <FileUploadControl id="islr-natural" label="Certificados de Declaración ISLR" accept=".pdf" onChange={(f) => handleDocChange('islr', f)} file={legalDocs.islr} />
-                <FileUploadControl id="cv-natural" label="Resumen curricular del facilitador(es)" accept=".pdf" onChange={(f) => handleDocChange('cv', f)} file={legalDocs.cv} />
+                <FileUploadControl id="cv-natural" label="Resumen curricular del facilitador" accept=".pdf" onChange={(f) => handleDocChange('cv', f)} file={legalDocs.cv} />
                 <FileUploadControl id="titulo-natural" label="Copia del título" accept=".pdf" onChange={(f) => handleDocChange('titulo', f)} file={legalDocs.titulo} />
               </VStack>
             )}
@@ -328,37 +263,35 @@ export const SolicitudForm = () => {
               width="full" 
               mt={4} 
               isLoading={isLoading} 
-              isDisabled={!personType || !providerName.trim() || !bio.trim() || !legalDocs.cedula || !legalDocs.rif}
-            >
+              isDisabled={
+                  !personType || 
+                  !providerName.trim() || 
+                  !bio.trim() || 
+                  !finalImageFile || 
+                  !legalDocs.cedula || 
+                  !legalDocs.rif || 
+                  !legalDocs.islr || 
+                  !legalDocs.cv
+              }
+          >
               Enviar Solicitud
-            </Button>
+          </Button>
           </VStack>
         </form>
       </VStack>
 
-      {/* MODAL DE RECORTE */}
       <Modal isOpen={isOpen} onClose={onClose} size="xl" closeOnOverlayClick={false} isCentered>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Editar Imagen de Perfil</ModalHeader>
           <ModalBody>
             <Box position="relative" height="400px" width="100%" bg="black">
-              <Cropper
-                image={imageSrc || undefined}
-                crop={crop}
-                zoom={zoom}
-                aspect={1 / 1}
-                onCropChange={setCrop}
-                onCropComplete={onCropComplete}
-                onZoomChange={setZoom}
-              />
+              <Cropper image={imageSrc || undefined} crop={crop} zoom={zoom} aspect={1 / 1} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} />
             </Box>
             <Box mt={4}>
               <Text mb={2} fontSize="sm">Zoom</Text>
-              <Slider value={zoom} min={1} max={3} step={0.1} aria-label="zoom" onChange={(val) => setZoom(val)}>
-                <SliderTrack>
-                  <SliderFilledTrack bg="teal.500" />
-                </SliderTrack>
+              <Slider value={zoom} min={1} max={3} step={0.1} aria-label="zoom" onChange={setZoom}>
+                <SliderTrack><SliderFilledTrack bg="teal.500" /></SliderTrack>
                 <SliderThumb />
               </Slider>
             </Box>
@@ -369,7 +302,6 @@ export const SolicitudForm = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
     </Box>
   );
 };

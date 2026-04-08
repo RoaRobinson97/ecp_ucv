@@ -105,38 +105,44 @@ export const RegisterForm = () => {
     setIsLoading(true);
 
     try {
+      // ✨ MAPEO CRUCIAL: Ajustamos los nombres para que coincidan con lo que auth-service.js busca
       const payload = {
-        cedula: formData.cedula,
-        nombres: formData.firstName,
-        apellidos: formData.lastName,
-        fecha_de_nacimiento: formData.date_of_birth,
-        genero: formData.gender, 
-        nivel_educativo: formData.education_level,
-        direccion: formData.address,
+        ci: formData.cedula,             // El servicio busca .ci
+        first_name: formData.firstName,  // El servicio busca .first_name
+        last_name: formData.lastName,    // El servicio busca .last_name
+        date_of_birth: formData.date_of_birth,
+        gender: formData.gender,         // El servicio busca .gender para el toLowerCase()
+        education_level: formData.education_level,
+        address: formData.address,
         email: formData.email,
         password: formData.password,
         rol: 'visitante' 
       };
 
-      // 1. Registramos al usuario (Lo guarda en la BD)
+      // 1. Registro
       await authService.register(payload);
       
-      // 2. ✨ AUTO-LOGIN SILENCIOSO: Obligamos al sistema a generar la cookie 'auth_token'
-      const loggedUser = await authService.login(formData.email, formData.password) as User;
-
       toast({
         title: "Cuenta Creada con Éxito.",
-        description: "Iniciando sesión automáticamente...",
+        description: "Tu perfil ha sido registrado en el sistema.",
         status: "success",
         duration: 3000,
         isClosable: true,
       });
 
-      // 3. Le avisamos a React
-      login(loggedUser);
-      
-      // 4. ✨ Redirección dura para forzar a Next.js a leer la cookie fresca en el servidor
-      window.location.href = "/";
+      // 2. Auto-login
+      try {
+          const response = await authService.login(formData.email, formData.password);
+          const realUser = response.usuario || response.user || response.User;
+          
+          if (realUser) {
+              login(realUser);
+          }
+          window.location.href = "/"; 
+      } catch (loginErr) {
+          console.warn("Auto-login falló tras registro exitoso", loginErr);
+          router.push('/login'); 
+      }
 
     } catch (err: any) {
       setServerError(err.message || "Ocurrió un error al registrar el usuario.");

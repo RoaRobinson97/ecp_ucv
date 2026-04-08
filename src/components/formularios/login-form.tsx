@@ -22,7 +22,6 @@ import { useRouter } from "next/navigation";
 import { FormControl, FormLabel, Input } from "@/components/ui/form-controls";
 import { authService } from '@/servicios/auth-service';
 import { DevLoginHelper } from '@/components/dev/DevLoginHelper';
-import { User } from '@/data/types'
 
 export const LoginForm = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
@@ -30,7 +29,7 @@ export const LoginForm = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const { login } = useAuth(); // Esta función ahora espera un objeto User completo
+    const { login } = useAuth(); 
     const router = useRouter();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,20 +43,20 @@ export const LoginForm = () => {
         setError('');
 
         try {
-            // 1. El servicio valida y crea la cookie 'auth_token'
-            const userData: User = await authService.login(formData.email, formData.password) as User;
+            const response = await authService.login(formData.email, formData.password);
             
-            // 2. Le avisamos a React que el usuario entró (para el Navbar, etc.)
-            login(userData); 
-            
-            // 3. ✨ Redirección inteligente y DURA
-            if (userData.rol === 'admin' || userData.rol === 'coordinador') {
-                window.location.href = '/admin/solicitudes';
-            } else if (userData.rol === 'proveedor') {
-                window.location.href = `/profile/${userData.id}`; 
-            } else {
-                window.location.href = '/'; // Estudiantes o visitantes van al inicio
+            // Extraemos el usuario del formato de Go
+            const realUser = response.usuario || response.user || response.User; 
+
+            if (!realUser) {
+                throw new Error("El servidor no devolvió los datos del usuario. Revisa la consola.");
             }
+            
+            // Pasamos los datos extraídos al Contexto
+            login(realUser); 
+            
+            // ✨ Redirección directa al home (/) para todos los usuarios
+            window.location.href = '/'; 
 
         } catch (err: any) {
             setError(err.message);
@@ -66,9 +65,7 @@ export const LoginForm = () => {
         }
     };
 
-    // ✨ 2. CREAMOS LA FUNCIÓN QUE RECIBIRÁ LOS DATOS DEL HELPER
     const handleDevUserSelect = (email: string, password: string) => {
-        // Esta función actualiza el estado del formulario con los datos seleccionados
         setFormData({ email, password });
     };
 
@@ -90,7 +87,6 @@ export const LoginForm = () => {
             <form onSubmit={handleLogin}>
                 <VStack spacing={4} align="stretch">
                     
-                    {/* ✨ 3. RENDERIZAMOS EL HELPER SOLO EN MODO DE DESARROLLO */}
                     {process.env.NODE_ENV === 'development' && (
                         <DevLoginHelper onUserSelect={handleDevUserSelect} />
                     )}

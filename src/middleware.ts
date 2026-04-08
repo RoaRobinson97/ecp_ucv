@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // ✨ CORRECCIÓN 1: Buscamos la cookie correcta
   const tokenCookie = request.cookies.get('auth_token');
   const { pathname } = request.nextUrl;
 
@@ -15,7 +14,6 @@ export function middleware(request: NextRequest) {
     }
 
     try {
-      // ✨ CORRECCIÓN 2: Decodificamos el JWT antes de parsearlo
       const token = tokenCookie.value;
       const parts = token.split('.');
       
@@ -27,25 +25,25 @@ export function middleware(request: NextRequest) {
       const base64Url = parts[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       
-      // Decodificación segura para Edge Runtime
       const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
           return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
 
-      const userData = JSON.parse(jsonPayload);
-      const userRole = userData.rol; 
+      const jwtData = JSON.parse(jsonPayload);
       
-      // Verificamos el rol
-      if (userRole === 'admin' || userRole === 'coordinador') {
-        return NextResponse.next(); // ¡Pase usted!
+      // ✨ CORRECCIÓN: Leemos de 'v1' exactamente igual que en el Context
+      const v1Data = jwtData.v1 || {};
+      const userRoles = v1Data.roles || []; 
+      
+      // ✨ CORRECCIÓN: Agregamos 'course_admin' a la puerta de seguridad
+      if (userRoles.includes('course_admin') || userRoles.includes('coordinador') || userRoles.includes('admin')) {
+        return NextResponse.next(); 
       } else {
-        console.warn(`[Middleware] Rol insuficiente: ${userRole}`);
-        // Si no tiene permisos, lo mandamos al inicio
+        console.warn(`[Middleware] Rol insuficiente. Roles encontrados:`, userRoles);
         return NextResponse.redirect(new URL('/', request.url));
       }
     } catch (e) {
       console.error("[Middleware] Fallo al parsear el token:", e);
-      // Si falla cualquier cosa (cookie corrupta, base64 inválido), lo pateamos al login
       return NextResponse.redirect(new URL('/login?error=corrupted_cookie', request.url));
     }
   }
