@@ -7,6 +7,7 @@ import { useAuth } from "./auth-context";
 type CourseDataType = {
   id: string; // 👈 Agrega un ID al tipo
   denominacion: string;
+  link_certificados?: string; // ✅ Campo opcional para los resultados
 };
 
 interface GlobalDataContextProps {

@@ -59,9 +59,11 @@ const KeyDetail = ({ label, value }: { label: string; value?: string | null }) =
         <Box>
             <Text fontWeight="semibold" fontSize="sm" color={labelColor} mb={1}>{label}</Text>
             <Box p={2} bg={boxBg} borderWidth="1px" borderColor={boxBorder} borderRadius="md">
-                <Text whiteSpace="pre-wrap" color={valueColor}>
-                    {value || <Text as="i" color="gray.500">No especificado</Text>}
-                </Text>
+                {value ? (
+                    <Text whiteSpace="pre-wrap" color={valueColor}>{value}</Text>
+                ) : (
+                    <Text as="i" color="gray.500">No especificado</Text>
+                )}
             </Box>
         </Box>
     );
@@ -75,9 +77,9 @@ const PublicationCard = ({ publication }: { publication: Publication }) => {
     const titleColor = useColorModeValue("gray.800", "white");
     const contentColor = useColorModeValue("gray.700", "gray.300");
 
-    const formattedDate = new Date(publication.fecha).toLocaleDateString('es-VE', {
-        year: 'numeric', month: 'long', day: 'numeric'
-    });
+    const formattedDate = publication.fecha 
+        ? new Date(publication.fecha).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric' })
+        : 'Fecha no especificada';
 
     return (
         <Card bg={cardBg} variant="outline" borderColor={dividerColor} size="sm">
@@ -128,22 +130,16 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
                 const courseData = await courseService.getCourseById(courseId) as Course;
                 if (!courseData) throw new Error('Curso no encontrado.');
 
-                try {
-                    const allPublications = await ApiService.get('publications') as Publication[];
-                    if (allPublications) {
-                        courseData.publications = allPublications.filter(pub => pub.course_id === String(courseId));
-                    }
-                } catch (pubError) {
-                    console.warn("No se pudieron cargar las publicaciones:", pubError);
-                    courseData.publications = [];
-                }
+                // ✨ CORRECCIÓN 1: Aseguramos que publications siempre sea un arreglo (El servicio ya hace el fetch)
+                courseData.publications = courseData.publications || [];
 
                 setCourse(courseData);
 
-                const providerUserId = courseData.user_id;
-                if (providerUserId && typeof providerUserId === 'string') {
+                // ✨ CORRECCIÓN 2: Extraemos el ID sin importar si es string o number
+                const providerUserId = courseData.user_id || (courseData as any).userId;
+                if (providerUserId) {
                     try {
-                        const providerData = await userService.getProviderDetails(providerUserId) as FullProvider;
+                        const providerData = await userService.getProviderDetails(String(providerUserId)) as FullProvider;
                         setProvider(providerData);
                     } catch (providerError: any) {
                         console.warn("Could not fetch provider details:", providerError.message);
@@ -218,8 +214,10 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
         return <Text textAlign="center" mt={10}>No se encontró información para este curso.</Text>;
     }
 
-    const isOwner = loggedInUser?.rol === 'proveedor' && loggedInUser?.id === course.user_id;
-    const isAdminOrCoordinator = loggedInUser?.rol === 'admin' || loggedInUser?.rol === 'coordinador';
+    // ✨ CORRECCIÓN 3: Castear los IDs a string siempre evita el bug donde 1 !== "1"
+    const courseOwnerId = course.user_id || (course as any).userId;
+    const isOwner = (loggedInUser?.rol as string) === 'proveedor' && String(loggedInUser?.id) === String(courseOwnerId);
+    const isAdminOrCoordinator = (loggedInUser?.rol as string) === 'admin' || (loggedInUser?.rol as string) === 'coordinador';
     const canSeePrivateDetails = isOwner || isAdminOrCoordinator;
     const canManageCohort = isOwner && course.estado_gestion !== 'cerrado';
     
@@ -234,7 +232,7 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
 
     // ✨ LÓGICA DE AVATAR APLICADA AQUÍ (Para la tarjeta del proveedor):
     const providerAvatarUrl = provider 
-        ? ((provider as any).provider_avatar_url ?? provider.avatar_url ?? `https://i.pravatar.cc/150?u=${provider.id}`) 
+        ? ((provider as any).provider_avatar_url ?? (provider as any).avatar_url ?? `https://i.pravatar.cc/150?u=${provider.id}`) 
         : undefined;
 
     return (
@@ -244,13 +242,13 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
                 {provider && (
                     <Card direction={{ base: 'column', sm: 'row' }} overflow='hidden' variant='outline' bg={cardBg} mb={6} borderColor={dividerColor} shadow="sm">
                         <Flex align="center" p={4}>
-                            {/* ✨ USAMOS LA VARIABLE providerAvatarUrl AQUÍ */}
-                            <Avatar size='xl' name={provider.nombre_proveedor} src={providerAvatarUrl} mr={4} />
+                            {/* ✨ CORRECCIÓN 4: Fallback seguro para el nombre del Avatar */}
+                            <Avatar size='xl' name={provider.nombre_proveedor || provider.nombres || 'Proveedor'} src={providerAvatarUrl} mr={4} />
                         </Flex>
                         <Stack flex={1}>
                             <CardBody>
                                 <Text fontSize="sm" color={mutedTextColor} mb={1}>Ofrecido por:</Text>
-                                <Heading size='lg' color={subHeadingColor} mb={1}>{provider.nombre_proveedor}</Heading>
+                                <Heading size='lg' color={subHeadingColor} mb={1}>{provider.nombre_proveedor || `${provider.nombres} ${provider.apellidos}`}</Heading>
                                 
                                 {provider.tipo_proveedor && (
                                     <Badge 
@@ -285,6 +283,23 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
                         <Text fontSize="xs" color={mutedTextColor} mt={2}>
                             (Código: {course.codigo_proveedor})
                         </Text>
+                    )}
+
+                    {/* ✨ BOTÓN PARA DESCARGAR RESULTADOS (SOLO APARECE SI HAY LINK) ✨ */}
+                    {(course as any).link_certificados && (
+                        <Box mt={4}>
+                            <Button 
+                                as="a" 
+                                href={(course as any).link_certificados} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                colorScheme="teal" 
+                                size="sm" 
+                                leftIcon={<span aria-hidden="true">📥</span>}
+                            >
+                                Resultados Cohorte Anterior
+                            </Button>
+                        </Box>
                     )}
                 </Box>
 
@@ -377,8 +392,9 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
 
                         {course.publications && course.publications.length > 0 ? (
                             <VStack spacing={4} align="stretch">
-                                {course.publications
-                                    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+                                {/* ✨ CORRECCIÓN 5: Protegemos contra fechas vacías (Invalid Date) en el sort */}
+                                {[...(course.publications || [])]
+                                    .sort((a, b) => new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime())
                                     .map(pub => (
                                         <PublicationCard key={pub.id} publication={pub} />
                                     ))}

@@ -233,6 +233,8 @@ class SolicitudesService {
             } else if (tipo?.includes('curso')) {
                 basePath = 'course-requests';
                 payload.tipo_curso = "unassigned"; // Requisito de tu struct de Go para aprobar cursos
+            } else if (tipo === 'cierre-cohorte') {
+                basePath = 'course-cycle-closures';
             } else {
                 throw new Error("No se puede determinar la ruta del backend para el tipo: " + tipo);
             }
@@ -274,6 +276,8 @@ class SolicitudesService {
             } else if (tipo?.includes('curso')) {
                 basePath = 'course-requests';
                 formData.append('tipo_curso', 'unassigned'); // Requisito del struct de Go para aprobar cursos
+            } else if (tipo === 'cierre-cohorte') {
+                basePath = 'course-cycle-closures';
             } else {
                 throw new Error("No se puede determinar la ruta del backend para el tipo: " + tipo);
             }

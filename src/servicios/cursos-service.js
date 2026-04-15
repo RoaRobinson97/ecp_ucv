@@ -63,7 +63,8 @@ class CourseService {
                     
                     // Otros campos que podrían servirte
                     costo: backendCourse.costo,
-                    tipo: backendCourse.tipo
+                    tipo: backendCourse.tipo,
+                    link_certificados: backendCourse.link_certificados || null
                 }));
 
                 const totalPages = Math.ceil(totalCourses / limit) || 1;
@@ -135,7 +136,8 @@ class CourseService {
                 codigo_proveedor: backendCourse.codigo_proveedor,
                 user_id: backendCourse.user_id || backendCourse.user_id,
                 estado_gestion: backendCourse.estado_gestion || backendCourse.status,
-                
+                link_certificados: backendCourse.link_certificados || null,
+
                 // Asumimos que el backend real devolverá las publicaciones anidadas o un array vacío
                 publications: backendCourse.publications || backendCourse.publicaciones || [] 
             };
