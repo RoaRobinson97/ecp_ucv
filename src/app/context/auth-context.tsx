@@ -90,6 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null); 
         Cookies.remove('auth_token');
         Cookies.remove('auth'); 
+        
+        // ✨ CORRECCIÓN: Redirección dura al home. Esto purga el estado de React y limpia la pantalla.
+        window.location.href = '/'; 
     };
 
     const value = { isAuthenticated, user, login, logout, isHydrated }; 

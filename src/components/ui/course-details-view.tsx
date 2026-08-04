@@ -3,13 +3,12 @@
 "use client";
 
 import { 
-  Box, Heading, Text, VStack, SimpleGrid, useColorModeValue, HStack, Divider 
+  Box, Heading, Text, VStack, SimpleGrid, useColorModeValue, HStack 
 } from '@chakra-ui/react';
 import { PayloadFormulacionCurso } from '@/data/types';
 
 interface CourseDetailsViewProps {
-  // Añadimos el "?" y un chequeo interno para evitar el "Cannot read properties of undefined"
-  payload?: PayloadFormulacionCurso; 
+  payload?: PayloadFormulacionCurso | any; 
   tipo?: string; 
 }
 
@@ -42,7 +41,6 @@ const DividerWithLabel = ({ label }: { label: string }) => (
 
 export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: CourseDetailsViewProps) {
   
-  // Si por alguna razón el payload no llega, mostramos un aviso en lugar de romper la app
   if (!payload) {
     return (
       <Box p={5} textAlign="center">
@@ -52,17 +50,12 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
   }
 
   const getTitle = () => {
-    // 1. Quitamos los guiones y ponemos espacios: "formulacion-curso-directa" -> "formulacion curso directa"
     let tituloLimpio = tipo.replace(/-/g, ' ');
-
-    // 2. Ponemos la primera letra en mayúscula para que se vea bien
     tituloLimpio = tituloLimpio.charAt(0).toUpperCase() + tituloLimpio.slice(1);
-
-    // 3. Aplicamos tu lógica de reemplazo para la vista de detalles
     return tituloLimpio
       .replace('Formulacion', 'Detalles de Formulacion')
       .replace('curso directa', 'Directa');
-};
+  };
 
   const containerBg = useColorModeValue("gray.50", "gray.900");
 
@@ -72,15 +65,16 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
 
       <VStack spacing={6} align="stretch" p={6} bg={containerBg} rounded="xl" shadow="md" borderWidth="1px">
         
-        <KeyDetail label="Denominación o Título del Curso" value={payload.titulo || payload.denominacion} />
+        {/* Mapeo seguro combinando lo que manda Go y el Frontend */}
+        <KeyDetail label="Denominación o Título del Curso" value={payload.titulo || payload.nombre || payload.denominacion} />
         
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
             <KeyDetail label="Duración Total" value={payload.duracion} />
-            <KeyDetail label="Propósito General" value={payload.proposito} />
+            <KeyDetail label="Propósito General" value={payload.proposito || payload.objetivos} />
         </SimpleGrid>
 
-        <KeyDetail label="Fundamentación y Justificación" value={payload.fundamentacion} />
-        <KeyDetail label="Estructura de Costos" value={payload.estructura_costos} />
+        <KeyDetail label="Fundamentación y Justificación" value={payload.fundamentacion || payload.descripcion} />
+        <KeyDetail label="Estructura de Costos" value={payload.estructura_costos || payload.costo} />
         
         <DividerWithLabel label="Perfil Académico" />
         
@@ -89,11 +83,11 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
             <KeyDetail label="Ingreso / Egreso" value={payload.perfiles} />
         </SimpleGrid>
 
-        <KeyDetail label="Materiales y Servicios" value={payload.exigencias} />
+        <KeyDetail label="Materiales y Servicios" value={payload.exigencias || payload.contenido} />
         
         <DividerWithLabel label="Plan de Estudios" />
 
-        <KeyDetail label="Estructura Curricular" value={payload.estructura_curricular} />
+        <KeyDetail label="Estructura Curricular" value={payload.estructura_curricular || payload.contenido} />
         <KeyDetail label="Evaluación" value={payload.evaluacion} />
         <KeyDetail label="Cronograma Tentativo" value={payload.cronograma} />
         

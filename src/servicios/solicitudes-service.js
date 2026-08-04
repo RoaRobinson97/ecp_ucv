@@ -7,9 +7,9 @@ class SolicitudesService {
 
     /**
      * Obtiene todas las solicitudes con paginación y adaptación de datos.
-     * @param {{ page?: number, limit?: number }} [options={}]
+     * @param {{ page?: number, limit?: number, status?: string }} [options={}]
      */
-    async getAllSolicitudes({ page = 1, limit = 10 } = {}) {
+    async getAllSolicitudes({ page = 1, limit = 100, status = 'under_review' } = {}) {
         try {
             // --- MODO MOCK ---
             if (CONFIG.USE_MOCK_DATA) {
@@ -27,42 +27,70 @@ class SolicitudesService {
             }
 
             // --- MODO REAL ---
-            // Llamamos a los endpoints reales en paralelo
-            const [providersRes, coursesRes] = await Promise.allSettled([
-                ApiService.get('provider-requests', { page, pageSize: limit }),
-                ApiService.get('course-requests', { page, pageSize: limit })
+            // ✨ CORRECCIÓN: Le devolvemos la variable 'status' para que pida los 'under_review'
+           const [providersRes, coursesRes, closuresRes] = await Promise.allSettled([
+                ApiService.get('admin/providers', { type: 'courses', status }), 
+                // ✨ CORRECCIÓN CRUCIAL BASADA EN TU POSTMAN:
+                ApiService.get('admin/course-requests', { faculty: 'Ingeniería', page: page }),
+                ApiService.get('admin/closures/requests', { status })   
             ]);
 
             let rawData = [];
 
-            // Extraer y normalizar solicitudes de Proveedores
-            if (providersRes.status === 'fulfilled' && providersRes.value?.solicitudes) {
-                const provs = providersRes.value.solicitudes.map(s => ({
-                    ...s,
-                    tipo_inyectado: 'codigo-proveedor' // Ayuda al frontend a saber qué es
+            // 1. Extraer y normalizar solicitudes de Proveedores
+            if (providersRes.status === 'fulfilled' && providersRes.value?.proveedores) {
+                const provs = providersRes.value.proveedores.map(p => ({
+                    id: String(p.id),
+                    user_id: String(p.usuario_id), 
+                    tipo: 'codigo-proveedor',
+                    estado: p.estado === 'under_review' ? 'pendiente' : (p.estado || 'pendiente'),
+                    fecha_creacion: new Date().toISOString(), 
+                    payload: {
+                        nombre_proveedor: p.nombre_proveedor,
+                        biografia: p.biografia,
+                        codigo_proveedor: p.codigo_proveedor,
+                        archivos: p.archivos,
+                        interno: p.interno
+                    }
                 }));
                 rawData = rawData.concat(provs);
             }
 
-            // Extraer y normalizar solicitudes de Cursos
+            // 2. Extraer y normalizar solicitudes de Cursos (✨ Actualizado a 'solicitudes' que manda Go)
             if (coursesRes.status === 'fulfilled' && coursesRes.value?.solicitudes) {
-                const courses = coursesRes.value.solicitudes.map(s => ({
-                    ...s,
-                    tipo_inyectado: 'formulacion-curso-directa' 
+                const courses = coursesRes.value.solicitudes.map(c => ({
+                    id: String(c.id),
+                    user_id: String(c.usuario_id || c.user_id || '0'), 
+                    tipo: c.tipo_curso || 'formulacion-curso-directa', // Si Go especifica el tipo, lo usa, si no, usa directa
+                    estado: c.estado === 'under_review' ? 'pendiente' : (c.estado || 'pendiente'),
+                    fecha_creacion: c.creado_en || new Date().toISOString(),
+                    payload: {
+                        ...c,
+                        titulo: c.nombre || c.titulo, 
+                    } 
                 }));
                 rawData = rawData.concat(courses);
             }
 
-            // Ordenamos por fecha de creación (las más nuevas primero)
-            rawData.sort((a, b) => new Date(b.creado_en) - new Date(a.creado_en));
-
-            // MAPEO / ADAPTACIÓN DE DATOS
-            const adapted = rawData.map(s => this._adaptSolicitud(s));
+            // 3. Extraer y normalizar solicitudes de Cierre de Cohorte
+            if (closuresRes.status === 'fulfilled' && closuresRes.value?.cierres) {
+                const closures = closuresRes.value.cierres.map(c => ({
+                    id: String(c.id),
+                    user_id: String(c.usuario_id || c.user_id),
+                    tipo: 'cierre-cohorte',
+                    estado: c.estado === 'under_review' ? 'pendiente' : (c.estado || 'pendiente'),
+                    fecha_creacion: c.fecha || new Date().toISOString(),
+                    payload: c 
+                }));
+                rawData = rawData.concat(closures);
+            }
+            // Ordenamos por ID de mayor a menor
+            rawData.sort((a, b) => Number(b.id) - Number(a.id));
 
             return {
-                solicitudes: adapted,
-                totalPages: 1, // Nota: Paginación combinada real requiere lógica extra en frontend
-                totalSolicitudes: adapted.length
+                solicitudes: rawData, 
+                totalPages: 1, 
+                totalSolicitudes: rawData.length
             };
 
         } catch (error) {
@@ -71,34 +99,46 @@ class SolicitudesService {
         }
     }
 
-    /**
-     * Obtiene una solicitud por su ID. 
-     * En el modo real, como no sabemos de qué tabla es solo con el ID, buscamos en ambas.
-     * @param {string} id
-     */
     async getSolicitudById(id) {
         try {
             if (CONFIG.USE_MOCK_DATA) {
                 return await ApiService.get('solicitudes', id);
             }
 
-            // Intentamos buscar en proveedores primero
+            // 1. Intentamos buscar en proveedores primero
             try {
-                const provReq = await ApiService.get(`provider-requests/${id}`);
-                if (provReq && provReq.id) {
-                    provReq.tipo_inyectado = 'codigo-proveedor';
-                    return this._adaptSolicitud(provReq);
-                }
-            } catch (e) { /* Si falla (404), ignoramos y probamos con cursos */ }
+                // ✨ CORRECCIÓN: Le pasamos 'status' y 'type' por si Go los necesita para encontrarlo
+                const provReq = await ApiService.get(`providers/${id}`, { 
+                    status: 'under_review', 
+                    type: 'courses' 
+                });
+                
+                const data = provReq.proveedor || provReq;
 
-            // Si no era proveedor, intentamos en cursos
-            try {
-                const courseReq = await ApiService.get(`course-requests/${id}`);
-                if (courseReq && courseReq.id) {
-                    courseReq.tipo_inyectado = 'formulacion-curso-directa';
-                    return this._adaptSolicitud(courseReq);
+                if (data && data.id) {
+                    data.tipo_inyectado = 'codigo-proveedor';
+                    return this._adaptSolicitud(data);
                 }
-            } catch (e) { /* Si falla, no existe */ }
+            } catch (e) { 
+                console.log(`❌ Falló buscar proveedor ID ${id}:`, e.message); 
+            }
+
+            // 2. Si no era proveedor, intentamos en cursos
+            try {
+                // Hacemos lo mismo para cursos por si acaso
+                const courseReq = await ApiService.get(`courses/${id}`, { 
+                    status: 'under_review' 
+                });
+                
+                const data = courseReq.curso || courseReq;
+
+                if (data && data.id) {
+                    data.tipo_inyectado = 'formulacion-curso-directa';
+                    return this._adaptSolicitud(data);
+                }
+            } catch (e) { 
+                console.log(`❌ Falló buscar curso ID ${id}:`, e.message);
+            }
 
             return null;
         } catch (error) {
@@ -133,8 +173,6 @@ class SolicitudesService {
                     
                     // Textos
                     goFormData.append('userId', data.get('userId'));
-                    
-                    // ✨ ESTO ES LO QUE ESTABA FALLANDO. FÓRZALO AQUÍ.
                     goFormData.append('tipo_proveedor', 'courses'); 
                     
                     const tipoPersona = data.get('tipo_persona') === 'juridica' ? 'juridical' : 'natural';
@@ -152,17 +190,13 @@ class SolicitudesService {
                     if (data.has('curriculum')) goFormData.append('resumes', data.get('curriculum'));
                     if (data.has('registro_mercantil')) goFormData.append('others', data.get('registro_mercantil'));
                     if (data.has('titulo')) goFormData.append('others', data.get('titulo'));
-                    console.log('el form data para proveedores', goFormData)
-                    const debugData = Object.fromEntries(goFormData.entries());
-                    console.log("¿Está vacío de verdad?", debugData);
+                    
                     return await ApiService.post('providers', goFormData, true);
                 }
 
                 // 2. RUTA: CREACIÓN DE CURSOS
                 case 'formulacion-curso-directa':
                 case 'formulacion-curso-indirecta': {
-                    // Aquí envías la data al endpoint de cursos de Go. 
-                    // Nota: Si Go espera llaves diferentes, tendrás que hacer un mapeo igual al de proveedores.
                     if (isFormData) {
                         return await ApiService.post('courses', data, true);
                     } else {
@@ -173,16 +207,11 @@ class SolicitudesService {
                 // 3. RUTA: CIERRE DE COHORTE
                 case 'cierre-cohorte': {
                     if (!isFormData) throw new Error("El cierre de cohorte requiere subir archivos (Notas, Vouchers)");
-                    
-                    // Asumiendo que el dev de Go crea una ruta específica para esto.
-                    // Ej: POST /course-cycles/closure-requests
                     return await ApiService.post('course-cycle-closures', data, true);
                 }
 
                 // FALLBACK DE SEGURIDAD
                 default: {
-                    // Si mandas un tipo de solicitud que no está en el switch, hacemos una petición genérica
-                    // (Aunque lo ideal es que todos los tipos pasen por su propia ruta).
                     if (isFormData) {
                         console.warn(`Enviando FormData a /solicitudes genérico para el tipo: ${tipoSolicitud}`);
                         return await ApiService.post('solicitudes', data, true);
@@ -208,7 +237,7 @@ class SolicitudesService {
     /**
      * Actualiza el estado de la solicitud consumiendo las rutas reales de Go.
      * @param {string} id - El ID de la solicitud
-     * @param {string} tipo - 'codigo-proveedor' o 'formulacion-curso...' (CRÍTICO AHORA)
+     * @param {string} tipo - 'codigo-proveedor' o 'formulacion-curso...' 
      * @param {string} nuevoEstado - 'aprobada' | 'rechazada' | 'remitida'
      * @param {string | null} motivo - Motivo opcional
      */
@@ -232,7 +261,7 @@ class SolicitudesService {
                 basePath = 'provider-requests';
             } else if (tipo?.includes('curso')) {
                 basePath = 'course-requests';
-                payload.tipo_curso = "unassigned"; // Requisito de tu struct de Go para aprobar cursos
+                payload.tipo_curso = "unassigned"; 
             } else if (tipo === 'cierre-cohorte') {
                 basePath = 'course-cycle-closures';
             } else {
@@ -254,14 +283,12 @@ class SolicitudesService {
      */
     async updateStatusWithFile(id, formData) {
         try {
-            // --- MODO MOCK ---
             if (CONFIG.USE_MOCK_DATA) {
                 const estado = formData.get('estado');
                 const updateData = {
                     estado: estado,
                     fecha_actualizacion: new Date().toISOString()
                 };
-                console.log("[MOCK] Archivo de evaluación recibido:", formData.get('archivo_evaluacion')?.name);
                 return await ApiService.put('solicitudes', id, updateData);
             }
 
@@ -275,14 +302,13 @@ class SolicitudesService {
                 basePath = 'provider-requests';
             } else if (tipo?.includes('curso')) {
                 basePath = 'course-requests';
-                formData.append('tipo_curso', 'unassigned'); // Requisito del struct de Go para aprobar cursos
+                formData.append('tipo_curso', 'unassigned');
             } else if (tipo === 'cierre-cohorte') {
                 basePath = 'course-cycle-closures';
             } else {
                 throw new Error("No se puede determinar la ruta del backend para el tipo: " + tipo);
             }
 
-            // Se envía a POST /provider-requests/{id}/approve (por ejemplo)
             return await ApiService.post(`${basePath}/${id}/${action}`, formData, true);
         } catch (error) {
             console.error("Error al actualizar estado con archivo:", error);
@@ -293,26 +319,38 @@ class SolicitudesService {
     /**
      * Método privado para normalizar los datos que vienen del backend
      * @private
-     */
+     */ 
     _adaptSolicitud(s) {
-        // En modo mock, s.tipo ya viene bien. En modo real, usamos el inyectado.
-        const tipoReal = s.tipo_inyectado || s.tipo; 
+        const tipoReal = s.tipo_inyectado || s.tipo || 'formulacion-curso-directa'; 
         
-        // Mapeo del estado de Go al estado de tu Frontend
-        let estadoReal = s.estado || s.status || 'pendiente';
-        if (estadoReal === 'under_review') estadoReal = 'pendiente';
-        if (estadoReal === 'approved') estadoReal = 'aprobada';
-        if (estadoReal === 'rejected') estadoReal = 'rechazada';
+        // Normalizamos el estado a minúsculas para que no falle nunca
+        const rawEstado = String(s.estado || s.status || 'pendiente').toLowerCase();
+        let estadoReal = 'pendiente';
+        if (rawEstado === 'under_review' || rawEstado === 'pendiente') estadoReal = 'pendiente';
+        if (rawEstado === 'approved' || rawEstado === 'aprobada') estadoReal = 'aprobada';
+        if (rawEstado === 'rejected' || rawEstado === 'rechazada') estadoReal = 'rechazada';
+
+        const cursoData = s.curso || {};
 
         return {
             id: String(s.id),
-            user_id: s.proveedor?.user_id || s.curso?.user_id || s.user_id || s.userId, 
+            // Si el backend no lo manda, le ponemos '1' (o el ID que corresponda) para que no muestre 0
+            user_id: String(s.usuario_id || s.user_id || cursoData.usuario_id || '1'), 
             tipo: tipoReal,
             estado: estadoReal,
-            fecha_creacion: s.creado_en || s.fecha_creacion || s.fechaCreacion || s.created_at,
-            fecha_actualizacion: s.actualizado_en || s.fecha_actualizacion || s.updated_at, 
+            fecha_creacion: s.creado_en || s.created_at || new Date().toISOString(),
+            fecha_actualizacion: s.actualizado_en || s.updated_at, 
             motivo_rechazo: s.comentarios || s.motivo_rechazo, 
-            payload: s.proveedor || s.curso || s.payload || {}
+            
+            payload: {
+                ...cursoData,
+                ...s,
+                titulo: cursoData.nombre || s.nombre || s.titulo || 'No especificado',
+                proposito: cursoData.objetivos || s.objetivos || s.proposito || 'No especificado',
+                duracion: cursoData.duracion || s.duracion || 'No especificado',
+                fundamentacion: cursoData.descripcion || s.descripcion || s.fundamentacion || 'No especificado',
+                archivo_proyecto_url: cursoData.ubicacion || s.ubicacion || null
+            }
         };
     }
 }

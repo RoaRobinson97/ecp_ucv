@@ -56,7 +56,9 @@ export type EstadoSolicitud = 'pendiente' | 'aprobada' | 'rechazada'
 
 export interface PayloadCodigoProveedor {
   tipo_persona: 'natural' | 'juridica';
-  es_interno: string | boolean; // ✨ AÑADIDO PARA LA UCV
+  es_interno?: string | boolean; // El que probablemente usas en el formulario
+  interno?: boolean;             // ✨ El que manda Go realmente
+  tipo_lucro?: string;           // ✨ También lo manda Go y lo usamos en la vista
   nombre_proveedor: string; 
   nombre_usuario?: string;  
   biografia: string;

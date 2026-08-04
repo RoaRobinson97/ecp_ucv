@@ -7,10 +7,9 @@ import {
 } from '@chakra-ui/react';
 import { FaFileSignature } from 'react-icons/fa'; 
 import { useRouter } from 'next/navigation'; 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Solicitud, EstadoSolicitud } from '@/data/types';
 
-// ✨ INTERFAZ EXTENDIDA: Como en el Server Component le agregamos "solicitante" y "nombre", se lo decimos a TypeScript
 interface SolicitudEnriquecida extends Solicitud {
   solicitante?: string;
   nombre?: string;
@@ -34,7 +33,7 @@ const getBadgeColorScheme = (estado: EstadoSolicitud | string) => {
     case 'pendiente': return 'orange';
     case 'aprobada': return 'green';
     case 'rechazada': return 'red';
-    case 'remitida': return 'blue'; // Agregamos "remitida" por si acaso
+    case 'remitida': return 'blue'; 
     default: return 'gray';
   }
 };
@@ -45,7 +44,7 @@ const LegalSeal = ({ hasContract, user_id }: { hasContract: boolean, user_id: st
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault(); 
-    e.stopPropagation(); // Evita que el clic dispare la navegación de la fila
+    e.stopPropagation(); 
     router.push(`/profile/${user_id}`);
   };
 
@@ -72,7 +71,14 @@ export function SolicitudesTable({ educacionContinua, grupoExtension }: Solicitu
   const [legalFilter, setLegalFilter] = useState('Todos');
 
   const isCourseTypeSelected = filter.includes('formulacion') || filter === 'Todos';
-  const educacionContinuaTypes = useMemo(() => ['Todos', ...Array.from(new Set(educacionContinua.map(sol => sol.tipo)))], [educacionContinua]);
+  
+  const educacionContinuaTypes = [
+    'Todos',
+    'codigo-proveedor',
+    'formulacion-curso-directa',
+    'formulacion-curso-indirecta',
+    'cierre-cohorte'
+  ];
 
   const renderTable = (solicitudes: SolicitudEnriquecida[]) => {
     let filteredSolicitudes = solicitudes;
@@ -98,7 +104,6 @@ export function SolicitudesTable({ educacionContinua, grupoExtension }: Solicitu
               <Th>ID</Th>
               <Th>Tipo</Th>
               <Th>Solicitante</Th>
-              <Th>Nombre / Título</Th>
               <Th>Fecha</Th>
               <Th>Estado</Th>
             </Tr>
@@ -111,21 +116,19 @@ export function SolicitudesTable({ educacionContinua, grupoExtension }: Solicitu
                 const hasContract = !!(payloadData?.contrato_id || payloadData?.numContrato);
                 
                 return (
-                  // ✨ SOLUCIÓN AL HTML INVÁLIDO: Usamos <Tr> con onClick y _hover para hacer la fila clickeable
                   <Tr 
-                    key={sol.id} 
-                    _hover={{ cursor: 'pointer', bg: 'gray.50' }} 
+                    key={`${sol.tipo}-${sol.id}`} 
+                    _hover={{ cursor: 'pointer', bg: 'gray.50' }}
                     onClick={() => router.push(`/admin/solicitudes/${sol.id}`)}
                     transition="background-color 0.2s"
                   >
-                    <Td fontWeight="bold" color="teal.600">{sol.id.substring(0, 8)}...</Td>
+                    <Td fontWeight="bold" color="teal.600">{sol.id}</Td>
                     <Td>
                       <Badge colorScheme={tipoColorMap[sol.tipo] || 'gray'}>
                         {sol.tipo.replace(/-/g, ' ').toUpperCase()}
                       </Badge>
                     </Td>
                     <Td fontWeight="medium" color="gray.600">{sol.solicitante}</Td>
-                    <Td>{sol.nombre}</Td>
                     <Td>{sol.fecha}</Td>
                     <Td>
                       <HStack spacing={2}>
@@ -137,7 +140,7 @@ export function SolicitudesTable({ educacionContinua, grupoExtension }: Solicitu
                 );
               })
             ) : (
-              <Tr><Td colSpan={6} textAlign="center" py={10}>No hay solicitudes registradas bajo estos criterios.</Td></Tr>
+              <Tr><Td colSpan={5} textAlign="center" py={10}>No hay solicitudes registradas bajo estos criterios.</Td></Tr>
             )}
           </Tbody>
         </Table>
@@ -149,7 +152,7 @@ export function SolicitudesTable({ educacionContinua, grupoExtension }: Solicitu
     <RadioGroup onChange={setFilter} value={currentFilter}>
       <Stack direction={{ base: 'column', md: 'row' }} spacing={4}>
         {types.map(tipo => (
-          <Radio key={tipo} value={tipo}>
+          <Radio key={tipo} value={tipo} colorScheme="teal">
             {tipo === 'Todos' ? 'Todos' : tipo
               .replace('codigo-proveedor', 'Proveedor')
               .replace('formulacion-curso-directa', 'Formulación Directa')
@@ -178,9 +181,9 @@ export function SolicitudesTable({ educacionContinua, grupoExtension }: Solicitu
                 <Text mb={2} fontWeight="bold">Filtrar por Documentación Legal:</Text>
                 <RadioGroup onChange={setLegalFilter} value={legalFilter}>
                   <Stack direction="row" spacing={4}>
-                    <Radio value="Todos">Todos</Radio>
-                    <Radio value="Vigente">Contrato Vigente</Radio>
-                    <Radio value="No Vigente">Sin Contrato</Radio>
+                    <Radio value="Todos" colorScheme="teal">Todos</Radio>
+                    <Radio value="Vigente" colorScheme="teal">Contrato Vigente</Radio>
+                    <Radio value="No Vigente" colorScheme="teal">Sin Contrato</Radio>
                   </Stack>
                 </RadioGroup>
               </Box>

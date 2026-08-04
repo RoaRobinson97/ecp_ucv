@@ -1,5 +1,3 @@
-// /src/data/base-api-service.js
-
 import Cookies from 'js-cookie'; 
 import { CONFIG } from '../config/config';
 import { MOCKED_DB, generateMockId } from '../data/mock-data';
@@ -10,22 +8,35 @@ class BaseApiService {
         this.baseURL = CONFIG.API_URL;
     }
 
-    // Método privado para configurar headers
-    #getHeaders(customHeaders = {}, isMultipart = false) {
+    // ✨ CORRECCIÓN CRÍTICA: Ahora es ASYNC para poder leer cookies en el servidor de Next.js
+    async #getHeaders(customHeaders = {}, isMultipart = false) {
         const headers = { ...customHeaders };
 
         // 🚨 SI ES MULTIPART: El navegador DEBE poner el Content-Type solo.
-        // Si no lo es, forzamos JSON.
         if (!isMultipart) {
             headers['Content-Type'] = 'application/json';
         }
 
         if (typeof window !== 'undefined') {
+            // --- MODO CLIENTE (Navegador) ---
             const token = Cookies.get('auth_token'); 
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             }
+        } else {
+            // --- MODO SERVIDOR (Next.js Server Components) ---
+            try {
+                const { cookies } = await import('next/headers');
+                const cookieStore = await cookies();
+                const token = cookieStore.get('auth_token')?.value;
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+            } catch (err) {
+                // Falla silenciosa si no estamos en un entorno compatible
+            }
         }
+        
         return headers;
     }
 
@@ -34,9 +45,13 @@ class BaseApiService {
         const { isMultipart, ...fetchOptionsWithoutMultipart } = options;
         
         try {
+            // ✨ Esperamos a que se resuelvan los headers con el token
+            const resolvedHeaders = await this.#getHeaders(options.headers, isMultipart);
+
             const fetchOptions = {
                 ...fetchOptionsWithoutMultipart,
-                headers: this.#getHeaders(options.headers, isMultipart)
+                headers: resolvedHeaders,
+                cache: 'no-store' // ✨ Vital para que Next.js no cachee respuestas vacías o errores
             };
 
             const response = await fetch(url, fetchOptions);
@@ -47,9 +62,19 @@ class BaseApiService {
                     window.location.href = '/login?error=expired'; 
                 }
                 const errorBody = await response.json().catch(() => ({ message: response.statusText }));
-                throw new Error(errorBody.message || `Error ${response.status}: ${response.statusText}`);
+                
+                // Extraemos 'error' que es el estándar común en Golang
+                const backendErrorMessage = errorBody.message || errorBody.error || `Error ${response.status}: ${response.statusText}`;
+                
+                throw new Error(backendErrorMessage);
             }
             
+            const authHeader = response.headers.get('Authorization');
+            if (authHeader && typeof window !== 'undefined') {
+                const extractedToken = authHeader.replace('Bearer ', '').trim();
+                document.cookie = `auth_token=${extractedToken}; path=/; max-age=86400; SameSite=Lax`;
+            }
+
             if (response.status === 204) return { success: true };
             return await response.json();
             
@@ -58,7 +83,6 @@ class BaseApiService {
         }
     }
 
-    // ✨ EL MÉTODO QUE TE DABA ERROR: Ahora dentro de la clase
     async #mockDataFetch(method, entityName, id = null, data = null) {
         console.log(`MOCK FILE: [${method}] Leyendo data para ${entityName}`);
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -108,7 +132,6 @@ class BaseApiService {
                 url += `?${searchParams.toString()}`;
             }
 
-            // 🎯 SI ES FORMDATA: Mandamos el objeto 'data' directo, sin JSON.stringify
             const options = {
                 method: method,
                 isMultipart: isFormData,
@@ -138,6 +161,6 @@ class BaseApiService {
     async delete(entityName, id) {
         return await this.#executeRequest('DELETE', entityName, id);
     }
-} // <--- ESTE CIERRE DE CLASE ES CRÍTICO
+}
 
 export const ApiService = new BaseApiService();

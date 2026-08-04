@@ -19,12 +19,6 @@ export default async function SolicitudesPage() {
   // ✨ FIX TYPESCRIPT: Le decimos que lo trate como un objeto de tipo 'User'
   const currentUser = userService.getUserFromToken(token) as User | null;
 
-  // 3. Validamos si existe y si su rol es 'admin' o 'coordinador'
-  if (!currentUser || !['admin', 'coordinador'].includes(currentUser.rol)) {
-      console.warn("Intento de acceso no autorizado a panel de admin/coordinador");
-      redirect('/login?error=unauthorized');
-  }
-
   // --- El resto del código de optimización N+1 ---
   let solicitudesUnificadas: any[] = [];
 

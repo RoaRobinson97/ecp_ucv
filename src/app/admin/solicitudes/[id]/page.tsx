@@ -21,29 +21,32 @@ import { CodigoProveedorView } from '@/components/ui/codigo-proveedor-view';
 import { CourseDetailsView } from '@/components/ui/course-details-view';
 import { AdminActions } from '@/components/ui/admin-actions';
 import { CierreCohorteView } from '@/components/ui/cierre-cohorte-view'; // ✨ LA NUEVA VISTA
+// (Tus imports se quedan igual...)
 
-export default async function SolicitudDetallePage({ params }: { params: { id: string } }) {
-  
-  // ✨ SEGURIDAD REAL (Eliminamos el hardcodeo inútil)
+export default async function SolicitudDetallePage({ params }: { params: Promise<{ id: string }> }) {
+  // (Toda tu lógica de seguridad se queda exactamente igual...)
+  const { id } = await params;
   const cookieStore = await cookies();
   const token = cookieStore.get('auth_token')?.value;
-  const currentUser = userService.getUserFromToken(token) as User | null;
+  const currentUser = userService.getUserFromToken(token) as Record<string, any> | null;
 
-  if (!currentUser || !['admin', 'coordinador'].includes(currentUser.rol)) {
-      redirect('/login?error=unauthorized');
-  }
+  if (!currentUser) redirect('/login?error=unauthorized');
 
-  // Ahora buscamos en la base de datos completa a través del servicio
-  const solicitud = await solicitudesService.getSolicitudById(params.id);
+  const userRole = currentUser.rol || '';
+  const userRolesList = currentUser.roles || currentUser.v1?.roles || [];
+  
+  const isAuthorized = 
+      ['admin', 'coordinador'].includes(userRole) || 
+      userRolesList.some((r: string) => ['deu_admin', 'deu_coordinator', 'admin'].includes(r));
+
+  if (!isAuthorized) redirect('/login?error=unauthorized');
+
+  const solicitud = await solicitudesService.getSolicitudById(id);
 
   if (!solicitud) notFound();
 
   const getStatusColor = (estado: string) => {
-    const colors: Record<string, string> = {
-      'pendiente': 'orange',
-      'aprobada': 'green',
-      'rechazada': 'red'
-    };
+    const colors: Record<string, string> = { 'pendiente': 'orange', 'aprobada': 'green', 'rechazada': 'red' };
     return colors[estado.toLowerCase()] || 'gray';
   };
 
@@ -56,7 +59,8 @@ export default async function SolicitudDetallePage({ params }: { params: { id: s
           <HStack justify="space-between" align="flex-end">
             <VStack align="start" spacing={1}>
               <Heading as="h1" size="xl">Detalle de Gestión</Heading>
-              <Text fontSize="lg" color="gray.500">Expediente ID: {solicitud.id}</Text>
+              {/* ✨ SOPORTE DARK MODE */}
+              <Text fontSize="lg" color="gray.500" _dark={{ color: "gray.400" }}>Expediente ID: {solicitud.id}</Text>
             </VStack>
             <Badge colorScheme={getStatusColor(solicitud.estado)} fontSize="md" p={2} rounded="md">
               {solicitud.estado.toUpperCase()}
@@ -74,11 +78,11 @@ export default async function SolicitudDetallePage({ params }: { params: { id: s
         <Divider />
 
         {/* CONTENIDO DINÁMICO */}
-        <Box p={8} bg="white" shadow="sm" borderWidth="1px" rounded="xl">
+        {/* ✨ SOPORTE DARK MODE: Fondo de la caja principal */}
+        <Box p={8} bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} shadow="sm" borderWidth="1px" rounded="xl">
           {solicitud.tipo === 'codigo-proveedor' ? (
             <CodigoProveedorView payload={solicitud.payload as PayloadCodigoProveedor} />
           ) : solicitud.tipo === 'cierre-cohorte' ? (
-            // ✨ AQUÍ RENDERIZAMOS EL CIERRE
             <CierreCohorteView payload={solicitud.payload as PayloadCierreCohorte} />
           ) : (
             <CourseDetailsView 
@@ -91,12 +95,13 @@ export default async function SolicitudDetallePage({ params }: { params: { id: s
         <Divider />
 
         {/* ACCIONES */}
-        <Box bg="gray.50" p={6} rounded="xl" border="1px dashed" borderColor="gray.300">
+        {/* ✨ SOPORTE DARK MODE: Caja de acciones */}
+        <Box bg="gray.50" _dark={{ bg: "gray.900", borderColor: "gray.700" }} p={6} rounded="xl" border="1px dashed" borderColor="gray.300">
           <Heading size="md" mb={4}>Panel de Decisiones</Heading>
           <AdminActions 
             solicitudId={solicitud.id} 
             solicitudTipo={solicitud.tipo} 
-            currentUserId={currentUser?.id} // ✨ LE PASAMOS EL ID REAL
+            currentUserId={currentUser?.id} 
           />
         </Box>
 
@@ -107,9 +112,10 @@ export default async function SolicitudDetallePage({ params }: { params: { id: s
 
 function StatCard({ label, value, color }: { label: string, value: string, color: string }) {
   return (
-    <Stat p={5} shadow="sm" border="1px" borderColor="gray.200" rounded="xl" bg="white">
-      <StatLabel fontWeight="bold" color="gray.600">{label}</StatLabel>
-      <StatNumber fontSize="xl" color={color}>{value}</StatNumber>
+    // ✨ SOPORTE DARK MODE: Tarjetas de estadísticas
+    <Stat p={5} shadow="sm" border="1px" borderColor="gray.200" rounded="xl" bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }}>
+      <StatLabel fontWeight="bold" color="gray.600" _dark={{ color: "gray.300" }}>{label}</StatLabel>
+      <StatNumber fontSize="xl" color={color} _dark={{ color: color }}>{value}</StatNumber>
     </Stat>
   );
 }

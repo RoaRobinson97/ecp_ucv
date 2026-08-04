@@ -38,17 +38,22 @@ export const Navbar = () => {
     // ✨ CORRECCIÓN: Extraemos los roles de forma segura (como arreglo)
     const userRoles = user?.roles || user?.Roles || [];
 
-    // Visibility conditions for buttons
-    const showFormulateButton = isAuthenticated && codigo_proveedor && courses.length === 0;
-    const showCohortButton = !isCohortOpen && isAuthenticated && codigo_proveedor && courses.length > 0;
+    const isAdmin = isAuthenticated && (
+        (userRoles as string[]).includes('deu_admin') || 
+        (userRoles as string[]).includes('admin') || 
+        (userRoles as string[]).includes('course_admin') || 
+        (userRoles as string[]).includes('coordinador')
+    );
+
+    // ✨ 2. Bloqueamos los botones de proveedor si el usuario es Admin (!isAdmin)
+    const showFormulateButton = isAuthenticated && !!codigo_proveedor && courses.length === 0 && !isAdmin;
+    const showCohortButton = !isCohortOpen && isAuthenticated && !!codigo_proveedor && courses.length > 0 && !isAdmin;
+    const showMisCursosButton = isAuthenticated && !!codigo_proveedor && !isAdmin;
+    
+    // El resto se mantiene
     const showLoginRegisterButtons = !isAuthenticated;
-    
-    // ✨ CORRECCIÓN: Buscamos en el arreglo en lugar del viejo string 'user?.rol'
-    const showSolicitudButton = isAuthenticated && !codigo_proveedor && userRoles.includes('visitante');
-    
-    // ✨ CORRECCIÓN: Usamos includes() y agregamos 'course_admin'
-    const showAdminPanelLink = isAuthenticated && (userRoles.includes('course_admin') || userRoles.includes('coordinador') || userRoles.includes('course_admin'));
-    const showMisCursosButton = isAuthenticated && !!codigo_proveedor;
+    const showSolicitudButton = isAuthenticated && !codigo_proveedor && (userRoles as string[]).includes('visitante');
+    const showAdminPanelLink = isAdmin; // Reutilizamos la constante limpia
 
     const courseId = courses.length > 0 ? courses[0].id : null;
     console.log(user)

@@ -11,16 +11,13 @@ import { CONFIG } from '../config/config';
 function formatDateForBackend(htmlDate) {
     if (!htmlDate) return "";
     
-    // htmlDate viene como "2009-05-15"
-    const parts = htmlDate.split('-'); // ["2009", "05", "15"]
+    // htmlDate viene del input date como "1988-09-03"
+    const parts = htmlDate.split('-'); 
     
     if (parts.length !== 3) return htmlDate;
 
-    const year = parts[0];
-    const month = parseInt(parts[1], 10); // Quita el cero: "05" -> 5
-    const day = parseInt(parts[2], 10);   // Quita el cero: "15" -> 15
-
-    return `${day}-${month}-${year}`; // Retorna "15-5-2009"
+    // Retornamos invirtiendo el orden, pero manteniendo los strings originales (con ceros)
+    return `${parts[2]}-${parts[1]}-${parts[0]}`; // Retorna "03-09-1988"
 }
 
 class AuthService {
@@ -71,13 +68,16 @@ class AuthService {
         
         console.log("API Login Exitoso:", response);
 
-        // Captura del JWT
-        if (response.token || response.access_token || response.Token) {
-           const realToken = response.token || response.access_token || response.Token;
-           document.cookie = `auth_token=${realToken}; path=/; max-age=86400; Secure; samesite=strict`;
+        const realToken = response.token || response.access_token || response.Token || response.jwt;
+        
+        if (realToken) {
+           // ✨ CORRECCIÓN: Quitamos 'Secure' y pasamos a 'Lax' para que no se pierda en localhost
+           document.cookie = `auth_token=${realToken}; path=/; max-age=86400; SameSite=Lax`;
+        } else {
+           console.warn("⚠️ ALERTA: El backend no devolvió ningún token en el JSON.");
         }
 
-        return response; 
+        return response;
 
       } catch (error) {
         console.error("Error en login real:", error.message);
@@ -95,7 +95,7 @@ class AuthService {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (CONFIG.USE_MOCK_DATA) {
-      // --- MODO MOCK ---
+      // --- MODO MOCK (Se mantiene igual) ---
       const users = MOCKED_DB.users;
       const incomingEmail = userData.username || userData.email;
       
@@ -116,7 +116,6 @@ class AuthService {
       };
 
       users.push(newUser);
-      console.log("Mock Register Exitoso:", newUser);
       return newUser;
 
     } else {
@@ -124,33 +123,43 @@ class AuthService {
       try {
         console.log("Usando API REAL para registro...");
         
-        // Mapeo exacto contra las estructuras de Golang
-        const payloadParaBackend = {
-            cedula: userData.ci,
-            nombres: userData.first_name,
-            apellidos: userData.last_name, 
-            fecha_de_nacimiento: formatDateForBackend(userData.date_of_birth),
-            genero: userData.gender.toLowerCase(),
-            nivel_educativo: userData.education_level,
-            direccion: userData.address,
-            email: userData.username || userData.email, 
-            password: userData.password
-        };
+        // ✨ CORRECCIÓN 2: Replicar el comportamiento de Postman usando FormData
+        const goFormData = new FormData();
         
-        console.log('Payload a enviar:', payloadParaBackend);
+        goFormData.append('cedula', userData.ci);
+        goFormData.append('nombres', userData.first_name);
+        goFormData.append('apellidos', userData.last_name);
+        goFormData.append('fecha_de_nacimiento', formatDateForBackend(userData.date_of_birth));
+        goFormData.append('genero', userData.gender.toLowerCase());
+        goFormData.append('nivel_educativo', userData.education_level);
+        goFormData.append('direccion', userData.address);
+        goFormData.append('email', userData.username || userData.email);
+        goFormData.append('password', userData.password);
+        
+        // Aseguramos que se envía el rol si la base de datos lo requiere
+        goFormData.append('rol', userData.rol || 'visitante'); 
 
-        const response = await ApiService.post('users', payloadParaBackend);
+        // ✨ OJO AL TERCER PARÁMETRO 'true': 
+        // Esto le indica a BaseApiService que envíe un form-data y NO un JSON
+        const response = await ApiService.post('users', goFormData, true);
 
         console.log("Registro API Exitoso:", response);
         return response;
 
-      } catch (error) {
+     } catch (error) {
         console.error("Error en registro real:", error.message);
         
-        if (error.message.includes("409") || error.message.toLowerCase().includes("duplicate")) {
-             throw new Error("Este correo o cédula ya están registrados.");
+        const msg = error.message.toLowerCase();
+        
+        // ✨ CORRECCIÓN: Quitamos el "400" (para evitar falsos positivos con fechas/formatos)
+        // y agregamos la frase exacta que envía Go: "user already exists"
+        if (msg.includes("user already exists") || msg.includes("duplicate") || msg.includes("409")) {
+             throw new Error("Este correo electrónico o cédula ya se encuentran registrados en el sistema.");
         }
-        throw error;
+        
+        // Limpiamos el prefijo técnico para que el toast se vea más limpio si ocurre otro error
+        const cleanMessage = error.message.replace("Fallo en la comunicación API: ", "");
+        throw new Error(cleanMessage);
       }
     }
   }

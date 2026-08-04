@@ -9,8 +9,6 @@ import {
   useColorModeValue,
   Text,
   Link,
-  Alert,
-  AlertIcon,
   useToast,
   Select, 
   FormControl, FormLabel, Input, FormErrorMessage 
@@ -18,7 +16,6 @@ import {
 import { useAuth } from "@/app/context/auth-context";
 import { useRouter } from "next/navigation";
 import { authService } from '@/servicios/auth-service';
-import { User } from '@/data/types';
 
 const genderOptions = [
   { value: "masculino", label: "Masculino" },
@@ -75,7 +72,6 @@ export const RegisterForm = () => {
     confirmPassword: '',
   });
   
-  const [serverError, setServerError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -93,9 +89,7 @@ export const RegisterForm = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     setPasswordError('');
-    setServerError('');
     
     if (formData.password !== formData.confirmPassword) {
       setPasswordError("Las contraseñas no coinciden.");
@@ -105,13 +99,12 @@ export const RegisterForm = () => {
     setIsLoading(true);
 
     try {
-      // ✨ MAPEO CRUCIAL: Ajustamos los nombres para que coincidan con lo que auth-service.js busca
       const payload = {
-        ci: formData.cedula,             // El servicio busca .ci
-        first_name: formData.firstName,  // El servicio busca .first_name
-        last_name: formData.lastName,    // El servicio busca .last_name
+        ci: formData.cedula,             
+        first_name: formData.firstName,  
+        last_name: formData.lastName,    
         date_of_birth: formData.date_of_birth,
-        gender: formData.gender,         // El servicio busca .gender para el toLowerCase()
+        gender: formData.gender,         
         education_level: formData.education_level,
         address: formData.address,
         email: formData.email,
@@ -134,18 +127,24 @@ export const RegisterForm = () => {
       try {
           const response = await authService.login(formData.email, formData.password);
           const realUser = response.usuario || response.user || response.User;
+          if (realUser) login(realUser);
           
-          if (realUser) {
-              login(realUser);
-          }
-          window.location.href = "/"; 
+          router.push("/");
+          router.refresh();
       } catch (loginErr) {
-          console.warn("Auto-login falló tras registro exitoso", loginErr);
           router.push('/login'); 
       }
 
     } catch (err: any) {
-      setServerError(err.message || "Ocurrió un error al registrar el usuario.");
+      // ✨ CORRECCIÓN: El error del backend (400) se muestra aquí como un Toast
+      toast({
+        title: "Error al registrar",
+        description: err.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "top"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -167,18 +166,9 @@ export const RegisterForm = () => {
       </Heading>
       <form onSubmit={handleRegister}>
         <VStack spacing={4}>
-
-          {serverError && (
-            <Alert status="error" rounded="md">
-              <AlertIcon />
-              {serverError}
-            </Alert>
-          )}
-
           {formFields.map((field) => (
             <FormControl key={field.id} id={field.id} isRequired={field.isRequired}>
               <FormLabel>{field.label}</FormLabel>
-              
               {field.type === 'select' ? (
                 <Select
                   name={field.id}

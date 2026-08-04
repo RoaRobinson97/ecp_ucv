@@ -9,14 +9,19 @@ class UserService {
      * @returns {Promise<Object | null>} El objeto User o null si no se encuentra.
      */
     async getUserById(user_id) {
+        // Evitamos peticiones innecesarias al backend si no hay ID o es el fallback '0'
+        if (!user_id || user_id === '0' || user_id === 'undefined') {
+            return null;
+        }
+
         try {
-            // Llama al método 'get' del BaseApiService para la entidad 'users'
             const user = await ApiService.get('users', user_id);
-            
             return user || null;
         } catch (error) {
-            console.error(`Error en UserService.getUserById(${user_id}):`, error);
-            throw new Error("Fallo al obtener los datos del usuario."); 
+            // ✨ CORRECCIÓN: Si el usuario no existe (404) o hay error, 
+            // simplemente fallamos en silencio retornando null. 
+            // Quitamos el console.error y el throw para evitar la pantalla roja de Next.js.
+            return null; 
         }
     }
 

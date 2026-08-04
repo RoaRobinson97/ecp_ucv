@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  const tokenCookie = request.cookies.get('auth_token');
+  // ✨ CORRECCIÓN: Buscamos nuestra cookie, o las clásicas que suele enviar Go
+  const tokenCookie = request.cookies.get('auth_token') || request.cookies.get('jwt') || request.cookies.get('token');
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith('/admin')) {
@@ -14,43 +15,43 @@ export function middleware(request: NextRequest) {
     }
 
     try {
-      const token = tokenCookie.value;
-      const parts = token.split('.');
-      
-      if (parts.length !== 3) {
-         console.error("[Middleware] Token inválido");
-         return NextResponse.redirect(new URL('/login?error=invalid_token', request.url));
-      }
+        const token = tokenCookie.value;
+        const parts = token.split('.');
+        
+        if (parts.length !== 3) {
+           console.error("[Middleware] Token inválido");
+           return NextResponse.redirect(new URL('/login?error=invalid_token', request.url));
+        }
 
-      const base64Url = parts[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
+        const base64Url = parts[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
 
-      const jwtData = JSON.parse(jsonPayload);
-      
-      // ✨ CORRECCIÓN: Leemos de 'v1' exactamente igual que en el Context
-      const v1Data = jwtData.v1 || {};
-      const userRoles = v1Data.roles || []; 
-      
-      // ✨ CORRECCIÓN: Agregamos 'course_admin' a la puerta de seguridad
-      if (userRoles.includes('course_admin') || userRoles.includes('coordinador') || userRoles.includes('admin')) {
-        return NextResponse.next(); 
-      } else {
-        console.warn(`[Middleware] Rol insuficiente. Roles encontrados:`, userRoles);
-        return NextResponse.redirect(new URL('/', request.url));
+        const jwtData = JSON.parse(jsonPayload);
+        
+        // Buscamos los roles
+        const userRoles = jwtData.roles || (jwtData.v1 ? jwtData.v1.roles : []) || []; 
+        
+        // Verificamos si es administrador
+        if (userRoles.includes('deu_admin') || userRoles.includes('course_admin') || userRoles.includes('coordinador') || userRoles.includes('admin')) {
+          return NextResponse.next(); 
+        } else {
+          console.warn(`[Middleware] Rol insuficiente. Roles encontrados:`, userRoles);
+          return NextResponse.redirect(new URL('/', request.url));
+        }
+      } catch (e) {
+        console.error("[Middleware] Fallo al parsear el token:", e);
+        return NextResponse.redirect(new URL('/login?error=corrupted_cookie', request.url));
       }
-    } catch (e) {
-      console.error("[Middleware] Fallo al parsear el token:", e);
-      return NextResponse.redirect(new URL('/login?error=corrupted_cookie', request.url));
-    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: '/admin/:path*',
+  // ✨ CORRECCIÓN CRÍTICA: El matcher ahora protege "/admin" exacto y todo lo que le sigue
+  matcher: ['/admin', '/admin/:path*'],
 };
