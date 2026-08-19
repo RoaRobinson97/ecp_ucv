@@ -8,7 +8,7 @@ class BaseApiService {
         this.baseURL = CONFIG.API_URL;
     }
 
-    // ✨ CORRECCIÓN CRÍTICA: Ahora es ASYNC para poder leer cookies en el servidor de Next.js
+    // ✨ CORRECCIÓN CRÍTICA: Ahora inyectamos la cookie directamente para el servidor
     async #getHeaders(customHeaders = {}, isMultipart = false) {
         const headers = { ...customHeaders };
 
@@ -22,6 +22,7 @@ class BaseApiService {
             const token = Cookies.get('auth_token'); 
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
+                // El navegador envía las cookies automáticamente, no hace falta inyectarlas aquí.
             }
         } else {
             // --- MODO SERVIDOR (Next.js Server Components) ---
@@ -31,9 +32,13 @@ class BaseApiService {
                 const token = cookieStore.get('auth_token')?.value;
                 if (token) {
                     headers['Authorization'] = `Bearer ${token}`;
+                    
+                    // ✨ EL TRUCO DEFINITIVO: 
+                    // Obligamos al fetch del servidor a enviar la cookie para que tu ruta /api la pueda leer.
+                    headers['Cookie'] = `auth_token=${token}`; 
                 }
             } catch (err) {
-                // Falla silenciosa si no estamos en un entorno compatible
+                console.error("Error inyectando cookies en SSR:", err);
             }
         }
         

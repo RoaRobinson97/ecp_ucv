@@ -109,7 +109,7 @@ export function CourseEvaluationForm({
         />
       </FormControl><FileInput
         isRequired
-        label="Subir Archivo de Prueba/Evidencia"
+        label="Subir Archivo de Prueba/EvonClick={() => handleAction('Aprobar')}idencia"
         description="Documento (PDF o ZIP) que justifique la calificación otorgada."
         onFileChange={onFileChange} 
       />

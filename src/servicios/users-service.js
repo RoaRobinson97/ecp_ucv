@@ -3,13 +3,7 @@ import { CONFIG } from '../config/config';
 
 class UserService {
     
-    /**
-     * Obtiene el objeto de usuario completo (User) por su ID.
-     * @param {string} user_id - El ID del usuario a buscar.
-     * @returns {Promise<Object | null>} El objeto User o null si no se encuentra.
-     */
     async getUserById(user_id) {
-        // Evitamos peticiones innecesarias al backend si no hay ID o es el fallback '0'
         if (!user_id || user_id === '0' || user_id === 'undefined') {
             return null;
         }
@@ -18,62 +12,54 @@ class UserService {
             const user = await ApiService.get('users', user_id);
             return user || null;
         } catch (error) {
-            // ✨ CORRECCIÓN: Si el usuario no existe (404) o hay error, 
-            // simplemente fallamos en silencio retornando null. 
-            // Quitamos el console.error y el throw para evitar la pantalla roja de Next.js.
             return null; 
         }
     }
 
     async hasInitialContract(user_id) {
-            // --- BLOQUE DE SIMULACIÓN (MOCK) ---
-            if (CONFIG.USE_MOCK_DATA) {
-                console.warn(`[MOCK] Validando estado legal aleatorio para: ${user_id}`);
-                
-                // Simulamos latencia de red para ver el Skeleton/Spinner en el frontend
-                await new Promise(resolve => setTimeout(resolve, 1000));
-    
-                // Retorna TRUE el 50% de las veces, FALSE el otro 50%
-                const randomResult = Math.random() < 0.5;
-                
-                console.log(`[MOCK RESULT] ¿Tiene contrato previo?: ${randomResult}`);
-                return randomResult;
-            }
-    
-            // --- LLAMADA REAL AL API (Producción) ---
-            try {
-                const status = await ApiService.get('legal-status', user_id);
-                // El backend debería retornar un objeto con esta propiedad
-                return !!(status && status.tiene_carta_intencion);
-            } catch (error) {
-                console.error("Error real en hasInitialContract:", error);
-                return false; 
-            }
+        if (CONFIG.USE_MOCK_DATA) {
+            console.warn(`[MOCK] Validando estado legal aleatorio para: ${user_id}`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const randomResult = Math.random() < 0.5;
+            console.log(`[MOCK RESULT] ¿Tiene contrato previo?: ${randomResult}`);
+            return randomResult;
         }
 
+        try {
+            const proveedores = await ApiService.get('providers', { usuario_id: user_id });
+            
+            if (proveedores && proveedores.length > 0) {
+                const proveedor = proveedores[0];
+                return !!(proveedor.legal_status && proveedor.legal_status.tiene_carta_intencion);
+            }
+            return false;
+        } catch (error) {
+            return false; 
+        }
+    }
 
     async getProviderDetails(user_id) {
         try {
             const user = await ApiService.get('users', user_id);
             
-            if (user && user.rol === 'proveedor' && user.codigo_proveedor) {
-                // 1. Obtenemos TODOS los proveedores (en modo Mock esto trae el array completo)
+            if (user && (user.rol === 'proveedor' || (user.roles && user.roles.includes('proveedor'))) && user.codigo_proveedor) {
                 const allProviders = await ApiService.get('providers'); 
                 
-                // 2. Buscamos el que coincida con el código
+                // ✨ FIX: Ahora busca comparando con el 'id' del proveedor o el 'usuario_id'
                 const providerData = allProviders.find(
-                    p => (p.codigo_proveedor === user.codigo_proveedor) || (p.codigo === user.codigo_proveedor)
+                    p => (p.id === user.codigo_proveedor) || (p.usuario_id === user.id)
                 );
 
                 if (!providerData) {
                     console.warn(`No se encontró data extra para el proveedor: ${user.codigo_proveedor}`);
-                    return user; // Devolvemos solo el user si no hay data de provider
+                    return user;
                 }
 
-                console.log("Datos de proveedor encontrados:", providerData);
-                
-                // 3. Fusión final
-                return { ...user, ...providerData };
+                return { 
+                    ...providerData, 
+                    ...user, 
+                    provider_table_id: providerData.id 
+                };
             }
             
             return user;
@@ -84,31 +70,15 @@ class UserService {
     }
 
     async getPublicProviderProfile(codigo_proveedor) {
-        // Este endpoint debería ser público y devolver solo:
-        // nombre_proveedor, biografia, avatar_url, tipo_proveedor e ID.
         return await ApiService.get(`providers/public/${codigo_proveedor}`);
     }
 
-    /**
-     * Obtiene todos los usuarios que tienen el rol de coordinador (Facultades).
-     * Funciona tanto con Mock como con API Real.
-     */
     async getCoordinadores() {
         try {
-            // Si el API real tiene un endpoint específico para coordinadores, 
-            // podrías cambiar esto a ApiService.get('users?rol=coordinador').
-            // Por seguridad y compatibilidad con tu BaseApiService actual, 
-            // traemos los usuarios y los filtramos.
-            const allUsers = await ApiService.get('users');
-
-            if (!allUsers || !Array.isArray(allUsers)) {
-                console.warn("No se pudo obtener la lista de usuarios para extraer coordinadores.");
+            const coordinadores = await ApiService.get('users', { rol: 'coordinador' });
+            if (!coordinadores || !Array.isArray(coordinadores)) {
                 return [];
             }
-
-            // Filtramos estrictamente los que tienen rol 'coordinador'
-            const coordinadores = allUsers.filter(user => user.rol === 'coordinador');
-            
             return coordinadores;
         } catch (error) {
             console.error("Error obteniendo coordinadores en UserService:", error);
@@ -116,24 +86,13 @@ class UserService {
         }
     }
 
-    /**
-     * ✨ NUEVO: Decodifica un JWT en el servidor.
-     * @param {string | undefined} token El JWT en formato string
-     * @returns {Object | null} El payload del token como objeto, o null si es inválido
-     */
     getUserFromToken(token) {
         if (!token) return null;
-        
         try {
             const base64Url = token.split('.')[1];
             if (!base64Url) return null;
-
-            // Normalizamos el base64
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            
-            // Usamos Buffer, que es la herramienta nativa de Node.js para esto
             const jsonPayload = Buffer.from(base64, 'base64').toString('utf-8');
-            
             return JSON.parse(jsonPayload);
         } catch (error) {
             console.error("Error al decodificar el token JWT:", error);

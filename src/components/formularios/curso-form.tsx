@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Button,
@@ -16,8 +16,6 @@ import {
 } from "@chakra-ui/react";
 import { useAuth } from "@/app/context/auth-context";
 import { useRouter } from "next/navigation";
-
-import { solicitudesService } from '@/servicios/solicitudes-service';
 import { PayloadFormulacionCurso } from '@/data/types';
 
 const FormSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -43,7 +41,6 @@ const CourseFormControl = ({ id, label, isTextArea = false }: {
   isTextArea?: boolean; 
 }) => {
   return (
-    // ✨ Todos los campos son requeridos en Producción
     <FormControl id={id} isRequired={true}>
       <FormLabel fontWeight="medium">{label}</FormLabel>
       {isTextArea ? (
@@ -59,12 +56,14 @@ export const CourseForm = () => {
   const { user } = useAuth();
   const router = useRouter();
   const toast = useToast();
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // ✨ NUEVO ESTADO PARA LA IMAGEN
+  const [coverImage, setCoverImage] = useState<File | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     
-    // ✨ Prevención de doble clic
     if (isLoading) return;
     
     if (!user || user.rol !== 'proveedor') {
@@ -77,7 +76,6 @@ export const CourseForm = () => {
     const formData = new FormData(event.currentTarget);
 
     try {
-      // Estructuramos el payload asegurando que todos los campos sean strings limpios
       const payload: PayloadFormulacionCurso = {
         titulo: (formData.get('denominacion') as string)?.trim(), 
         denominacion: (formData.get('denominacion') as string)?.trim(), 
@@ -93,24 +91,43 @@ export const CourseForm = () => {
         cronograma: (formData.get('cronograma') as string)?.trim(),
       };
 
-      // ✨ Validación en el cliente: Asegurar que no manden espacios en blanco
       const hasEmptyFields = Object.values(payload).some(value => !value);
       if (hasEmptyFields) {
-          toast({
-              title: "Formulario incompleto",
-              description: "Por favor, completa todos los campos requeridos.",
-              status: "warning",
+          toast({ title: "Formulario incompleto", description: "Por favor, completa todos los campos requeridos.", status: "warning" });
+          setIsLoading(false);
+          return;
+      }
+
+      if (!coverImage) {
+          toast({ 
+            title: "Falta la imagen de portada", 
+            description: "Es obligatorio subir una imagen representativa para el curso.", 
+            status: "warning" 
           });
           setIsLoading(false);
           return;
       }
 
-      await solicitudesService.createSolicitud({
-          userId: user.id, // Ojo, en tu servicio lo llamamos userId, asegúrate de mantener la consistencia
-          tipo: 'formulacion-curso-directa',
-          estado: 'pendiente',
-          payload: payload
+      // ✨ MAGIA: EMPAQUETAMOS TODO EN UN FORMDATA PARA MANDAR EL ARCHIVO
+      const finalFormData = new FormData();
+      finalFormData.append('userId', user.id || '');
+      finalFormData.append('tipo', 'formulacion-curso-directa');
+      finalFormData.append('payload', JSON.stringify(payload)); // Mandamos los datos de texto como string
+      
+      if (coverImage) {
+        finalFormData.append('cover', coverImage);
+      }
+
+      // ✨ Usamos fetch directo para que el navegador ponga los headers multipart/form-data automáticamente
+      const response = await fetch('/api/courses', {
+        method: 'POST',
+        body: finalFormData
       });
+
+      if (!response.ok) {
+        const err = await response.json().catch(()=>({}));
+        throw new Error(err.error || "Error al enviar al servidor");
+      }
 
       toast({
         title: "Curso formulado y enviado.",
@@ -136,15 +153,7 @@ export const CourseForm = () => {
   };
 
   return (
-    <Box
-      maxW="3xl" 
-      mx="auto"
-      p={{ base: 5, md: 8 }} 
-      my={8}
-      bg={useColorModeValue("white", "gray.700")} 
-      rounded="lg"
-      shadow="xl" 
-    >
+    <Box maxW="3xl" mx="auto" p={{ base: 5, md: 8 }} my={8} bg={useColorModeValue("white", "gray.700")} rounded="lg" shadow="xl">
       <VStack spacing={4} align="stretch" mb={8}>
         <Heading as="h1" size="xl" textAlign="center" color="teal.500">
           Formulación de Nuevo Curso
@@ -158,6 +167,17 @@ export const CourseForm = () => {
         <VStack spacing={8}> 
           
           <FormSection title="1. Identificación del Curso">
+            {/* ✨ EL INPUT DE LA FOTO (OPCIONAL) */}
+            <FormControl id="cover" isRequired={true}>
+              <FormLabel fontWeight="medium">Imagen de Portada</FormLabel>
+              <Input 
+                type="file" 
+                accept="image/png, image/jpeg, image/jpg" 
+                p={1}
+                onChange={(e) => setCoverImage(e.target.files?.[0] || null)}
+              />
+            </FormControl>
+
             <CourseFormControl id="denominacion" label="Denominación del Curso" />
             <CourseFormControl id="proposito" label="Propósito" isTextArea />
             <CourseFormControl id="fundamentacion" label="Fundamentación" isTextArea />
@@ -188,7 +208,7 @@ export const CourseForm = () => {
             mt={6}
             isLoading={isLoading}
             loadingText="Enviando Formulación..."
-            isDisabled={isLoading} // ✨ Previene múltiples clics a nivel de botón
+            isDisabled={isLoading}
           >
             Enviar Formulación
           </Button>

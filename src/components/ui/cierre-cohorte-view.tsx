@@ -9,7 +9,6 @@ import {
   useColorModeValue, 
   Flex 
 } from '@chakra-ui/react';
-import { PayloadCierreCohorte } from '@/data/types';
 
 // Componente para los datos de texto
 const DataBox = ({ label, value }: { label: string; value: string | number | undefined }) => {
@@ -27,7 +26,7 @@ const DataBox = ({ label, value }: { label: string; value: string | number | und
   );
 };
 
-// ✨ COMPONENTE INTELIGENTE: Decide si incrustar o mostrar botón de descarga
+// COMPONENTE INTELIGENTE: Decide si incrustar o mostrar botón de descarga
 const EmbeddedViewer = ({ title, url }: { title: string, url: string }) => {
   const bgColor = useColorModeValue('gray.100', 'gray.800');
   const borderColor = useColorModeValue('gray.300', 'gray.600');
@@ -69,7 +68,6 @@ const EmbeddedViewer = ({ title, url }: { title: string, url: string }) => {
           Abrir en pestaña nueva / Descargar
         </Text>
       </Flex>
-      {/* El iframe intenta renderizar el archivo en el navegador */}
       <Box w="full" h="400px" bg="gray.50">
         <iframe 
           src={url} 
@@ -83,10 +81,15 @@ const EmbeddedViewer = ({ title, url }: { title: string, url: string }) => {
   );
 };
 
-export function CierreCohorteView({ payload }: { payload: PayloadCierreCohorte }) {
+export function CierreCohorteView({ payload }: { payload: any }) { 
   if (!payload) {
     return <Text color="red.500" fontWeight="bold">Error: El payload está vacío.</Text>;
   }
+
+  // ✨ FIX MAESTRO: Si el componente padre pasó el objeto de DB completo, extraemos el 'payload' interno
+  const dataReal = payload.payload ? payload.payload : payload;
+
+  const archivos = dataReal.archivos || {};
 
   return (
     <VStack align="stretch" spacing={6}>
@@ -95,39 +98,35 @@ export function CierreCohorteView({ payload }: { payload: PayloadCierreCohorte }
       </Heading>
       
       <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-        <DataBox label="Programa / Curso" value={payload.titulo_curso} />
-        <DataBox label="Identificador de la Cohorte" value={payload.nombre_cohorte} />
-        <DataBox label="Fecha de Inicio" value={payload.fecha_inicio} />
-        <DataBox label="Fecha de Culminación" value={payload.fecha_fin} />
-        <DataBox label="Total Estudiantes Inscritos" value={payload.estudiantes_inscritos} />
-        <DataBox label="Total Estudiantes Aprobados" value={payload.estudiantes_aprobados} />
+        {/* Ahora leemos desde dataReal */}
+        <DataBox label="Programa / Curso" value={dataReal.titulo_curso} />
+        <DataBox label="Identificador de la Cohorte" value={dataReal.nombre_cohorte} />
       </SimpleGrid>
 
-      {payload.observaciones && (
+      {dataReal.observaciones && (
         <Box p={4} rounded="md" bg="blue.50" border="1px solid" borderColor="blue.200">
           <Text fontSize="sm" color="blue.600" fontWeight="bold" mb={1}>Observaciones del Proveedor</Text>
-          <Text fontSize="md">{payload.observaciones}</Text>
+          <Text fontSize="md">{dataReal.observaciones}</Text>
         </Box>
       )}
 
-      {/* ✨ SECCIÓN DE LOS 3 ARCHIVOS INCRUSTADOS */}
       <Box>
          <Text fontSize="md" color="gray.600" fontWeight="bold" mb={4}>Documentos Respaldatorios</Text>
          <VStack align="stretch" spacing={6}>
             
             <EmbeddedViewer 
               title="1. Listado de Participantes" 
-              url={payload.archivo_participantes_url} 
+              url={archivos.participantes_url || dataReal.archivo_participantes_url} 
             />
             
             <EmbeddedViewer 
               title="2. Vouchers de Pago" 
-              url={payload.archivo_vouchers_url} 
+              url={archivos.vouchers_url || dataReal.archivo_vouchers_url} 
             />
 
             <EmbeddedViewer 
               title="3. Encuestas de Satisfacción" 
-              url={payload.archivo_encuesta_url} 
+              url={archivos.encuesta_url || dataReal.archivo_encuesta_url} 
             />
 
          </VStack>

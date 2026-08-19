@@ -1,61 +1,164 @@
+// src/components/ui/client-cursos.tsx
 "use client";
 
-import { Box, SimpleGrid, Card, CardBody, Stack, Image } from "@chakra-ui/react";
+import React, { useState, useMemo } from 'react';
+import {
+    Box, VStack, SimpleGrid, Input, InputGroup, InputLeftElement,
+    Button, HStack, Text, Card, CardBody, Stack, Image, Heading, Flex, IconButton
+} from '@chakra-ui/react';
+import { MdSearch, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import NextLink from 'next/link';
-import React from 'react';
-import { Heading, Paragraph } from "@/components/ui/tipografia";
-import { Pagination } from "@/components/ui/pagination";
 import { Course } from '@/data/types';
 
-interface ClientCoursesProps {
-    courses: Course[];
-    currentPage: number;
-    totalPages: number;
-}
-
-const CourseCard = ({ titulo, descripcion, image }: Pick<Course, 'titulo' | 'descripcion' | 'image'>) => {
-    const placeholderImage = "https://placehold.co/400x200/cccccc/ffffff/png?text=Imagen+no+encontrada";
+// ✨ Tarjetita del curso
+const CourseCard = ({ titulo, descripcion, image }: any) => {
+    const placeholderImage = "https://placehold.co/400x200/cccccc/ffffff/png?text=Curso";
+    const finalImage = image && image.startsWith('/') ? `http://localhost:8080${image}` : (image || '');
 
     return (
-        <Card overflow="hidden" variant="outline" _hover={{ transform: 'translateY(-5px)', shadow: 'lg' }} transition="all 0.2s" height="100%">
-            <Image
-                src={image || placeholderImage} 
-                alt={titulo}
-                objectFit="cover"
-                w="100%"
-                h="200px"
-                fallbackSrc={placeholderImage}
-            />
+        <Card _hover={{ transform: 'translateY(-5px)', shadow: 'lg' }} transition="all 0.2s" height="100%" overflow="hidden" variant="outline">
+            <Image src={finalImage} alt={titulo} objectFit="cover" w="100%" h="200px" fallbackSrc={placeholderImage} />
             <CardBody>
-                <Stack mt="6" spacing="3">
-                    <Heading size="md">{titulo}</Heading>
-                    {/* Evitar errores si no hay descripción */}
-                    <Paragraph noOfLines={3}>{descripcion || "Sin descripción disponible."}</Paragraph>
+                <Stack mt="4" spacing="3">
+                    <Heading size="md" noOfLines={2}>{titulo}</Heading>
+                    <Text color="gray.600" noOfLines={3} fontSize="sm">
+                        {descripcion || "Sin descripción disponible."}
+                    </Text>
                 </Stack>
             </CardBody>
         </Card>
     );
 };
 
-export function ClientCourses({ courses, currentPage, totalPages }: ClientCoursesProps) {
-    return (
-        <Box maxW="container.xl" mx="auto" py={10} px={6}>
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10}>
-                {courses.map(course => (
-                    // ✨ Cambio aquí: Usar slug si existe, si no, el ID, igual que en el Home
-                    <NextLink href={`/curso/${ course.id}`} passHref key={course.id}>
-                        <CourseCard
-                            titulo={course.titulo}
-                            descripcion={course.descripcion}
-                            image={course.image}
-                        />
-                    </NextLink>
-                ))}
-            </SimpleGrid>
+export function ClientCourses({ initialCourses }: { initialCourses: Course[] }) {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 9;
 
-            {totalPages > 1 && (
-                <Pagination currentPage={currentPage} totalPages={totalPages} />
-            )}
+    // 1. EL BUSCADOR INTELIGENTE
+    const filteredCourses = useMemo(() => {
+        if (!searchTerm.trim()) return initialCourses;
+        const lowerSearch = searchTerm.toLowerCase();
+        
+        return initialCourses.filter(c => 
+            (c.titulo && c.titulo.toLowerCase().includes(lowerSearch)) ||
+            (c.descripcion && c.descripcion.toLowerCase().includes(lowerSearch))
+        );
+    }, [initialCourses, searchTerm]);
+
+    // 2. LA PAGINACIÓN MATEMÁTICA
+    const totalPages = Math.ceil(filteredCourses.length / ITEMS_PER_PAGE) || 1;
+    
+    const paginatedCourses = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredCourses.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredCourses, currentPage, ITEMS_PER_PAGE]);
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        setCurrentPage(1); 
+    };
+
+    // 3. ALGORITMO DE TRUNCAMIENTO PARA PAGINACIÓN
+    const getPageNumbers = () => {
+        const pages = [];
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            if (currentPage <= 4) {
+                pages.push(1, 2, 3, 4, 5, '...', totalPages);
+            } else if (currentPage >= totalPages - 3) {
+                pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+            } else {
+                pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+            }
+        }
+        return pages;
+    };
+
+    return (
+        <Box maxW="container.xl" mx="auto" py={10} px={6} minH="70vh" display="flex" flexDirection="column">
+            
+            <VStack spacing={6} mb={10}>
+                <Heading size="xl" textAlign="center">Catálogo de Cursos</Heading>
+                
+                <Box w="full" maxW="lg">
+                    <InputGroup size="lg">
+                        <InputLeftElement pointerEvents="none">
+                            <MdSearch color="gray.300" size={24} />
+                        </InputLeftElement>
+                        <Input 
+                            type="text" 
+                            placeholder="Buscar por nombre o tema del curso..." 
+                            value={searchTerm}
+                            onChange={handleSearch}
+                            bg="white"
+                            shadow="sm"
+                            focusBorderColor="teal.500"
+                        />
+                    </InputGroup>
+                </Box>
+            </VStack>
+
+            <Box flex="1">
+                {paginatedCourses.length === 0 ? (
+                    <Box textAlign="center" py={20} bg="gray.50" rounded="md" border="1px dashed" borderColor="gray.200">
+                        <Text fontSize="lg" color="gray.500">No se encontraron cursos que coincidan con tu búsqueda.</Text>
+                    </Box>
+                ) : (
+                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={10}>
+                        {paginatedCourses.map(course => (
+                            <NextLink href={`/curso/${course.id}`} passHref key={course.id}>
+                                <CourseCard
+                                    titulo={course.titulo}
+                                    descripcion={course.descripcion}
+                                    image={course.image}
+                                />
+                            </NextLink>
+                        ))}
+                    </SimpleGrid>
+                )}
+            </Box>
+
+            {/* CONTROLES DE PAGINACIÓN MODERNOS */}
+            <Flex justify="center" align="center" mt={12}>
+                <HStack spacing={2}>
+                    <IconButton 
+                        icon={<MdChevronLeft size={20} />}
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                        isDisabled={currentPage === 1}
+                        aria-label="Página anterior"
+                        variant="outline"
+                        colorScheme="gray"
+                    />
+                    
+                    {getPageNumbers().map((p, index) => (
+                        p === '...' ? (
+                            <Text key={`ellipsis-${index}`} px={2} color="gray.500" fontWeight="bold">...</Text>
+                        ) : (
+                            <Button
+                                key={index}
+                                onClick={() => setCurrentPage(p as number)}
+                                variant={currentPage === p ? "solid" : "outline"}
+                                colorScheme={currentPage === p ? "teal" : "gray"}
+                                minW="40px"
+                            >
+                                {p}
+                            </Button>
+                        )
+                    ))}
+                    
+                    <IconButton 
+                        icon={<MdChevronRight size={20} />}
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+                        isDisabled={currentPage === totalPages}
+                        aria-label="Página siguiente"
+                        variant="outline"
+                        colorScheme="gray"
+                    />
+                </HStack>
+            </Flex>
+            
         </Box>
     );
 }

@@ -74,13 +74,17 @@ export function CodigoProveedorView({ payload }: CodigoProveedorViewProps) {
             {isImage ? (
               <img src={url} alt={label} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
             ) : (
-              <iframe src={demoPdfUrl} title={label} style={{ width: "100%", height: "100%", border: "none" }} />
+              // ✨ Como ya tenemos URLs reales, usamos la URL real en vez de demoPdfUrl
+              <iframe src={url} title={label} style={{ width: "100%", height: "100%", border: "none" }} />
             )}
           </Box>
         )}
       </Box>
     );
   };
+
+  // Para extraer de forma segura el array de otros documentos
+  const otrosDocs = Array.isArray(docs.otros_documentos) ? docs.otros_documentos : (Array.isArray(docs.otros) ? docs.otros : []);
 
   return (
     <Box mb={10}>
@@ -115,11 +119,14 @@ export function CodigoProveedorView({ payload }: CodigoProveedorViewProps) {
             <DocumentField label="Cédula de Identidad" url={docs.ci || docs.cedula} />
             <DocumentField label="Registro de Información Fiscal (RIF)" url={docs.rif} />
             <DocumentField label="Certificado ISLR" url={docs.islr} />
-            <DocumentField label="Resumen Curricular" url={Array.isArray(docs.resumenes) ? docs.resumenes[0] : docs.resumenes || docs.curriculum} />
-            <DocumentField label="Copia del Título Profesional" url={Array.isArray(docs.otros) ? docs.otros[0] : docs.otros || docs.titulo} />
+            <DocumentField label="Resumen Curricular" url={docs.curriculum || docs.resumenes} />
             
-            {(tipoPersona === 'juridica' || (docs.otros && docs.otros.length > 1) || docs.registro_mercantil) && (
-              <DocumentField label="Registro Mercantil" url={Array.isArray(docs.otros) ? docs.otros[1] : docs.registro_mercantil} />
+            {/* ✨ Leemos directamente su llave dedicada */}
+            <DocumentField label="Copia del Título Profesional" url={docs.titulo} />
+            
+            {/* ✨ Solo lo muestra si existe (para jurídicas) */}
+            {docs.registro_mercantil && (
+              <DocumentField label="Registro Mercantil" url={docs.registro_mercantil} />
             )}
           </SimpleGrid>
         </Box>

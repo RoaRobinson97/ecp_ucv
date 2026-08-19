@@ -17,23 +17,24 @@ import {
   NumberDecrementStepper,
   useToast,
   useDisclosure,
-  Text // Import Text for the message
+  Text,
+  useColorModeValue
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-// ✨ Quitamos useGlobalData si solo usamos el estado del curso
-// import { useGlobalData } from "@/app/context/global-data-context";
 import CloseCohortModal from "@/components/modals/cerrar-cohorte-modal";
-// ✨ Importamos el tipo CourseEstadoGestion si lo tienes definido, o lo definimos aquí
-import { Course } from '@/data/types'; // Asumiendo que Course tiene estado_gestion
+import { Course } from '@/data/types'; 
+import { courseService } from '@/servicios/cursos-service';
 
-// ✨ 1. Actualizamos CourseInfo para incluir el estado
+// ✨ 1. ACTUALIZAMOS LA INTERFAZ PARA RECIBIR EL CONTRATO
 interface CourseInfo {
   id: string;
   titulo: string;
-  estado_gestion?: Course['estado_gestion']; // Usamos el tipo de Course
+  estado_gestion?: string; 
+  estado?: string;
+  contrato_id?: string;
+  documento_legal_id?: string;
 }
 
-// Props se mantiene igual
 interface CohortPanelProps {
   course: CourseInfo;
 }
@@ -42,8 +43,6 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
   const toast = useToast();
   const router = useRouter();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  // ✨ Mantenemos setCohortOpen si la acción de abrir/cerrar debe actualizar un estado global/API
-  // const { setCohortOpen } = useGlobalData(); // Descomentar si es necesario
 
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
   const [cohortName, setCohortName] = useState('');
@@ -51,7 +50,25 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
   const [endDate, setEndDate] = useState('');
   const [capacity, setCapacity] = useState(20);
 
-  // La lógica para abrir la cohorte sigue siendo relevante
+  // ✨ COLORES DINÁMICOS PARA MODO CLARO Y OSCURO
+  const panelBg = useColorModeValue("gray.50", "gray.800"); 
+  const panelBorder = useColorModeValue("teal.500", "teal.300");
+  const headingColor = useColorModeValue("teal.700", "teal.300");
+  const labelColor = useColorModeValue("gray.800", "gray.200");
+  const textColor = useColorModeValue("black", "white");
+  const inputBg = useColorModeValue("white", "gray.900");
+  const inputBorder = useColorModeValue("gray.300", "gray.600");
+  const mutedColor = useColorModeValue("gray.500", "gray.400");
+  const readOnlyBg = useColorModeValue("gray.100", "gray.700");
+
+  // ✨ 2. LÓGICA BLINDADA: Determinamos si de verdad puede abrir cohorte
+  const estadoReal = String(course.estado_gestion || course.estado).toLowerCase();
+  const hasContract = !!(course.contrato_id || course.documento_legal_id);
+  
+  const isAbierto = estadoReal === 'abierto';
+  // Es amparado si dice "cerrado", O si dice "aprobado/a" pero YA TIENE CONTRATO
+  const isAmparado = estadoReal === 'cerrado' || ((estadoReal === 'aprobada' || estadoReal === 'aprobado') && hasContract);
+
   const handleOpenCohort = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsSubmittingForm(true);
@@ -69,24 +86,29 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
     }
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      // Aquí podrías llamar a una función para actualizar el estado del curso en tu "DB" mock o API real
-      // Por ahora, simulamos el éxito y actualizamos el estado global si es necesario
-      // setCohortOpen(true); // Descomentar si se usa estado global
+      // LLAMADA REAL A LA API
+      await courseService.openCohort(course.id, { 
+          cohortName, 
+          startDate, 
+          endDate, 
+          capacity 
+      });
+
       toast({
         title: "Cohorte Abierta.",
-        description: `La cohorte "${cohortName}" para "${course.titulo}" ha sido creada con éxito.`,
+        description: `La cohorte "${cohortName}" ha sido iniciada. Los alumnos ya pueden verla.`,
         status: "success",
         duration: 5000,
         isClosable: true,
       });
-      // Probablemente no quieras redirigir aquí, sino refrescar la data de la página actual
-      // router.push(`/`);
-      // router.refresh(); // O usar router.refresh() si aplica en tu versión de Next.js
-    } catch (error) {
+      
+      // Refrescamos la página para que el componente cambie a la vista de "Cohorte Activa"
+      window.location.reload();
+
+    } catch (error: any) {
        toast({
         title: "Error al abrir cohorte.",
-        description: "Por favor, inténtalo de nuevo más tarde.",
+        description: error.message || "Por favor, inténtalo de nuevo más tarde.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -96,40 +118,37 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
     }
   };
 
-  // La lógica para cerrar cohorte (probablemente dentro del Modal) también puede necesitar
-  // actualizar el estado_gestion del curso.
-
-  // Datos simulados para una cohorte activa (esto debería venir de la API/estado global eventualmente)
   const activeCohortData = { name: 'Cohorte Primavera 2024', start: '2024-09-01', end: '2024-11-01', cap: 25 };
 
   return (
     <>
-      <Box p={6} border="2px" borderColor="teal.100" rounded="lg" bg="teal.50">
-        {/* ✨ 2. CAMBIAMOS LA CONDICIÓN PRINCIPAL */}
-        {course.estado_gestion === 'abierto' ? (
+      <Box p={6} borderTop="4px solid" borderColor={panelBorder} rounded="lg" bg={panelBg} shadow="md">
+        
+        {/* ✨ 3. REEMPLAZAMOS LAS CONDICIONES DE RENDERIZADO */}
+        {isAbierto ? (
           // --- Si el curso está 'abierto', mostramos la gestión ---
           <VStack spacing={4}>
-            <Heading as="h2" size="xl" mb={4} textAlign="center" color="teal.800">
+            <Heading as="h2" size="xl" mb={4} textAlign="center" color={headingColor}>
               Gestión de Cohorte Abierta
             </Heading>
-            {/* Formulario de solo lectura con datos de la cohorte activa */}
+            
             <FormControl id="cohortName-active">
-              <FormLabel fontWeight="bold">Nombre de la Cohorte</FormLabel>
-              <Input type="text" value={activeCohortData.name} isReadOnly disabled />
+              <FormLabel fontWeight="bold" color={labelColor}>Nombre de la Cohorte</FormLabel>
+              <Input type="text" value={activeCohortData.name} bg={readOnlyBg} color={textColor} borderColor={inputBorder} isReadOnly disabled _disabled={{ opacity: 0.8, cursor: 'not-allowed' }} />
             </FormControl>
             <Flex width="full" gap={4}>
               <FormControl id="startDate-active">
-                <FormLabel fontWeight="bold">Fecha de Inicio</FormLabel>
-                <Input type="date" value={activeCohortData.start} isReadOnly disabled />
+                <FormLabel fontWeight="bold" color={labelColor}>Fecha de Inicio</FormLabel>
+                <Input type="date" value={activeCohortData.start} bg={readOnlyBg} color={textColor} borderColor={inputBorder} isReadOnly disabled _disabled={{ opacity: 0.8, cursor: 'not-allowed' }} css={{ colorScheme: 'dark' }} />
               </FormControl>
               <FormControl id="endDate-active">
-                <FormLabel fontWeight="bold">Fecha de Fin</FormLabel>
-                <Input type="date" value={activeCohortData.end} isReadOnly disabled />
+                <FormLabel fontWeight="bold" color={labelColor}>Fecha de Fin</FormLabel>
+                <Input type="date" value={activeCohortData.end} bg={readOnlyBg} color={textColor} borderColor={inputBorder} isReadOnly disabled _disabled={{ opacity: 0.8, cursor: 'not-allowed' }} css={{ colorScheme: 'dark' }} />
               </FormControl>
             </Flex>
             <FormControl id="capacity-active">
-              <FormLabel fontWeight="bold">Capacidad</FormLabel>
-              <NumberInput value={activeCohortData.cap} isReadOnly isDisabled>
+              <FormLabel fontWeight="bold" color={labelColor}>Capacidad</FormLabel>
+              <NumberInput value={activeCohortData.cap} bg={readOnlyBg} color={textColor} borderColor={inputBorder} isReadOnly isDisabled _disabled={{ opacity: 0.8, cursor: 'not-allowed' }}>
                 <NumberInputField />
               </NumberInput>
             </FormControl>
@@ -137,57 +156,90 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
               Cerrar Cohorte
             </Button>
           </VStack>
-        ) : course.estado_gestion === 'cerrado' ? (
-          // --- Si el curso está 'cerrado', mostramos el formulario para abrir ---
+          
+        ) : isAmparado ? (
+          
+          // --- Si el curso está amparado legalmente, mostramos el formulario para abrir ---
           <form onSubmit={handleOpenCohort}>
-            <Heading as="h2" size="xl" mb={6} textAlign="center" color="teal.800">
+            <Heading as="h2" size="xl" mb={6} textAlign="center" color={headingColor}>
               Abrir Nueva Cohorte
             </Heading>
             <VStack spacing={4}>
-             {/* Formulario para abrir cohorte completo */}
               <FormControl id="cohortName" isRequired>
-                 <FormLabel>Nombre de la Cohorte</FormLabel>
-                 <Input type="text" placeholder="Ej: Cohorte Invierno 2024" value={cohortName} onChange={(e) => setCohortName(e.target.value)} />
+                 <FormLabel color={labelColor} fontWeight="medium">Nombre de la Cohorte</FormLabel>
+                 <Input 
+                    type="text" 
+                    placeholder="Ej: Cohorte Invierno 2024" 
+                    value={cohortName} 
+                    onChange={(e) => setCohortName(e.target.value)} 
+                    bg={inputBg}
+                    color={textColor}
+                    borderColor={inputBorder}
+                    _placeholder={{ color: mutedColor }}
+                 />
               </FormControl>
               <Flex width="full" gap={4}>
                  <FormControl id="startDate" isRequired>
-                   <FormLabel>Fecha de Inicio</FormLabel>
-                   <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                   <FormLabel color={labelColor} fontWeight="medium">Fecha de Inicio</FormLabel>
+                   <Input 
+                      type="date" 
+                      value={startDate} 
+                      onChange={(e) => setStartDate(e.target.value)} 
+                      bg={inputBg}
+                      color={textColor}
+                      borderColor={inputBorder}
+                   />
                  </FormControl>
                  <FormControl id="endDate" isRequired>
-                   <FormLabel>Fecha de Fin</FormLabel>
-                   <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                   <FormLabel color={labelColor} fontWeight="medium">Fecha de Fin</FormLabel>
+                   <Input 
+                      type="date" 
+                      value={endDate} 
+                      onChange={(e) => setEndDate(e.target.value)} 
+                      bg={inputBg}
+                      color={textColor}
+                      borderColor={inputBorder}
+                   />
                  </FormControl>
               </Flex>
               <FormControl id="capacity" isRequired>
-                 <FormLabel>Capacidad de Estudiantes</FormLabel>
-                 <NumberInput min={1} max={100} value={capacity} onChange={(_, valueAsNumber) => setCapacity(valueAsNumber)}>
-                   <NumberInputField />
+                 <FormLabel color={labelColor} fontWeight="medium">Capacidad de Estudiantes</FormLabel>
+                 <NumberInput 
+                    min={1} max={100} 
+                    value={capacity} 
+                    onChange={(_, valueAsNumber) => setCapacity(valueAsNumber)}
+                 >
+                   <NumberInputField bg={inputBg} color={textColor} borderColor={inputBorder} />
                    <NumberInputStepper>
-                     <NumberIncrementStepper />
-                     <NumberDecrementStepper />
+                     <NumberIncrementStepper color={textColor} borderColor={inputBorder} />
+                     <NumberDecrementStepper color={textColor} borderColor={inputBorder} />
                    </NumberInputStepper>
                  </NumberInput>
               </FormControl>
-              <Button type="submit" colorScheme="teal" size="lg" width="full" mt={4} isLoading={isSubmittingForm} loadingText="Abriendo Cohorte...">
-                Abrir Cohorte
+              <Button type="submit" colorScheme="teal" size="lg" width="full" mt={6} isLoading={isSubmittingForm} loadingText="Abriendo Cohorte...">
+                Confirmar y Abrir Cohorte
               </Button>
             </VStack>
           </form>
+          
         ) : (
-           // --- Si el estado es otro (pendiente, aprobado, rechazado) ---
-           <Box textAlign="center">
-                <Heading as="h3" size="lg" mb={4} color="gray.600">Gestión de Cohorte</Heading>
-                <Text color="gray.500">
-                    Este curso se encuentra en estado "{course.estado_gestion || 'desconocido'}".
-                    La gestión de cohortes solo está disponible para cursos cerrados o abiertos.
+           // --- Si el estado es otro (pendiente, aprobado sin contrato, rechazado) ---
+           <Box textAlign="center" py={4}>
+                <Heading as="h3" size="md" mb={4} color={headingColor}>Gestión de Cohorte</Heading>
+                <Text color={mutedColor} fontSize="sm">
+                    Este programa académico se encuentra en estado <strong>"{estadoReal || 'desconocido'}"</strong>.
+                    La apertura de cohortes requiere que el curso esté amparado legalmente.
                 </Text>
            </Box>
         )}
       </Box>
-      {/* El Modal para cerrar la cohorte se mantiene */}
-      <CloseCohortModal isOpen={isOpen} onClose={onClose} />
+      <CloseCohortModal 
+          isOpen={isOpen} 
+          onClose={onClose} 
+          courseId={course.id} 
+          courseTitle={course.titulo} 
+          cohortName={activeCohortData.name} 
+      />
     </>
   );
 }
-

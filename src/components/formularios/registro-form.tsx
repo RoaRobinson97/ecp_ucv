@@ -123,20 +123,56 @@ export const RegisterForm = () => {
         isClosable: true,
       });
 
-      // 2. Auto-login
+      // 2. Auto-login blindado
+      // 2. Auto-login blindado
       try {
-          const response = await authService.login(formData.email, formData.password);
-          const realUser = response.usuario || response.user || response.User;
-          if (realUser) login(realUser);
-          
-          router.push("/");
-          router.refresh();
+        const response = await authService.login(formData.email, formData.password);
+        
+        // 1. Buscamos el token real que devolvió Go
+        const realToken = response.token || response.access_token || response.Token || response.jwt;
+        
+        // 2. Desencriptamos el JWT manualmente para robarle el ID que te asignó la BD
+        let realId = "";
+        if (realToken) {
+            try {
+                const base64Url = realToken.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const decodedToken = JSON.parse(window.atob(base64));
+                realId = decodedToken.id || decodedToken.sub || decodedToken.userId || decodedToken.usuario_id || "";
+            } catch (e) {
+                console.warn("No se pudo decodificar el token JWT en el frontend");
+            }
+        }
+        
+        // 3. Armamos el usuario inyectándole el ID real
+        const realUser = response.usuario || response.user || response.User || {
+            id: realId, 
+            nombres: formData.firstName,
+            apellidos: formData.lastName,
+            email: formData.email,
+            rol: 'visitante'
+        };
+        
+        login(realUser);
+        
+        // ✅ RECARGA DURA: Obliga al navegador a enviar la cookie al servidor
+        window.location.href = '/';
+
       } catch (loginErr) {
-          router.push('/login'); 
+        toast({
+            title: "Redirección",
+            description: "Registro completado. Por favor, inicia sesión con tus nuevas credenciales.",
+            status: "info",
+            duration: 5000,
+            isClosable: true,
+            position: "top"
+        });
+        
+        // ✅ RECARGA DURA AQUÍ TAMBIÉN
+        window.location.href = '/login'; 
       }
 
     } catch (err: any) {
-      // ✨ CORRECCIÓN: El error del backend (400) se muestra aquí como un Toast
       toast({
         title: "Error al registrar",
         description: err.message,

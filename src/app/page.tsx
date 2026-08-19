@@ -1,5 +1,4 @@
-// /app/page.tsx (HomePage)
-
+// /app/page.tsx
 import React from 'react';
 import { Box } from "@chakra-ui/react";
 import NextLink from 'next/link';
@@ -7,24 +6,19 @@ import { Heading, Paragraph } from "@/components/ui/tipografia";
 import { PrimaryButton } from "@/components/ui/buttons";
 import { ClientContent } from '../components/ui/client-components';
 import { courseService } from '../servicios/cursos-service'; 
-
-// ✨ IMPORTA TU INTERFAZ GLOBAL EN LUGAR DE REESCRIBIRLA
 import { Course } from '@/data/types';
 
-// ✨ REVALIDACIÓN DE CACHÉ (ISR)
-// Esto le dice a Next.js: "Vuelve a consultar la base de datos en el fondo cada 60 segundos"
-// Así tu página es ultra rápida, pero siempre se mantiene actualizada.
 export const revalidate = 60; 
 
 export default async function HomePage() {
-    
     let coursesForClient: Course[] = []; 
     let hasError = false; 
     
     try {
-        const { courses } = await courseService.getAllCourses({ page: 1, limit: 3 }) as { courses: Course[] };
+        // ✨ Invocamos el nuevo servicio hiper-específico
+        const { courses } = await courseService.getPublicCourses(3);
         coursesForClient = courses;
-
+        console.log(coursesForClient)
     } catch (error) {
         console.error("Fallo al cargar cursos en HomePage:", error);
         hasError = true; 
@@ -40,11 +34,7 @@ export default async function HomePage() {
                 backgroundRepeat="no-repeat"
                 color="white"
             >
-                <Box 
-                    bgColor={'#33333399'} 
-                    py={10} 
-                    px={6} 
-                >
+                <Box bgColor={'#33333399'} py={10} px={6}>
                     <Heading as="h1" size="2xl" mb={4}>
                         Cursos Certificados por la UCV
                     </Heading>
@@ -57,6 +47,7 @@ export default async function HomePage() {
                 </Box>
             </Box>
 
+            {/* Como el servicio ya limpió la basura, ClientContent solo los dibuja */}
             <ClientContent courses={coursesForClient} hasError={hasError} />
         </Box>
     );

@@ -1,18 +1,19 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box, Button, FormControl, FormLabel, Input, Textarea, VStack,
   Heading, Text, useToast, RadioGroup, Radio, HStack, FormHelperText,
   Divider, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody,
   ModalFooter, Slider, SliderTrack, SliderFilledTrack, SliderThumb,
-  Avatar, Icon, useDisclosure
+  Avatar, Icon, useDisclosure, Select
 } from "@chakra-ui/react";
 import Cropper from 'react-easy-crop';
 import { useAuth } from "@/app/context/auth-context";
 import { useRouter } from "next/navigation";
 import { FaCamera } from 'react-icons/fa';
 import { solicitudesService } from '@/servicios/solicitudes-service';
+import { userService } from '@/servicios/users-service'; // ✨ Importamos el userService
 
 // --- UTILIDAD PARA RECORTAR LA IMAGEN ---
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -58,10 +59,16 @@ export const SolicitudForm = () => {
   const toast = useToast();
 
   const [personType, setPersonType] = useState<"natural" | "juridica">("natural");
-  const [isInternal, setIsInternal] = useState<"true" | "false">("false"); // ✨ NUEVO ESTADO UCV
+  const [isInternal, setIsInternal] = useState<"true" | "false">("false"); 
+  const [tipoLucro, setTipoLucro] = useState<"lucrativo" | "no_lucrativo">("no_lucrativo");
   const [providerName, setProviderName] = useState("");
   const [bio, setBio] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  
+  // ✨ ESTADOS PARA LAS FACULTADES
+  const [facultadId, setFacultadId] = useState("");
+  const [facultadesList, setFacultadesList] = useState<any[]>([]);
+  const [isLoadingFacultades, setIsLoadingFacultades] = useState(false);
 
   const [legalDocs, setLegalDocs] = useState<{ [key: string]: File | null }>({
     cedula: null, rif: null, islr: null, cv: null, titulo: null, regMercantil: null
@@ -71,7 +78,6 @@ export const SolicitudForm = () => {
     setLegalDocs(prev => ({ ...prev, [key]: file }));
   };
 
-  // --- ESTADOS PARA EL EDITOR DE IMAGEN ---
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -79,6 +85,31 @@ export const SolicitudForm = () => {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [finalProfileImage, setFinalProfileImage] = useState<string | null>(null); 
   const [finalImageFile, setFinalImageFile] = useState<Blob | null>(null);
+
+  // ✨ CARGAMOS LAS FACULTADES AL INICIAR (Sin variables fantasma)
+  useEffect(() => {
+    async function loadFacultades() {
+        setIsLoadingFacultades(true);
+        try {
+            const coordinadores = await userService.getCoordinadores();
+            // Filtramos por si acaso viene algún elemento nulo o sin ID
+            const facultadesMapeadas = (coordinadores || [])
+                .filter((coord: any) => coord && coord.id)
+                .map((coord: any) => ({
+                    id: coord.id,
+                    name: coord.facultad || `${coord.first_name || coord.nombres || ''} ${coord.last_name || coord.apellidos || ''}`.trim()
+                }));
+            setFacultadesList(facultadesMapeadas);
+        } catch (error) {
+            console.error("Error al cargar lista de facultades:", error);
+        } finally {
+            setIsLoadingFacultades(false);
+        }
+    }
+
+    // Lo llamamos directamente, sin condiciones raras
+    loadFacultades();
+  }, []); // <-- Dependencias vacías para que corra solo una vez al cargar la página
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -104,10 +135,23 @@ export const SolicitudForm = () => {
     } catch (e) { console.error(e); }
   }, [imageSrc, croppedAreaPixels, onClose]);
 
+  // ✨ AÑADIMOS LA FACULTAD A LA VALIDACIÓN
+  const isFormValid = Boolean(
+    personType &&
+    facultadId !== '' &&
+    providerName.trim() !== '' &&
+    bio.trim() !== '' &&
+    finalImageFile &&
+    legalDocs.cedula &&
+    legalDocs.rif &&
+    legalDocs.islr &&
+    legalDocs.cv &&
+    legalDocs.titulo &&
+    (personType === 'natural' || (personType === 'juridica' && legalDocs.regMercantil))
+  );
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    
-    // ✨ ARREGLO DE TYPESCRIPT: Convertimos todo a un string seguro
     const finalUserId = String(user?.id || user?.ID || "");
 
     if (!user || !finalUserId) {
@@ -115,12 +159,8 @@ export const SolicitudForm = () => {
         return;
     }
 
-    if (!finalImageFile || !legalDocs.cedula || !legalDocs.rif || !legalDocs.islr || !legalDocs.cv) {
-        toast({ 
-            title: "Documentación incompleta", 
-            description: "Foto de perfil, Cédula, RIF, ISLR y Currículum son obligatorios para el servidor.", 
-            status: "warning" 
-        });
+    if (!isFormValid) {
+        toast({ title: "Documentación incompleta", description: "Asegúrate de subir TODOS los documentos requeridos antes de enviar.", status: "warning" });
         return;
     }
 
@@ -130,21 +170,24 @@ export const SolicitudForm = () => {
       const formData = new FormData();
       
       formData.append('userId', finalUserId);
-      formData.append('tipo', 'codigo-proveedor'); // Esto lo ignora Go, pero te sirve a ti
+      formData.append('tipo', 'codigo-proveedor'); 
       formData.append('estado', 'pendiente');
       formData.append('tipo_persona', personType);
-      formData.append('es_interno', isInternal); // ✨ ENVIAMOS LA RELACIÓN CON LA UCV
+      formData.append('es_interno', isInternal); 
+      formData.append('tipo_lucro', tipoLucro);
       formData.append('nombre_proveedor', providerName);
       formData.append('biografia', bio);
+      formData.append('coordinador_id', facultadId); // 🔥 ENVIAMOS EL ID DEL COORDINADOR ELEGIDO
 
       if (finalImageFile) formData.append('avatar', finalImageFile, 'avatar.jpg');
       if (legalDocs.cedula) formData.append('cedula', legalDocs.cedula);
       if (legalDocs.rif) formData.append('rif', legalDocs.rif);
       if (legalDocs.islr) formData.append('islr', legalDocs.islr);
       if (legalDocs.titulo) formData.append('titulo', legalDocs.titulo);
-      
-      if (personType === 'natural' && legalDocs.cv) formData.append('curriculum', legalDocs.cv);
-      if (personType === 'juridica' && legalDocs.regMercantil) formData.append('registro_mercantil', legalDocs.regMercantil);
+      if (legalDocs.cv) formData.append('curriculum', legalDocs.cv);
+      if (personType === 'juridica' && legalDocs.regMercantil) {
+        formData.append('registro_mercantil', legalDocs.regMercantil);
+      }
 
       await solicitudesService.createSolicitud(formData); 
 
@@ -156,8 +199,7 @@ export const SolicitudForm = () => {
         isClosable: true,
       });
 
-      router.push(`/profile/${finalUserId}`); 
-      
+      router.push('/'); 
     } catch (error: any) {
       console.error(error);
       toast({ title: "Error al subir los documentos", description: error.message || "Fallo en el servidor.", status: "error" });
@@ -177,6 +219,27 @@ export const SolicitudForm = () => {
         <form onSubmit={handleSubmit}>
           <VStack spacing={6}>
             
+            {/* ✨ NUEVO SELECT DE FACULTADES */}
+            <FormControl id="facultad" isRequired>
+              <FormLabel fontWeight="bold">¿A qué Facultad diriges tu solicitud?</FormLabel>
+              <Select
+                placeholder={isLoadingFacultades ? "Cargando facultades..." : "Selecciona una facultad"}
+                value={facultadId}
+                onChange={(e) => setFacultadId(e.target.value)}
+                isDisabled={isLoadingFacultades}
+                focusBorderColor="teal.500"
+              >
+                {facultadesList.map((fac) => (
+                  <option key={fac.id} value={fac.id}>
+                    {fac.name}
+                  </option>
+                ))}
+              </Select>
+              <FormHelperText>Tu documentación será evaluada por el coordinador de esta facultad.</FormHelperText>
+            </FormControl>
+
+            <Divider />
+
             <FormControl id="person-type" as="fieldset" isRequired>
               <FormLabel as="legend" fontWeight="bold">Tipo de Persona</FormLabel>
               <RadioGroup onChange={(value: any) => setPersonType(value)} value={personType}>
@@ -189,13 +252,24 @@ export const SolicitudForm = () => {
 
             <Divider />
 
-            {/* ✨ NUEVO: RELACIÓN UCV */}
             <FormControl id="internal-type" as="fieldset" isRequired>
               <FormLabel as="legend" fontWeight="bold">¿El proveedor pertenece a la UCV?</FormLabel>
               <RadioGroup onChange={(value: any) => setIsInternal(value)} value={isInternal}>
                 <HStack spacing="24px">
                   <Radio value="true" colorScheme="teal">Sí, pertenece (Interno)</Radio>
                   <Radio value="false" colorScheme="teal">No (Externo)</Radio>
+                </HStack>
+              </RadioGroup>
+            </FormControl>
+
+            <Divider />
+
+            <FormControl id="lucro-type" as="fieldset" isRequired>
+              <FormLabel as="legend" fontWeight="bold">Naturaleza de la Organización</FormLabel>
+              <RadioGroup onChange={(value: any) => setTipoLucro(value)} value={tipoLucro}>
+                <HStack spacing="24px">
+                  <Radio value="lucrativo" colorScheme="teal">Con fines de lucro</Radio>
+                  <Radio value="no_lucrativo" colorScheme="teal">Sin fines de lucro</Radio>
                 </HStack>
               </RadioGroup>
             </FormControl>
@@ -215,7 +289,7 @@ export const SolicitudForm = () => {
               </FormControl>
 
               <FormControl>
-                <FormLabel>Imagen de Perfil (Cuadrada)</FormLabel>
+                <FormLabel>Imagen de Perfil (Cuadrada) <Text as="span" color="red.500">*</Text></FormLabel>
                 <HStack spacing={4} align="center">
                   <Avatar size="xl" src={finalProfileImage || undefined} icon={<Icon as={FaCamera} fontSize="1.5rem" />} bg="gray.200" />
                   <Box>
@@ -225,7 +299,7 @@ export const SolicitudForm = () => {
                         {finalProfileImage ? "Cambiar Imagen" : "Subir Imagen"}
                       </Button>
                     </label>
-                    <FormHelperText>JPG o PNG.</FormHelperText>
+                    <FormHelperText>JPG o PNG. Requerido.</FormHelperText>
                   </Box>
                 </HStack>
               </FormControl>
@@ -236,50 +310,33 @@ export const SolicitudForm = () => {
             {personType === "natural" && (
               <VStack spacing={4} align="stretch" w="full">
                 <Heading size="md" color="gray.700">Documentación (Persona Natural)</Heading>
-                <FileUploadControl id="cedula" label="Cédula de Identidad" accept=".pdf" onChange={(f) => handleDocChange('cedula', f)} file={legalDocs.cedula} />
-                <FileUploadControl id="rif-natural" label="Registro de Información Fiscal (RIF)" accept=".pdf" onChange={(f) => handleDocChange('rif', f)} file={legalDocs.rif} />
-                <FileUploadControl id="islr-natural" label="Certificados de Declaración ISLR" accept=".pdf" onChange={(f) => handleDocChange('islr', f)} file={legalDocs.islr} />
-                <FileUploadControl id="cv-natural" label="Resumen curricular del facilitador" accept=".pdf" onChange={(f) => handleDocChange('cv', f)} file={legalDocs.cv} />
-                <FileUploadControl id="titulo-natural" label="Copia del título" accept=".pdf" onChange={(f) => handleDocChange('titulo', f)} file={legalDocs.titulo} />
+                <FileUploadControl id="cedula" label="Cédula de Identidad *" accept=".pdf" onChange={(f) => handleDocChange('cedula', f)} file={legalDocs.cedula} />
+                <FileUploadControl id="rif-natural" label="Registro de Información Fiscal (RIF) *" accept=".pdf" onChange={(f) => handleDocChange('rif', f)} file={legalDocs.rif} />
+                <FileUploadControl id="islr-natural" label="Certificados de Declaración ISLR *" accept=".pdf" onChange={(f) => handleDocChange('islr', f)} file={legalDocs.islr} />
+                <FileUploadControl id="cv-natural" label="Resumen curricular del facilitador *" accept=".pdf" onChange={(f) => handleDocChange('cv', f)} file={legalDocs.cv} />
+                <FileUploadControl id="titulo-natural" label="Copia del título *" accept=".pdf" onChange={(f) => handleDocChange('titulo', f)} file={legalDocs.titulo} />
               </VStack>
             )}
 
             {personType === "juridica" && (
               <VStack spacing={4} align="stretch" w="full">
                 <Heading size="md" color="gray.700">Documentación (Persona Jurídica)</Heading>
-                <FileUploadControl id="reg-mercantil" label="Registro Mercantil" accept=".pdf" onChange={(f) => handleDocChange('regMercantil', f)} file={legalDocs.regMercantil} />
-                <FileUploadControl id="cedula-legal" label="Cédula de Identidad del representante legal" accept=".pdf" onChange={(f) => handleDocChange('cedula', f)} file={legalDocs.cedula} />
-                <FileUploadControl id="rif-juridico" label="Registro de Información Fiscal (RIF)" accept=".pdf" onChange={(f) => handleDocChange('rif', f)} file={legalDocs.rif} />
-                <FileUploadControl id="islr-juridico" label="Certificado de Declaración ISLR" accept=".pdf" onChange={(f) => handleDocChange('islr', f)} file={legalDocs.islr} />
-                <FileUploadControl id="cv-juridico" label="Resumen curricular del facilitador(es)" accept=".pdf" onChange={(f) => handleDocChange('cv', f)} file={legalDocs.cv} />
-                <FileUploadControl id="titulo-juridico" label="Copia del título" accept=".pdf" onChange={(f) => handleDocChange('titulo', f)} file={legalDocs.titulo} />
+                <FileUploadControl id="reg-mercantil" label="Registro Mercantil *" accept=".pdf" onChange={(f) => handleDocChange('regMercantil', f)} file={legalDocs.regMercantil} />
+                <FileUploadControl id="cedula-legal" label="Cédula de Identidad del representante legal *" accept=".pdf" onChange={(f) => handleDocChange('cedula', f)} file={legalDocs.cedula} />
+                <FileUploadControl id="rif-juridico" label="Registro de Información Fiscal (RIF) *" accept=".pdf" onChange={(f) => handleDocChange('rif', f)} file={legalDocs.rif} />
+                <FileUploadControl id="islr-juridico" label="Certificado de Declaración ISLR *" accept=".pdf" onChange={(f) => handleDocChange('islr', f)} file={legalDocs.islr} />
+                <FileUploadControl id="cv-juridico" label="Resumen curricular del facilitador(es) *" accept=".pdf" onChange={(f) => handleDocChange('cv', f)} file={legalDocs.cv} />
+                <FileUploadControl id="titulo-juridico" label="Copia del título *" accept=".pdf" onChange={(f) => handleDocChange('titulo', f)} file={legalDocs.titulo} />
               </VStack>
             )}
             
-            <Button 
-              type="submit" 
-              colorScheme="teal" 
-              size="lg" 
-              width="full" 
-              mt={4} 
-              isLoading={isLoading} 
-              isDisabled={
-                  !personType || 
-                  !providerName.trim() || 
-                  !bio.trim() || 
-                  !finalImageFile || 
-                  !legalDocs.cedula || 
-                  !legalDocs.rif || 
-                  !legalDocs.islr || 
-                  !legalDocs.cv
-              }
-          >
+            <Button type="submit" colorScheme="teal" size="lg" width="full" mt={4} isLoading={isLoading} isDisabled={!isFormValid}>
               Enviar Solicitud
-          </Button>
+            </Button>
           </VStack>
         </form>
       </VStack>
-
+      
       <Modal isOpen={isOpen} onClose={onClose} size="xl" closeOnOverlayClick={false} isCentered>
         <ModalOverlay />
         <ModalContent>

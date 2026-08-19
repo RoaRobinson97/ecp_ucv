@@ -5,7 +5,6 @@ import { Box, VStack, SimpleGrid, Card, CardBody, Stack, Image, Text } from "@ch
 import React from 'react';
 import NextLink from 'next/link';
 import { Heading, Paragraph } from "@/components/ui/tipografia";
-// ✨ 1. Importamos la interfaz global
 import { Course } from "@/data/types"; 
 
 interface InfoCardProps {
@@ -45,7 +44,6 @@ const CourseCard = ({ titulo, descripcion, image }: MinimalCourseProps) => {
             <CardBody>
                 <Stack mt="6" spacing="3">
                     <Heading size="md">{titulo}</Heading>
-                    {/* Nos aseguramos de que descripcion exista antes de renderizarla */}
                     <Paragraph noOfLines={3}>{descripcion || "Sin descripción disponible."}</Paragraph>
                 </Stack>
             </CardBody>
@@ -59,6 +57,11 @@ interface ClientContentProps {
 }
 
 export function ClientContent({ courses, hasError = false }: ClientContentProps) {
+    
+    // ✨ Como la API de Next.js ya filtró la basura, solo usamos lo que nos entregue.
+    // Además, exigimos que el curso tenga su documento legal.
+    const cursosDisponibles = courses.filter(c => !!c.documento_legal_id);
+
     return (
         <Box maxW="container.xl" mx="auto" py={10} px={6}>
             {/* Sección "Nuestra Plataforma" */}
@@ -88,19 +91,18 @@ export function ClientContent({ courses, hasError = false }: ClientContentProps)
                     <Paragraph fontSize="lg">Aprende nuevas habilidades con el respaldo de la universidad.</Paragraph>
                 </VStack>
                 
-                {/* ✨ 3. Manejo de estado de Error vs Vacío vs Lleno */}
                 {hasError ? (
                     <Box textAlign="center" py={10} bg="red.50" rounded="md" color="red.600">
                         <Text fontSize="lg" fontWeight="semibold">No pudimos cargar los cursos en este momento.</Text>
                         <Text>Por favor, intenta refrescar la página más tarde.</Text>
                     </Box>
-                ) : courses.length === 0 ? (
+                ) : cursosDisponibles.length === 0 ? (
                     <Box textAlign="center" py={10} bg="gray.50" rounded="md" color="gray.500">
                         <Text fontSize="lg">Próximamente publicaremos nuevos cursos certificados.</Text>
                     </Box>
                 ) : (
                     <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10}>
-                        {courses.map(course => (
+                        {cursosDisponibles.map(course => (
                             <NextLink href={`/curso/${course.id}`} passHref key={course.id}>
                                 <CourseCard
                                     titulo={course.titulo}

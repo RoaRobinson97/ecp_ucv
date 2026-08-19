@@ -49,7 +49,7 @@ class AuthService {
         const fakeJwt = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${base64Payload}.MockSignature12345`;
         
         document.cookie = `auth_token=${fakeJwt}; path=/; max-age=86400`; 
-
+        console.log('El user: ',user)
         return user;
       } else {
         throw new Error("El correo electrónico o la contraseña son incorrectos.");

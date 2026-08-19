@@ -1,46 +1,58 @@
 // /app/mis-cursos/page.tsx
 import React from 'react';
 import { Box, Text } from '@chakra-ui/react';
-// Asegúrate que la ruta al componente cliente sea correcta
+import { cookies } from 'next/headers'; 
 import MyCoursesClientPage from '@/components/ui/mis-cursos-client-component';
 import { courseService } from '@/servicios/cursos-service';
-import { Course } from '@/data/types'; // Asegúrate de tener este tipo
+import { userService } from '@/servicios/users-service';
+import { Course } from '@/data/types'; 
 
-// Interfaz para los searchParams esperados
-interface MisCursosSearchParams {
-    page?: string;
-    codigo_proveedor?: string; // Esperamos el user_id como parámetro
-}
-
-export default async function MisCursosPage({ searchParams }: { searchParams: MisCursosSearchParams }) {
+export default async function MisCursosPage({ searchParams }: { searchParams: Promise<{ page?: string, usuario_id?: string }> }) {
     
-    // Obtenemos el user_id de los parámetros de búsqueda
-    const codigo_proveedor = searchParams.codigo_proveedor;
+    // 1. OBTENEMOS EL USUARIO DESDE LAS COOKIES
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token')?.value;
+    
+    const userPayload = userService.getUserFromToken(token) as { 
+        id?: string; 
+        sub?: string; // 👈 ¡ESTO FUE LO QUE SE TE OLVIDÓ COPIAR ANTES!
+        userID?: string; 
+    } | null;
+    
+    // Sacamos el ID del token asegurándonos de leer "sub"
+    let usuario_id = userPayload?.sub || userPayload?.id || userPayload?.userID;
 
-    // Si no se proporciona un user_id, mostramos un error o redirigimos (aquí solo mostramos error)
-    // En una app real, la protección de ruta (middleware) manejaría esto antes.
-    if (!codigo_proveedor) {
+    // 2. BUSCAMOS EN LA URL (PLAN B)
+    const params = await searchParams;
+    if (!usuario_id) {
+        usuario_id = params.usuario_id;
+    }
+
+    // 3. SI AÚN ASÍ NO HAY NADA, LO REBOTAMOS
+    if (!usuario_id) {
         return (
             <Box maxW="container.lg" mx="auto" py={10} px={6} textAlign="center">
-                <Text fontSize="xl" color="red.500">Error: Falta el identificador del usuario.</Text>
+                <Text fontSize="xl" color="red.500">
+                    Acceso Denegado: Inicia sesión o añade ?usuario_id= a la URL.
+                </Text>
             </Box>
         );
     }
     
-    const page = Number(searchParams.page) || 1;
-    const limit = 9; // Cursos por página
+    // 4. PARÁMETROS DE PAGINACIÓN
+    const page = Number(params.page) || 1;
+    const limit = 9; 
 
     let courses: Course[] = [];
     let totalPages = 1;
 
     try {
-        // Llamamos al servicio para obtener los cursos DE ESE USUARIO específico
-        const result = await courseService.getCoursesBycodigo_proveedor(codigo_proveedor, { page, limit }) as { courses: Course[], totalPages: number };
+        // 5. BUSCAMOS POR EL ID DEL USUARIO 
+        const result = await courseService.getCoursesByUserId(usuario_id, { page, limit });
         courses = result.courses;
         totalPages = result.totalPages;
     } catch (error) {
         console.error("Error fetching provider courses:", error);
-        // Manejo de error similar al template
         return (
              <Box maxW="container.lg" mx="auto" py={10} px={6} textAlign="center">
                  <Text fontSize="xl" color="red.500">Error al cargar tus cursos.</Text>
@@ -48,7 +60,6 @@ export default async function MisCursosPage({ searchParams }: { searchParams: Mi
         );
     }
     
-    // Manejo si no se encuentran cursos para este usuario
     if (!courses || courses.length === 0) {
         return (
             <Box maxW="container.lg" mx="auto" py={10} px={6} textAlign="center">
@@ -57,13 +68,6 @@ export default async function MisCursosPage({ searchParams }: { searchParams: Mi
         );
     }
     
-    // (Opcional) Redirección si la página solicitada no existe
-    if (page > totalPages && totalPages > 0) {
-       // Podrías redirigir aquí si quieres, o simplemente mostrar la última página.
-       // Por ahora, lo dejamos pasar para mantenerlo simple.
-     }
-
-    // Pasamos los datos al componente cliente
     return (
         <MyCoursesClientPage 
             courses={courses} 

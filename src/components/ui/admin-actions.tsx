@@ -70,7 +70,7 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
         const coordinadores = await userService.getCoordinadores();
         const facultadesMapeadas = coordinadores.map((coord: any) => ({
           id: coord.id,
-          name: coord.nombres
+          name: coord.facultad || `${coord.first_name || coord.nombres} ${coord.last_name || coord.apellidos}`
         }));
         setFacultadesList(facultadesMapeadas);
       } catch (error) {
@@ -91,8 +91,8 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
   
   const isClassifiedForRemission = isCourseRequest && currentClassification === CLASIFICACION_REQUIERE_REMISION;
   
-  // ✨ LA LÓGICA MAGISTRAL: Comparamos la facultad seleccionada con el ID del usuario actual
-  const isRemissionSelfHandled = isClassifiedForRemission && selectedFaculty === currentUserId;
+  // ✨ LA LÓGICA MAGISTRAL BLINDADA: Comparamos como Strings absolutos
+  const isRemissionSelfHandled = isClassifiedForRemission && String(selectedFaculty) === String(currentUserId);
   
   // ✨ Si es auto-manejada (se eligió a sí mismo), YA NO requiere remisión.
   const requiresRemision = isDirecta && isClassifiedForRemission && !isRemissionSelfHandled; 
@@ -124,17 +124,22 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
     
     try {
       const nuevoEstado = action === 'Aprobar' ? 'aprobada' : 'rechazada';
-      const motivo_rechazo = action === 'Rechazar' ? message : null;
+      const motivo_rechazo = action === 'Rechazar' ? message : undefined; 
 
       if (action === 'Aprobar' && isCourseRequest) {
           const formData = new FormData();
           formData.append('estado', 'aprobada');
           formData.append('calificacion', calificacion);
           formData.append('archivo_evaluacion', evaluationFile as Blob); 
+          // ✨ NUEVO: Guardamos la clasificación incluso si se auto-aprueba
+          formData.append('clasificacion', currentClassification); 
 
-          await solicitudesService.updateStatusWithFile(solicitudId, formData);
+          await solicitudesService.updateStatusWithFile(solicitudId, solicitudTipo, formData);
       } else {
-          await solicitudesService.updateStatus(solicitudId, nuevoEstado, motivo_rechazo);
+          await solicitudesService.updateStatus(solicitudId, solicitudTipo, nuevoEstado, motivo_rechazo as any, {
+              // ✨ NUEVO: También la guardamos si se rechaza
+              clasificacion: currentClassification 
+          });
       }
 
       toast({
@@ -172,11 +177,21 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
 
       const nombreFacultad = facultadesList.find(f => f.id === selectedFaculty)?.name || selectedFaculty;
 
-      await solicitudesService.updateStatus(solicitudId, 'remitida', `Remitido a: ${nombreFacultad}`);
+      await solicitudesService.updateStatus(
+          solicitudId, 
+          solicitudTipo, 
+          'under_review', 
+          `Remitido a: ${nombreFacultad}` as any, 
+          {
+              coordinador_id: selectedFaculty, 
+              facultad: nombreFacultad,
+              tipo_curso: 'formulacion-curso-indirecta' // 🔥 ¡BINGO! Cambio de naturaleza del curso
+          }
+      );
       
       toast({
-        title: `Solicitud remitida exitosamente.`,
-        description: `Enviada a ${nombreFacultad}.`,
+        title: `Solicitud redirigida exitosamente.`,
+        description: `El curso ahora pertenece a la coordinación de ${nombreFacultad} como curso indirecto.`,
         status: "info",
         duration: 5000,
         isClosable: true,
@@ -322,6 +337,13 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
             </VStack>
             
             <Divider my={6} />
+
+            {/* ✨ AVISO VISUAL DE BOTÓN BLOQUEADO */}
+            {isCourseRequest && (!calificacion || !evaluationFile) && (
+                <Text color="red.500" fontSize="sm" fontWeight="bold" textAlign="center" mb={4}>
+                    ⚠ Debes ingresar la calificación y subir el archivo de evidencia para poder Aprobar.
+                </Text>
+            )}
 
             <Box>
                 <Button

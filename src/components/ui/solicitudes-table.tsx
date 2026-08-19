@@ -115,11 +115,22 @@ export function SolicitudesTable({ educacionContinua, grupoExtension }: Solicitu
                 const payloadData = sol.payload as Record<string, any>;
                 const hasContract = !!(payloadData?.contrato_id || payloadData?.numContrato);
                 
+                // ✨ FIX: Evaluamos si está aprobada para redirigir al perfil si falta contrato
+                const isApproved = sol.estado.toLowerCase() === 'aprobada' || sol.estado.toLowerCase() === 'aprobado';
+                
+                const handleRowClick = () => {
+                  if (isCourse && isApproved && !hasContract) {
+                    router.push(`/profile/${sol.user_id}`); // Va al perfil para tramitar el contrato
+                  } else {
+                    router.push(`/admin/solicitudes/${sol.id}`); // Flujo normal
+                  }
+                };
+                
                 return (
                   <Tr 
                     key={`${sol.tipo}-${sol.id}`} 
                     _hover={{ cursor: 'pointer', bg: 'gray.50' }}
-                    onClick={() => router.push(`/admin/solicitudes/${sol.id}`)}
+                    onClick={handleRowClick}
                     transition="background-color 0.2s"
                   >
                     <Td fontWeight="bold" color="teal.600">{sol.id}</Td>
@@ -176,18 +187,7 @@ export function SolicitudesTable({ educacionContinua, grupoExtension }: Solicitu
             <Text mb={2} fontWeight="bold">Filtrar por tipo:</Text>
             {renderFilters(educacionContinuaTypes, filter, setFilter)}
             
-            {isCourseTypeSelected && (
-              <Box mt={4} rounded="md">
-                <Text mb={2} fontWeight="bold">Filtrar por Documentación Legal:</Text>
-                <RadioGroup onChange={setLegalFilter} value={legalFilter}>
-                  <Stack direction="row" spacing={4}>
-                    <Radio value="Todos" colorScheme="teal">Todos</Radio>
-                    <Radio value="Vigente" colorScheme="teal">Contrato Vigente</Radio>
-                    <Radio value="No Vigente" colorScheme="teal">Sin Contrato</Radio>
-                  </Stack>
-                </RadioGroup>
-              </Box>
-            )}
+          
           </Box>
           {renderTable(educacionContinua)}
         </TabPanel>

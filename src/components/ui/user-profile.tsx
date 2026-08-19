@@ -7,52 +7,70 @@ import {
     HStack, Icon, Spinner, Center
 } from '@chakra-ui/react';
 import { Course, User, FullProvider } from "@/data/types"; 
-import { MdEmail, MdPhone } from 'react-icons/md'; // ✨ Íconos de contacto
+import { MdEmail, MdPhone } from 'react-icons/md'; 
 import { courseService } from "@/servicios/cursos-service";
 
 export function UserProfileClient({ user }: { user: User | FullProvider }) {
-    // 1️⃣ HOOKS DE ESTADO (React)
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoadingCourses, setIsLoadingCourses] = useState(false);
+    
+    // ✨ FIX 1: Estado para atrapar la info del proveedor si el componente superior no la envió
+    const [providerData, setProviderData] = useState<any>(null);
 
-    // 2️⃣ HOOKS DE ESTILO Y CONTEXTO (Chakra UI)
-    // Se declaran todos arriba para evitar errores de orden de Hooks
     const cardBg = useColorModeValue("white", "gray.700");
     const textColor = useColorModeValue("gray.600", "gray.400");
     const headerBg = useColorModeValue("gray.50", "gray.800");
     const tableBorder = useColorModeValue("gray.100", "gray.600");
     const brandColor = "teal.500";
 
-    // 3️⃣ LÓGICA DE DERIVACIÓN (Variables calculadas)
     const isProvider = user.rol === 'proveedor';
-    
-    const displayName = (isProvider && 'nombre_proveedor' in user) 
-        ? (user as FullProvider).nombre_proveedor 
-        : `${user.nombres} ${user.apellidos}`;
+    const safeUserId = (user as any).id || (user as any).usuario_id || (user as any).ID;
 
-    const bioText = (isProvider && 'biografia' in user) 
-        ? (user as FullProvider).biografia 
-        : (user.biografia || "Usuario de la plataforma.");
+    // ✨ AUTO-HIDRATACIÓN: Buscamos la info del proveedor (avatar, bio) directo de la BD
+    useEffect(() => {
+        if (isProvider && safeUserId) {
+            fetch(`http://localhost:8080/providers?usuario_id=${safeUserId}`)
+                .then(r => r.json())
+                .then(d => {
+                    if (d && d.length > 0) setProviderData(d[0]);
+                })
+                .catch(e => console.error("Error hidratando proveedor:", e));
+        }
+    }, [isProvider, safeUserId]);
 
-    // ✨ LÓGICA DE AVATAR APLICADA AQUÍ:
-    const avatarUrl = (user as any).provider_avatar_url 
-        ?? (user as FullProvider).avatar_url 
-        ?? `https://i.pravatar.cc/150?u=${user.id}`;
+    // ✨ Unimos la data del usuario base con la del proveedor
+    const combinedUser = { ...(user as any), ...providerData };
 
-    // Extraer arreglos de contacto si es proveedor
-    const extraEmails = (isProvider && 'emails_contacto' in user) ? (user as FullProvider).emails_contacto : [];
-    const extraPhones = (isProvider && 'telefonos_contacto' in user) ? (user as FullProvider).telefonos_contacto : [];
+    // Adaptado a los nombres combinados
+    const displayName = (isProvider && combinedUser.nombre_proveedor) 
+        ? combinedUser.nombre_proveedor 
+        : `${combinedUser.first_name || combinedUser.nombres || ''} ${combinedUser.last_name || combinedUser.apellidos || ''}`.trim() || 'Usuario Desconocido';
 
-    // 4️⃣ EFECTO PARA CARGAR CURSOS
+    const bioText = (isProvider && combinedUser.biografia) 
+        ? combinedUser.biografia 
+        : "Usuario de la plataforma.";
+
+    // ✨ FIX AVATAR: Ya lee correctamente desde la data combinada
+    const rawAvatar = combinedUser.archivos?.logo || combinedUser.provider_avatar_url || combinedUser.avatar_url;
+    const avatarUrl = rawAvatar 
+        ? (rawAvatar.startsWith('/') ? `http://localhost:8080${rawAvatar}` : rawAvatar) 
+        : `https://i.pravatar.cc/150?u=${safeUserId}`;
+
+    // Extraer arreglos de contacto
+    const extraEmails = (isProvider && combinedUser.emails_contacto) ? combinedUser.emails_contacto : [];
+    const extraPhones = (isProvider && combinedUser.telefonos_contacto) ? combinedUser.telefonos_contacto : [];
+
     useEffect(() => {
         async function loadPublicCourses() {
-            if (!isProvider) return;
+            if (!isProvider || !safeUserId) return;
             setIsLoadingCourses(true);
             try {
-                const result = await courseService.getCoursesByUserId(user.id);
-                const publicCourses = result.courses.filter((c: Course) => 
-                    c.estado_gestion === 'aprobado' || c.estado_gestion === 'abierto'
-                );
+                const result = await courseService.getCoursesByUserId(safeUserId);
+                const publicCourses = result.courses.filter((c: any) => {
+                    const estado = String(c.estado_gestion || c.estado).toLowerCase();
+                    // ✨ FIX 2: Agregamos "cerrado" para que los cursos con amparo legal aparezcan
+                    return estado === 'aprobado' || estado === 'abierto' || estado === 'cerrado';
+                });
                 setCourses(publicCourses);
             } catch (error) {
                 console.error("Error cargando cursos públicos:", error);
@@ -61,26 +79,27 @@ export function UserProfileClient({ user }: { user: User | FullProvider }) {
             }
         }
         loadPublicCourses();
-    }, [user.id, isProvider]);
+    }, [safeUserId, isProvider]);
 
     const getStatusColor = (status: string | undefined) => {
-        return status === 'abierto' ? 'green' : 'blue';
+        const st = String(status).toLowerCase();
+        if (st === 'abierto') return 'green';
+        if (st === 'cerrado') return 'blue';
+        return 'teal';
     };
 
-    // 5️⃣ RENDERIZADO
     return (
         <Box p={8} bg={cardBg} shadow="xl" rounded="lg" maxW="2xl" mx="auto" borderTop="4px solid" borderColor={brandColor}>
             
             <VStack spacing={4} align="center" mb={6}>
-                {/* ✨ USAMOS LA VARIABLE avatarUrl AQUÍ */}
-                <Avatar size="2xl" name={displayName as string} src={avatarUrl} border="2px solid" borderColor={brandColor} />
+                <Avatar size="2xl" name={displayName} src={avatarUrl} border="2px solid" borderColor={brandColor} />
                 
                 <VStack spacing={1}>
-                    <Heading size="xl" textAlign="center">{displayName as string}</Heading>
+                    <Heading size="xl" textAlign="center">{displayName}</Heading>
                     
-                    {isProvider && 'tipo_proveedor' in user && (
-                        <Badge colorScheme="teal" variant="subtle" px={2} py={1} rounded="md">
-                            {(user as FullProvider).tipo_proveedor.replace(/-/g, ' ')}
+                    {isProvider && (combinedUser.tipo_lucro || combinedUser.tipo_proveedor) && (
+                        <Badge colorScheme="teal" variant="subtle" px={3} py={1} rounded="md" textTransform="uppercase">
+                            {String(combinedUser.tipo_lucro || combinedUser.tipo_proveedor).replace(/_/g, ' ').replace(/-/g, ' ')}
                         </Badge>
                     )}
                 </VStack>
@@ -91,24 +110,21 @@ export function UserProfileClient({ user }: { user: User | FullProvider }) {
                     </Text>
                 </Box>
 
-                {/* ✨ SECCIÓN DE CONTACTO */}
+                {/* SECCIÓN DE CONTACTO */}
                 <VStack spacing={2} pt={4} w="full" align="center">
-                    {/* Email principal (de la cuenta) */}
                     <HStack spacing={2} fontSize="sm" color="teal.500" fontWeight="bold">
                         <Icon as={MdEmail} />
-                        <Text>{user.email}</Text>
+                        <Text>{combinedUser.email || user.email}</Text>
                     </HStack>
 
-                    {/* Emails adicionales (si es proveedor) */}
-                    {extraEmails?.map((email) => (
+                    {extraEmails?.map((email: string) => (
                         <HStack key={email} spacing={2} fontSize="sm" color={textColor}>
                             <Icon as={MdEmail} opacity={0.6} />
                             <Text>{email}</Text>
                         </HStack>
                     ))}
 
-                    {/* Teléfonos adicionales (si es proveedor) */}
-                    {extraPhones?.map((phone) => (
+                    {extraPhones?.map((phone: string) => (
                         <HStack key={phone} spacing={2} fontSize="sm" color={textColor}>
                             <Icon as={MdPhone} color="green.500" />
                             <Text>{phone}</Text>
@@ -134,19 +150,19 @@ export function UserProfileClient({ user }: { user: User | FullProvider }) {
                                     </Tr>
                                 </Thead>
                                 <Tbody>
-                                    {courses.map((course: Course) => (
+                                    {courses.map((course: any) => (
                                         <Tr key={course.id}>
                                             <Td fontWeight="medium">
-                                                <Text noOfLines={1}>{course.titulo}</Text>
+                                                <Text noOfLines={1}>{course.titulo || course.nombre}</Text>
                                             </Td>
                                             <Td textAlign="center">
                                                 <Badge 
-                                                    colorScheme={getStatusColor(course.estado_gestion)}
+                                                    colorScheme={getStatusColor(course.estado_gestion || course.estado)}
                                                     variant="subtle"
                                                     px={3}
                                                     rounded="full"
                                                 >
-                                                    {course.estado_gestion === 'abierto' ? 'Inscripciones Abiertas' : 'Próximamente'}
+                                                    {(course.estado_gestion || course.estado) === 'abierto' ? 'Inscripciones Abiertas' : 'Amparado / Vigente'}
                                                 </Badge>
                                             </Td>
                                         </Tr>

@@ -1,27 +1,26 @@
+// src/app/cursos/page.tsx
 import React from 'react';
 import { Box, Text, Heading } from '@chakra-ui/react';
 import { ClientCourses } from '@/components/ui/client-cursos';
 import { courseService } from '@/servicios/cursos-service';
 import { Course } from '@/data/types';
 
-export default async function CursosPage({ searchParams }: { searchParams: { page?: string } }) {
-    const page = Number(searchParams.page) || 1;
-    const limit = 9;
+export const revalidate = 60; // Refresca la caché cada 60 segs
 
+export default async function CursosPage() {
     let courses: Course[] = [];
-    let totalPages = 1;
     let hasError = false;
 
     try {
-        const result = await courseService.getAllCourses({ page, limit }) as { courses: Course[], totalPages: number };
+        // ✨ Le pedimos TODOS los cursos legales al servicio público
+        const result = await courseService.getPublicCourses(1000);
         courses = result.courses || [];
-        totalPages = result.totalPages || 1;
     } catch (error) {
         console.error("Error cargando la página de cursos:", error);
         hasError = true;
     }
 
-    // ✨ Manejo de error de red (Backend caído)
+    // ✨ Manejo de error de red
     if (hasError) {
         return (
             <Box maxW="container.xl" mx="auto" py={20} px={6} textAlign="center">
@@ -35,12 +34,13 @@ export default async function CursosPage({ searchParams }: { searchParams: { pag
     if (courses.length === 0) {
         return (
             <Box maxW="container.xl" mx="auto" py={20} px={6} textAlign="center">
-                <Text fontSize="xl">No se encontraron cursos publicados en esta página.</Text>
+                <Text fontSize="xl">No se encontraron cursos publicados en este momento.</Text>
             </Box>
         );
     }
 
+    // ✨ CORRECCIÓN AQUÍ: Pasamos "initialCourses" en lugar de las props viejas
     return (
-        <ClientCourses courses={courses} currentPage={page} totalPages={totalPages} />
+        <ClientCourses initialCourses={courses} />
     );
 }

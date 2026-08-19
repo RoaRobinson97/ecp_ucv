@@ -1,31 +1,32 @@
 import { Box, Heading, Text, VStack } from '@chakra-ui/react';
-import { redirect } from 'next/navigation';
-// ✨ Importamos cookies de Next.js
 import { cookies } from 'next/headers'; 
 import { SolicitudesTable } from '@/components/ui/solicitudes-table';
 import { solicitudesService } from '@/servicios/solicitudes-service';
 import { userService } from '@/servicios/users-service';
 import { Solicitud, User } from '@/data/types';
 
-export default async function SolicitudesPage() {
+export const dynamic = 'force-dynamic';
 
+export default async function SolicitudesPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get('auth_token')?.value;
 
-  // ✨ CHISMOSOS EN LA TERMINAL DEL SERVIDOR
-  console.log("--- DEBUG SEGURIDAD ---");
-  console.log("1. Token recibido de la cookie:", token ? "SÍ HAY TOKEN" : "NO HAY TOKEN");
+  const currentUser = userService.getUserFromToken(token) as User & { sub?: string, userID?: string } | null;
+  const esCoordinador = currentUser?.rol === 'coordinador' || currentUser?.roles?.includes('coordinador');
+  const coordinadorId = esCoordinador ? (currentUser?.sub || currentUser?.id || currentUser?.userID) : undefined;
 
-  // ✨ FIX TYPESCRIPT: Le decimos que lo trate como un objeto de tipo 'User'
-  const currentUser = userService.getUserFromToken(token) as User | null;
-
-  // --- El resto del código de optimización N+1 ---
   let solicitudesUnificadas: any[] = [];
 
   try {
-      const response = await solicitudesService.getAllSolicitudes({ limit: 100 });
+      // ✨ FIX: Agregamos "as any" para que TypeScript deje pasar el parámetro
+      const response = await solicitudesService.getAllSolicitudes({ 
+          limit: 100,
+          coordinador_id: String(coordinadorId)
+      } as any); 
+      
       const solicitudes = response.solicitudes as Solicitud[];
       
+      // ✨ Filtro normal, limpio y sin parches
       const solicitudesFiltradas = solicitudes.filter(s => 
         ['codigo-proveedor', 'formulacion-curso-directa', 'formulacion-curso-indirecta', 'cierre-cohorte'].includes(s.tipo)
       );
@@ -36,11 +37,9 @@ export default async function SolicitudesPage() {
           uniqueUserIds.map(id => userService.getUserById(id).catch(() => null))
       );
       
-      // ✨ FIX TYPESCRIPT EXTREMO: Forzamos el tipo Record<string, User> tanto en la variable como en el acumulador (acc)
-      const userMap: Record<string, User> = usersData.reduce((acc: Record<string, User>, rawUser) => {
+      const userMap: Record<string, User> = usersData.reduce((acc: Record<string, User>, rawUser: any) => {
           const user = rawUser as User | null;
           if (user && user.id) {
-              // Aseguramos que la llave se guarde como string
               acc[String(user.id)] = user;
           }
           return acc;
@@ -48,16 +47,19 @@ export default async function SolicitudesPage() {
 
       solicitudesUnificadas = solicitudesFiltradas.map((sol: Solicitud) => {
         const userIdString = String(sol.user_id);
-        const user = userMap[userIdString];
+        const user: any = userMap[userIdString];
         
-        const nombre_usuario = user ? `${user.nombres} ${user.apellidos}` : 'Usuario Desconocido';
+        const nombre = user?.first_name || user?.nombres || '';
+        const apellido = user?.last_name || user?.apellidos || '';
+        const nombre_usuario = user ? `${nombre} ${apellido}`.trim() : 'Usuario Desconocido';
+        
         const payloadData = sol.payload as Record<string, any>;
         const nombre_proveedor = payloadData?.nombre_proveedor;
 
         return {
           ...sol,
           solicitante: nombre_proveedor || nombre_usuario,
-          nombre: payloadData?.nombre_proveedor || payloadData?.titulo || 'Sin nombre',
+          nombre: payloadData?.nombre_proveedor || payloadData?.titulo || payloadData?.titulo_curso || payloadData?.denominacion || 'Sin nombre',
           fecha: sol.fecha_creacion
         };
       });
