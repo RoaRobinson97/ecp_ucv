@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "start:prod": "concurrently \"json-server --watch db.json --port 8080 --host 0.0.0.0\" \"next start\""
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.2.4",
@@ -14,6 +14,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@next/font": "^14.2.15",
+    "concurrently": "^10.0.5",
     "framer-motion": "^10.18.0",
     "js-cookie": "^3.0.5",
     "next": "^15.1.6",
