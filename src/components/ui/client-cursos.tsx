@@ -13,7 +13,11 @@ import { Course } from '@/data/types';
 // ✨ Tarjetita del curso
 const CourseCard = ({ titulo, descripcion, image }: any) => {
     const placeholderImage = "https://placehold.co/400x200/cccccc/ffffff/png?text=Curso";
-    const finalImage = image && image.startsWith('/') ? `http://localhost:8080${image}` : (image || '');
+    
+    // ✨ CORRECCIÓN CRÍTICA DE LA IMAGEN: 
+    // Usamos la variable de entorno para que en producción apunte al dominio correcto
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    const finalImage = image && image.startsWith('/') ? `${baseUrl}${image}` : (image || '');
 
     return (
         <Card 
@@ -22,16 +26,14 @@ const CourseCard = ({ titulo, descripcion, image }: any) => {
             height="100%" 
             overflow="hidden" 
             variant="outline"
-            // ✨ CORRECCIÓN VISUAL: Utilizamos los tokens semánticos estructurales
             bg="surface"
             borderColor="border"
         >
             <Image src={finalImage} alt={titulo} objectFit="cover" w="100%" h="200px" fallbackSrc={placeholderImage} />
             <CardBody>
                 <Stack mt="4" spacing="3">
-                    <Heading size="md" noOfLines={2}>{titulo}</Heading>
-                    {/* ✨ CORRECCIÓN VISUAL: Reemplazamos gray.600 por text.muted */}
-                    <Text color="text.muted" noOfLines={3} fontSize="sm">
+                    <Heading size="md" noOfLines={2} color="text.primary">{titulo}</Heading>
+                    <Text color="text.muted" noOfLines={3} fontSize="sm" fontWeight="medium">
                         {descripcion || "Sin descripción disponible."}
                     </Text>
                 </Stack>
@@ -90,7 +92,7 @@ export function ClientCourses({ initialCourses }: { initialCourses: Course[] }) 
         <Box maxW="container.xl" mx="auto" py={10} px={6} minH="70vh" display="flex" flexDirection="column">
             
             <VStack spacing={6} mb={10}>
-                <Heading size="xl" textAlign="center">Catálogo de Cursos</Heading>
+                <Heading size="xl" textAlign="center" color="primary">Catálogo de Cursos</Heading>
                 
                 <Box w="full" maxW="lg">
                     <InputGroup size="lg">
@@ -102,7 +104,6 @@ export function ClientCourses({ initialCourses }: { initialCourses: Course[] }) 
                             placeholder="Buscar por nombre o tema del curso..." 
                             value={searchTerm}
                             onChange={handleSearch}
-                            // ✨ CORRECCIÓN VISUAL: Reemplazamos bg="white" por "surface" y fijamos colores
                             bg="surface"
                             color="text.primary"
                             borderColor="border"
@@ -115,9 +116,8 @@ export function ClientCourses({ initialCourses }: { initialCourses: Course[] }) 
 
             <Box flex="1">
                 {paginatedCourses.length === 0 ? (
-                    // ✨ CORRECCIÓN VISUAL: Reemplazamos gray.50 y gray.200 por tokens
-                    <Box textAlign="center" py={20} bg="surface" rounded="md" border="1px dashed" borderColor="border">
-                        <Text fontSize="lg" color="text.muted">No se encontraron cursos que coincidan con tu búsqueda.</Text>
+                    <Box textAlign="center" py={20} bg="surface" rounded="xl" border="1px dashed" borderColor="border" shadow="sm">
+                        <Text fontSize="lg" color="text.muted" fontWeight="medium">No se encontraron cursos que coincidan con tu búsqueda.</Text>
                     </Box>
                 ) : (
                     <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={10}>
