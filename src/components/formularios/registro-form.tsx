@@ -6,7 +6,6 @@ import {
   Button,
   VStack,
   Heading,
-  useColorModeValue,
   Text,
   Link,
   useToast,
@@ -124,14 +123,11 @@ export const RegisterForm = () => {
       });
 
       // 2. Auto-login blindado
-      // 2. Auto-login blindado
       try {
         const response = await authService.login(formData.email, formData.password);
         
-        // 1. Buscamos el token real que devolvió Go
         const realToken = response.token || response.access_token || response.Token || response.jwt;
         
-        // 2. Desencriptamos el JWT manualmente para robarle el ID que te asignó la BD
         let realId = "";
         if (realToken) {
             try {
@@ -144,7 +140,6 @@ export const RegisterForm = () => {
             }
         }
         
-        // 3. Armamos el usuario inyectándole el ID real
         const realUser = response.usuario || response.user || response.User || {
             id: realId, 
             nombres: formData.firstName,
@@ -155,7 +150,6 @@ export const RegisterForm = () => {
         
         login(realUser);
         
-        // ✅ RECARGA DURA: Obliga al navegador a enviar la cookie al servidor
         window.location.href = '/';
 
       } catch (loginErr) {
@@ -168,7 +162,6 @@ export const RegisterForm = () => {
             position: "top"
         });
         
-        // ✅ RECARGA DURA AQUÍ TAMBIÉN
         window.location.href = '/login'; 
       }
 
@@ -186,31 +179,44 @@ export const RegisterForm = () => {
     }
   };
 
-  const formBgColor = useColorModeValue("white", "gray.700");
-
   return (
     <Box
-      bg={formBgColor}
-      p={8}
-      rounded="lg"
-      shadow="lg"
+      bg="surface"
+      p={{ base: 6, md: 8 }}
+      rounded="xl"
+      shadow="xl"
+      borderWidth="1px"
+      borderColor="border"
       w="full"
       maxW="md"
+      mx="auto"
+      my={{ base: 8, md: 12 }} // ✨ CORRECCIÓN: Margen vertical para despegarlo del Navbar y el footer
     >
-      <Heading as="h1" size="xl" textAlign="center" mb={6}>
+      <Heading 
+        as="h1" 
+        size="lg" 
+        textAlign="center" 
+        mb={8} 
+        color="text.primary"
+        fontWeight="bold"
+      >
         Crear Cuenta
       </Heading>
       <form onSubmit={handleRegister}>
-        <VStack spacing={4}>
+        <VStack spacing={5}>
           {formFields.map((field) => (
             <FormControl key={field.id} id={field.id} isRequired={field.isRequired}>
-              <FormLabel>{field.label}</FormLabel>
+              <FormLabel fontWeight="semibold" color="text.primary">{field.label}</FormLabel>
               {field.type === 'select' ? (
                 <Select
                   name={field.id}
                   value={formData[field.id as keyof typeof formData]}
                   onChange={handleChange}
                   placeholder={field.placeholder}
+                  bg="background"
+                  borderColor="border"
+                  focusBorderColor="primary"
+                  color="text.primary"
                 >
                   {field.options?.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -224,28 +230,39 @@ export const RegisterForm = () => {
                   name={field.id}
                   value={formData[field.id as keyof typeof formData]}
                   onChange={handleChange}
+                  bg="background"
+                  borderColor="border"
+                  focusBorderColor="primary"
+                  color="text.primary"
                 />
               )}
             </FormControl>
           ))}
 
           <FormControl id="confirmPassword" isRequired isInvalid={!!passwordError}>
-            <FormLabel>Confirmar Contraseña</FormLabel>
+            <FormLabel fontWeight="semibold" color="text.primary">Confirmar Contraseña</FormLabel>
             <Input
               type="password"
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
+              bg="background"
+              borderColor="border"
+              focusBorderColor="primary"
+              color="text.primary"
             />
-            {passwordError && <FormErrorMessage>{passwordError}</FormErrorMessage>}
+            {passwordError && <FormErrorMessage fontWeight="bold">{passwordError}</FormErrorMessage>}
           </FormControl>
 
           <Button
             type="submit"
-            colorScheme="teal"
+            bg="primary"
+            color="white"
+            _hover={{ bg: "teal.600" }} // Asumiendo que primary es un teal
             size="lg"
             w="full"
-            mt={4}
+            mt={6}
+            shadow="md"
             isLoading={isLoading}
             loadingText="Registrando..."
           >
@@ -254,9 +271,9 @@ export const RegisterForm = () => {
         </VStack>
       </form>
       
-      <Text mt={6} textAlign="center">
+      <Text mt={8} textAlign="center" color="text.muted">
         ¿Ya tienes una cuenta?{' '}
-        <Link color="teal.500" href="/login" fontWeight="bold">
+        <Link color="primary" href="/login" fontWeight="bold" _hover={{ textDecoration: 'underline' }}>
           Inicia Sesión
         </Link>
       </Text>

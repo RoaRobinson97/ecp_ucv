@@ -18,18 +18,16 @@ import {
   useToast,
   useDisclosure,
   Text,
-  useColorModeValue
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import CloseCohortModal from "@/components/modals/cerrar-cohorte-modal";
-import { Course } from '@/data/types'; 
+import { Course } from '@/data/types';
 import { courseService } from '@/servicios/cursos-service';
 
-// ✨ 1. ACTUALIZAMOS LA INTERFAZ PARA RECIBIR EL CONTRATO
 interface CourseInfo {
   id: string;
   titulo: string;
-  estado_gestion?: string; 
+  estado_gestion?: string;
   estado?: string;
   contrato_id?: string;
   documento_legal_id?: string;
@@ -50,23 +48,10 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
   const [endDate, setEndDate] = useState('');
   const [capacity, setCapacity] = useState(20);
 
-  // ✨ COLORES DINÁMICOS PARA MODO CLARO Y OSCURO
-  const panelBg = useColorModeValue("gray.50", "gray.800"); 
-  const panelBorder = useColorModeValue("teal.500", "teal.300");
-  const headingColor = useColorModeValue("teal.700", "teal.300");
-  const labelColor = useColorModeValue("gray.800", "gray.200");
-  const textColor = useColorModeValue("black", "white");
-  const inputBg = useColorModeValue("white", "gray.900");
-  const inputBorder = useColorModeValue("gray.300", "gray.600");
-  const mutedColor = useColorModeValue("gray.500", "gray.400");
-  const readOnlyBg = useColorModeValue("gray.100", "gray.700");
-
-  // ✨ 2. LÓGICA BLINDADA: Determinamos si de verdad puede abrir cohorte
   const estadoReal = String(course.estado_gestion || course.estado).toLowerCase();
   const hasContract = !!(course.contrato_id || course.documento_legal_id);
-  
+
   const isAbierto = estadoReal === 'abierto';
-  // Es amparado si dice "cerrado", O si dice "aprobado/a" pero YA TIENE CONTRATO
   const isAmparado = estadoReal === 'cerrado' || ((estadoReal === 'aprobada' || estadoReal === 'aprobado') && hasContract);
 
   const handleOpenCohort = async (event: React.FormEvent) => {
@@ -74,45 +59,17 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
     setIsSubmittingForm(true);
 
     if (!cohortName || !startDate || !endDate || capacity <= 0) {
-       toast({
-        title: "Error de validación.",
-        description: "Por favor, completa todos los campos requeridos.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      toast({ title: "Error de validación.", description: "Por favor, completa todos los campos requeridos.", status: "error", duration: 3000, isClosable: true });
       setIsSubmittingForm(false);
       return;
     }
 
     try {
-      // LLAMADA REAL A LA API
-      await courseService.openCohort(course.id, { 
-          cohortName, 
-          startDate, 
-          endDate, 
-          capacity 
-      });
-
-      toast({
-        title: "Cohorte Abierta.",
-        description: `La cohorte "${cohortName}" ha sido iniciada. Los alumnos ya pueden verla.`,
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
-      
-      // Refrescamos la página para que el componente cambie a la vista de "Cohorte Activa"
+      await courseService.openCohort(course.id, { cohortName, startDate, endDate, capacity });
+      toast({ title: "Cohorte Abierta.", description: `La cohorte "${cohortName}" ha sido iniciada. Los alumnos ya pueden verla.`, status: "success", duration: 5000, isClosable: true });
       window.location.reload();
-
     } catch (error: any) {
-       toast({
-        title: "Error al abrir cohorte.",
-        description: error.message || "Por favor, inténtalo de nuevo más tarde.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+      toast({ title: "Error al abrir cohorte.", description: error.message || "Por favor, inténtalo de nuevo más tarde.", status: "error", duration: 5000, isClosable: true });
     } finally {
       setIsSubmittingForm(false);
     }
@@ -122,123 +79,127 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
 
   return (
     <>
-      <Box p={6} borderTop="4px solid" borderColor={panelBorder} rounded="lg" bg={panelBg} shadow="md">
-        
-        {/* ✨ 3. REEMPLAZAMOS LAS CONDICIONES DE RENDERIZADO */}
+      <Box p={6} borderTop="4px solid" borderColor="primary" rounded="lg" bg="surface" shadow="md">
         {isAbierto ? (
-          // --- Si el curso está 'abierto', mostramos la gestión ---
           <VStack spacing={4}>
-            <Heading as="h2" size="xl" mb={4} textAlign="center" color={headingColor}>
+            <Heading as="h2" size="lg" mb={4} textAlign="center" color="primary">
               Gestión de Cohorte Abierta
             </Heading>
             
             <FormControl id="cohortName-active">
-              <FormLabel fontWeight="bold" color={labelColor}>Nombre de la Cohorte</FormLabel>
-              <Input type="text" value={activeCohortData.name} bg={readOnlyBg} color={textColor} borderColor={inputBorder} isReadOnly disabled _disabled={{ opacity: 0.8, cursor: 'not-allowed' }} />
+              <FormLabel fontWeight="bold" color="text.primary">Nombre de la Cohorte</FormLabel>
+              <Input type="text" value={activeCohortData.name} bg="neutral" color="text.primary" borderColor="border" isReadOnly isDisabled _disabled={{ opacity: 0.8, cursor: 'not-allowed' }} />
             </FormControl>
+            
             <Flex width="full" gap={4}>
               <FormControl id="startDate-active">
-                <FormLabel fontWeight="bold" color={labelColor}>Fecha de Inicio</FormLabel>
-                <Input type="date" value={activeCohortData.start} bg={readOnlyBg} color={textColor} borderColor={inputBorder} isReadOnly disabled _disabled={{ opacity: 0.8, cursor: 'not-allowed' }} css={{ colorScheme: 'dark' }} />
+                <FormLabel fontWeight="bold" color="text.primary">Fecha de Inicio</FormLabel>
+                <Input type="date" value={activeCohortData.start} bg="neutral" color="text.primary" borderColor="border" isReadOnly isDisabled _disabled={{ opacity: 0.8, cursor: 'not-allowed' }} />
               </FormControl>
               <FormControl id="endDate-active">
-                <FormLabel fontWeight="bold" color={labelColor}>Fecha de Fin</FormLabel>
-                <Input type="date" value={activeCohortData.end} bg={readOnlyBg} color={textColor} borderColor={inputBorder} isReadOnly disabled _disabled={{ opacity: 0.8, cursor: 'not-allowed' }} css={{ colorScheme: 'dark' }} />
+                <FormLabel fontWeight="bold" color="text.primary">Fecha de Fin</FormLabel>
+                <Input type="date" value={activeCohortData.end} bg="neutral" color="text.primary" borderColor="border" isReadOnly isDisabled _disabled={{ opacity: 0.8, cursor: 'not-allowed' }} />
               </FormControl>
             </Flex>
+            
             <FormControl id="capacity-active">
-              <FormLabel fontWeight="bold" color={labelColor}>Capacidad</FormLabel>
-              <NumberInput value={activeCohortData.cap} bg={readOnlyBg} color={textColor} borderColor={inputBorder} isReadOnly isDisabled _disabled={{ opacity: 0.8, cursor: 'not-allowed' }}>
+              <FormLabel fontWeight="bold" color="text.primary">Capacidad</FormLabel>
+              <NumberInput value={activeCohortData.cap} bg="neutral" color="text.primary" borderColor="border" isReadOnly isDisabled _disabled={{ opacity: 0.8, cursor: 'not-allowed' }}>
                 <NumberInputField />
               </NumberInput>
             </FormControl>
+            
             <Button onClick={onOpen} colorScheme="red" size="lg" width="full" mt={4}>
               Cerrar Cohorte
             </Button>
           </VStack>
-          
         ) : isAmparado ? (
-          
-          // --- Si el curso está amparado legalmente, mostramos el formulario para abrir ---
           <form onSubmit={handleOpenCohort}>
-            <Heading as="h2" size="xl" mb={6} textAlign="center" color={headingColor}>
+            <Heading as="h2" size="lg" mb={6} textAlign="center" color="primary">
               Abrir Nueva Cohorte
             </Heading>
+            
             <VStack spacing={4}>
               <FormControl id="cohortName" isRequired>
-                 <FormLabel color={labelColor} fontWeight="medium">Nombre de la Cohorte</FormLabel>
-                 <Input 
-                    type="text" 
-                    placeholder="Ej: Cohorte Invierno 2024" 
-                    value={cohortName} 
-                    onChange={(e) => setCohortName(e.target.value)} 
-                    bg={inputBg}
-                    color={textColor}
-                    borderColor={inputBorder}
-                    _placeholder={{ color: mutedColor }}
-                 />
+                <FormLabel color="text.primary" fontWeight="bold">Nombre de la Cohorte</FormLabel>
+                <Input 
+                  type="text" 
+                  placeholder="Ej: Cohorte Invierno 2024" 
+                  value={cohortName} 
+                  onChange={(e) => setCohortName(e.target.value)} 
+                  bg="background"
+                  color="text.primary"
+                  borderColor="border"
+                  focusBorderColor="primary"
+                  _placeholder={{ color: "text.muted" }}
+                />
               </FormControl>
+              
               <Flex width="full" gap={4}>
-                 <FormControl id="startDate" isRequired>
-                   <FormLabel color={labelColor} fontWeight="medium">Fecha de Inicio</FormLabel>
-                   <Input 
-                      type="date" 
-                      value={startDate} 
-                      onChange={(e) => setStartDate(e.target.value)} 
-                      bg={inputBg}
-                      color={textColor}
-                      borderColor={inputBorder}
-                   />
-                 </FormControl>
-                 <FormControl id="endDate" isRequired>
-                   <FormLabel color={labelColor} fontWeight="medium">Fecha de Fin</FormLabel>
-                   <Input 
-                      type="date" 
-                      value={endDate} 
-                      onChange={(e) => setEndDate(e.target.value)} 
-                      bg={inputBg}
-                      color={textColor}
-                      borderColor={inputBorder}
-                   />
-                 </FormControl>
+                <FormControl id="startDate" isRequired>
+                  <FormLabel color="text.primary" fontWeight="bold">Fecha de Inicio</FormLabel>
+                  <Input 
+                    type="date" 
+                    value={startDate} 
+                    onChange={(e) => setStartDate(e.target.value)} 
+                    bg="background"
+                    color="text.primary"
+                    borderColor="border"
+                    focusBorderColor="primary"
+                  />
+                </FormControl>
+                <FormControl id="endDate" isRequired>
+                  <FormLabel color="text.primary" fontWeight="bold">Fecha de Fin</FormLabel>
+                  <Input 
+                    type="date" 
+                    value={endDate} 
+                    onChange={(e) => setEndDate(e.target.value)} 
+                    bg="background"
+                    color="text.primary"
+                    borderColor="border"
+                    focusBorderColor="primary"
+                  />
+                </FormControl>
               </Flex>
+              
               <FormControl id="capacity" isRequired>
-                 <FormLabel color={labelColor} fontWeight="medium">Capacidad de Estudiantes</FormLabel>
-                 <NumberInput 
-                    min={1} max={100} 
-                    value={capacity} 
-                    onChange={(_, valueAsNumber) => setCapacity(valueAsNumber)}
-                 >
-                   <NumberInputField bg={inputBg} color={textColor} borderColor={inputBorder} />
-                   <NumberInputStepper>
-                     <NumberIncrementStepper color={textColor} borderColor={inputBorder} />
-                     <NumberDecrementStepper color={textColor} borderColor={inputBorder} />
-                   </NumberInputStepper>
-                 </NumberInput>
+                <FormLabel color="text.primary" fontWeight="bold">Capacidad de Estudiantes</FormLabel>
+                <NumberInput 
+                  min={1} max={100} 
+                  value={capacity} 
+                  onChange={(_, valueAsNumber) => setCapacity(valueAsNumber)}
+                  focusBorderColor="primary" // ✨ MOVIDO AL CONTENEDOR PADRE
+                >
+                  {/* ✨ REMOVIDO DEL HIJO PARA EVITAR EL ERROR DE TYPESCRIPT */}
+                  <NumberInputField bg="background" color="text.primary" borderColor="border" />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper color="text.primary" borderColor="border" />
+                    <NumberDecrementStepper color="text.primary" borderColor="border" />
+                  </NumberInputStepper>
+                </NumberInput>
               </FormControl>
+              
               <Button type="submit" colorScheme="teal" size="lg" width="full" mt={6} isLoading={isSubmittingForm} loadingText="Abriendo Cohorte...">
                 Confirmar y Abrir Cohorte
               </Button>
             </VStack>
           </form>
-          
         ) : (
-           // --- Si el estado es otro (pendiente, aprobado sin contrato, rechazado) ---
-           <Box textAlign="center" py={4}>
-                <Heading as="h3" size="md" mb={4} color={headingColor}>Gestión de Cohorte</Heading>
-                <Text color={mutedColor} fontSize="sm">
-                    Este programa académico se encuentra en estado <strong>"{estadoReal || 'desconocido'}"</strong>.
-                    La apertura de cohortes requiere que el curso esté amparado legalmente.
-                </Text>
-           </Box>
+          <Box textAlign="center" py={4}>
+            <Heading as="h3" size="md" mb={4} color="primary">Gestión de Cohorte</Heading>
+            <Text color="text.muted" fontSize="sm">
+              Este programa académico se encuentra en estado <strong>"{estadoReal || 'desconocido'}"</strong>.
+              La apertura de cohortes requiere que el curso esté amparado legalmente.
+            </Text>
+          </Box>
         )}
       </Box>
       <CloseCohortModal 
-          isOpen={isOpen} 
-          onClose={onClose} 
-          courseId={course.id} 
-          courseTitle={course.titulo} 
-          cohortName={activeCohortData.name} 
+        isOpen={isOpen} 
+        onClose={onClose} 
+        courseId={course.id} 
+        courseTitle={course.titulo} 
+        cohortName={activeCohortData.name} 
       />
     </>
   );

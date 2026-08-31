@@ -1,13 +1,19 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import { Providers } from "./providers"
+import { Montserrat } from 'next/font/google' // ✨ Cambiamos Inter por Montserrat
+import Providers from "./providers"
 import { Navbar } from "../components/layout/navbar";
 
-const inter = Inter({ subsets: ['latin'] })
+// ✨ Configuramos los pesos y la variable CSS
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-montserrat',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: 'Educacion Continua y Permanente',
-  description: 'Descripcion del modulo de educacion continua y permanente',
+  title: 'Educación Continua y Permanente - UCV',
+  description: 'Descripción del módulo de educación continua y permanente',
 }
 
 export default function RootLayout({
@@ -16,12 +22,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html suppressHydrationWarning>
+    // ✨ Mantenemos suppressHydrationWarning e inyectamos la clase de Montserrat
+    <html lang="es" suppressHydrationWarning className={montserrat.variable}>
       <body>
         <Providers>
           <Navbar />
           {children}
-          </Providers>
+        </Providers>
       </body>
     </html>
   )

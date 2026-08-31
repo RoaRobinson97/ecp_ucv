@@ -13,9 +13,8 @@ import { useAuth } from "@/app/context/auth-context";
 import { useRouter } from "next/navigation";
 import { FaCamera } from 'react-icons/fa';
 import { solicitudesService } from '@/servicios/solicitudes-service';
-import { userService } from '@/servicios/users-service'; // ✨ Importamos el userService
+import { userService } from '@/servicios/users-service';
 
-// --- UTILIDAD PARA RECORTAR LA IMAGEN ---
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image();
@@ -36,19 +35,19 @@ async function getCroppedImg(imageSrc: string, pixelCrop: any) {
     canvas.toBlob((blob) => { if (blob) resolve(blob); }, 'image/jpeg', 0.95);
   });
 }
-// --- FIN UTILIDAD ---
 
 const FileUploadControl = ({ id, label, accept, onChange, file }: { 
   id: string, label: string, accept?: string, onChange: (file: File | null) => void, file: File | null 
 }) => (
   <FormControl id={id}>
-    <FormLabel fontSize="sm" fontWeight="medium">
-      {label} {file && <Text as="span" color="green.500" ml={2}>(✓ Cargado)</Text>}
+    <FormLabel fontSize="sm" fontWeight="medium" color="text.primary">
+      {label} {file && <Text as="span" color="success" ml={2}>(✓ Cargado)</Text>}
     </FormLabel>
     <Input 
       type="file" p={1} accept={accept} 
       onChange={(e) => onChange(e.target.files ? e.target.files[0] : null)}
-      sx={{ '::file-selector-button': { height: 8, padding: 0, mr: 4, background: 'none', border: 'none', fontWeight: 'bold' } }}
+      bg="background" borderColor="border" focusBorderColor="primary" color="text.primary"
+      sx={{ '::file-selector-button': { height: 8, padding: 0, mr: 4, background: 'none', border: 'none', fontWeight: 'bold', color: 'text.primary' } }}
     />
   </FormControl>
 );
@@ -65,7 +64,6 @@ export const SolicitudForm = () => {
   const [bio, setBio] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
-  // ✨ ESTADOS PARA LAS FACULTADES
   const [facultadId, setFacultadId] = useState("");
   const [facultadesList, setFacultadesList] = useState<any[]>([]);
   const [isLoadingFacultades, setIsLoadingFacultades] = useState(false);
@@ -86,13 +84,11 @@ export const SolicitudForm = () => {
   const [finalProfileImage, setFinalProfileImage] = useState<string | null>(null); 
   const [finalImageFile, setFinalImageFile] = useState<Blob | null>(null);
 
-  // ✨ CARGAMOS LAS FACULTADES AL INICIAR (Sin variables fantasma)
   useEffect(() => {
     async function loadFacultades() {
         setIsLoadingFacultades(true);
         try {
             const coordinadores = await userService.getCoordinadores();
-            // Filtramos por si acaso viene algún elemento nulo o sin ID
             const facultadesMapeadas = (coordinadores || [])
                 .filter((coord: any) => coord && coord.id)
                 .map((coord: any) => ({
@@ -106,10 +102,8 @@ export const SolicitudForm = () => {
             setIsLoadingFacultades(false);
         }
     }
-
-    // Lo llamamos directamente, sin condiciones raras
     loadFacultades();
-  }, []); // <-- Dependencias vacías para que corra solo una vez al cargar la página
+  }, []); 
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -135,18 +129,9 @@ export const SolicitudForm = () => {
     } catch (e) { console.error(e); }
   }, [imageSrc, croppedAreaPixels, onClose]);
 
-  // ✨ AÑADIMOS LA FACULTAD A LA VALIDACIÓN
   const isFormValid = Boolean(
-    personType &&
-    facultadId !== '' &&
-    providerName.trim() !== '' &&
-    bio.trim() !== '' &&
-    finalImageFile &&
-    legalDocs.cedula &&
-    legalDocs.rif &&
-    legalDocs.islr &&
-    legalDocs.cv &&
-    legalDocs.titulo &&
+    personType && facultadId !== '' && providerName.trim() !== '' && bio.trim() !== '' && finalImageFile &&
+    legalDocs.cedula && legalDocs.rif && legalDocs.islr && legalDocs.cv && legalDocs.titulo &&
     (personType === 'natural' || (personType === 'juridica' && legalDocs.regMercantil))
   );
 
@@ -168,7 +153,6 @@ export const SolicitudForm = () => {
 
     try {
       const formData = new FormData();
-      
       formData.append('userId', finalUserId);
       formData.append('tipo', 'codigo-proveedor'); 
       formData.append('estado', 'pendiente');
@@ -177,7 +161,7 @@ export const SolicitudForm = () => {
       formData.append('tipo_lucro', tipoLucro);
       formData.append('nombre_proveedor', providerName);
       formData.append('biografia', bio);
-      formData.append('coordinador_id', facultadId); // 🔥 ENVIAMOS EL ID DEL COORDINADOR ELEGIDO
+      formData.append('coordinador_id', facultadId); 
 
       if (finalImageFile) formData.append('avatar', finalImageFile, 'avatar.jpg');
       if (legalDocs.cedula) formData.append('cedula', legalDocs.cedula);
@@ -191,14 +175,7 @@ export const SolicitudForm = () => {
 
       await solicitudesService.createSolicitud(formData); 
 
-      toast({
-        title: "Solicitud enviada exitosamente.",
-        description: "Tus documentos han sido subidos para revisión.",
-        status: "success",
-        duration: 6000,
-        isClosable: true,
-      });
-
+      toast({ title: "Solicitud enviada exitosamente.", description: "Tus documentos han sido subidos para revisión.", status: "success", duration: 6000, isClosable: true });
       router.push('/'); 
     } catch (error: any) {
       console.error(error);
@@ -209,39 +186,35 @@ export const SolicitudForm = () => {
   };
 
   return (
-    <Box maxW="xl" mx="auto" p={8} bg="white" rounded="xl" shadow="lg">
+    <Box maxW="xl" mx="auto" p={{ base: 6, md: 8 }} my={{ base: 8, md: 12 }} bg="surface" borderWidth="1px" borderColor="border" rounded="xl" shadow="xl">
       <VStack spacing={6} align="stretch">
         <Box textAlign="center">
-          <Heading as="h1" size="lg" mb={2} color="teal.600">Únete como Proveedor</Heading>
-          <Text fontSize="md" color="gray.600">Completa tu perfil público y entrega la documentación.</Text>
+          <Heading as="h1" size="lg" mb={2} color="primary" fontWeight="bold">Únete como Proveedor</Heading>
+          <Text fontSize="md" color="text.muted">Completa tu perfil público y entrega la documentación.</Text>
         </Box>
 
         <form onSubmit={handleSubmit}>
           <VStack spacing={6}>
-            
-            {/* ✨ NUEVO SELECT DE FACULTADES */}
             <FormControl id="facultad" isRequired>
-              <FormLabel fontWeight="bold">¿A qué Facultad diriges tu solicitud?</FormLabel>
+              <FormLabel fontWeight="bold" color="text.primary">¿A qué Facultad diriges tu solicitud?</FormLabel>
               <Select
                 placeholder={isLoadingFacultades ? "Cargando facultades..." : "Selecciona una facultad"}
                 value={facultadId}
                 onChange={(e) => setFacultadId(e.target.value)}
                 isDisabled={isLoadingFacultades}
-                focusBorderColor="teal.500"
+                bg="background" borderColor="border" focusBorderColor="primary" color="text.primary"
               >
                 {facultadesList.map((fac) => (
-                  <option key={fac.id} value={fac.id}>
-                    {fac.name}
-                  </option>
+                  <option key={fac.id} value={fac.id}>{fac.name}</option>
                 ))}
               </Select>
-              <FormHelperText>Tu documentación será evaluada por el coordinador de esta facultad.</FormHelperText>
+              <FormHelperText color="text.muted">Tu documentación será evaluada por el coordinador de esta facultad.</FormHelperText>
             </FormControl>
 
-            <Divider />
+            <Divider borderColor="border" />
 
             <FormControl id="person-type" as="fieldset" isRequired>
-              <FormLabel as="legend" fontWeight="bold">Tipo de Persona</FormLabel>
+              <FormLabel as="legend" fontWeight="bold" color="text.primary">Tipo de Persona</FormLabel>
               <RadioGroup onChange={(value: any) => setPersonType(value)} value={personType}>
                 <HStack spacing="24px">
                   <Radio value="natural" colorScheme="teal">Persona Natural</Radio>
@@ -250,10 +223,10 @@ export const SolicitudForm = () => {
               </RadioGroup>
             </FormControl>
 
-            <Divider />
+            <Divider borderColor="border" />
 
             <FormControl id="internal-type" as="fieldset" isRequired>
-              <FormLabel as="legend" fontWeight="bold">¿El proveedor pertenece a la UCV?</FormLabel>
+              <FormLabel as="legend" fontWeight="bold" color="text.primary">¿El proveedor pertenece a la UCV?</FormLabel>
               <RadioGroup onChange={(value: any) => setIsInternal(value)} value={isInternal}>
                 <HStack spacing="24px">
                   <Radio value="true" colorScheme="teal">Sí, pertenece (Interno)</Radio>
@@ -262,10 +235,10 @@ export const SolicitudForm = () => {
               </RadioGroup>
             </FormControl>
 
-            <Divider />
+            <Divider borderColor="border" />
 
             <FormControl id="lucro-type" as="fieldset" isRequired>
-              <FormLabel as="legend" fontWeight="bold">Naturaleza de la Organización</FormLabel>
+              <FormLabel as="legend" fontWeight="bold" color="text.primary">Naturaleza de la Organización</FormLabel>
               <RadioGroup onChange={(value: any) => setTipoLucro(value)} value={tipoLucro}>
                 <HStack spacing="24px">
                   <Radio value="lucrativo" colorScheme="teal">Con fines de lucro</Radio>
@@ -274,24 +247,24 @@ export const SolicitudForm = () => {
               </RadioGroup>
             </FormControl>
 
-            <Divider />
+            <Divider borderColor="border" />
 
             <VStack spacing={4} align="stretch" w="full">
-              <Heading size="md" color="gray.700">Perfil Público</Heading>
+              <Heading size="md" color="primary">Perfil Público</Heading>
               <FormControl id="providerName" isRequired>
-                <FormLabel>Nombre del Proveedor / Organización</FormLabel>
-                <Input placeholder="Ej: Academia de Artes" value={providerName} onChange={(e) => setProviderName(e.target.value)} />
+                <FormLabel color="text.primary">Nombre del Proveedor / Organización</FormLabel>
+                <Input placeholder="Ej: Academia de Artes" value={providerName} onChange={(e) => setProviderName(e.target.value)} bg="background" borderColor="border" focusBorderColor="primary" color="text.primary" />
               </FormControl>
 
               <FormControl id="bio" isRequired>
-                <FormLabel>Biografía</FormLabel>
-                <Textarea placeholder="Describe tu experiencia..." rows={4} value={bio} onChange={(e) => setBio(e.target.value)} />
+                <FormLabel color="text.primary">Biografía</FormLabel>
+                <Textarea placeholder="Describe tu experiencia..." rows={4} value={bio} onChange={(e) => setBio(e.target.value)} bg="background" borderColor="border" focusBorderColor="primary" color="text.primary" />
               </FormControl>
 
               <FormControl>
-                <FormLabel>Imagen de Perfil (Cuadrada) <Text as="span" color="red.500">*</Text></FormLabel>
+                <FormLabel color="text.primary">Imagen de Perfil (Cuadrada) <Text as="span" color="danger">*</Text></FormLabel>
                 <HStack spacing={4} align="center">
-                  <Avatar size="xl" src={finalProfileImage || undefined} icon={<Icon as={FaCamera} fontSize="1.5rem" />} bg="gray.200" />
+                  <Avatar size="xl" src={finalProfileImage || undefined} icon={<Icon as={FaCamera} fontSize="1.5rem" />} bg="neutral" />
                   <Box>
                     <Input type="file" accept="image/png, image/jpeg, image/jpg" onChange={onFileChange} display="none" id="file-upload" />
                     <label htmlFor="file-upload">
@@ -299,17 +272,17 @@ export const SolicitudForm = () => {
                         {finalProfileImage ? "Cambiar Imagen" : "Subir Imagen"}
                       </Button>
                     </label>
-                    <FormHelperText>JPG o PNG. Requerido.</FormHelperText>
+                    <FormHelperText color="text.muted">JPG o PNG. Requerido.</FormHelperText>
                   </Box>
                 </HStack>
               </FormControl>
             </VStack>
 
-            <Divider />
+            <Divider borderColor="border" />
 
             {personType === "natural" && (
               <VStack spacing={4} align="stretch" w="full">
-                <Heading size="md" color="gray.700">Documentación (Persona Natural)</Heading>
+                <Heading size="md" color="primary">Documentación (Persona Natural)</Heading>
                 <FileUploadControl id="cedula" label="Cédula de Identidad *" accept=".pdf" onChange={(f) => handleDocChange('cedula', f)} file={legalDocs.cedula} />
                 <FileUploadControl id="rif-natural" label="Registro de Información Fiscal (RIF) *" accept=".pdf" onChange={(f) => handleDocChange('rif', f)} file={legalDocs.rif} />
                 <FileUploadControl id="islr-natural" label="Certificados de Declaración ISLR *" accept=".pdf" onChange={(f) => handleDocChange('islr', f)} file={legalDocs.islr} />
@@ -320,7 +293,7 @@ export const SolicitudForm = () => {
 
             {personType === "juridica" && (
               <VStack spacing={4} align="stretch" w="full">
-                <Heading size="md" color="gray.700">Documentación (Persona Jurídica)</Heading>
+                <Heading size="md" color="primary">Documentación (Persona Jurídica)</Heading>
                 <FileUploadControl id="reg-mercantil" label="Registro Mercantil *" accept=".pdf" onChange={(f) => handleDocChange('regMercantil', f)} file={legalDocs.regMercantil} />
                 <FileUploadControl id="cedula-legal" label="Cédula de Identidad del representante legal *" accept=".pdf" onChange={(f) => handleDocChange('cedula', f)} file={legalDocs.cedula} />
                 <FileUploadControl id="rif-juridico" label="Registro de Información Fiscal (RIF) *" accept=".pdf" onChange={(f) => handleDocChange('rif', f)} file={legalDocs.rif} />
@@ -339,14 +312,14 @@ export const SolicitudForm = () => {
       
       <Modal isOpen={isOpen} onClose={onClose} size="xl" closeOnOverlayClick={false} isCentered>
         <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Editar Imagen de Perfil</ModalHeader>
+        <ModalContent bg="surface">
+          <ModalHeader color="text.primary">Editar Imagen de Perfil</ModalHeader>
           <ModalBody>
             <Box position="relative" height="400px" width="100%" bg="black">
               <Cropper image={imageSrc || undefined} crop={crop} zoom={zoom} aspect={1 / 1} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} />
             </Box>
             <Box mt={4}>
-              <Text mb={2} fontSize="sm">Zoom</Text>
+              <Text mb={2} fontSize="sm" color="text.primary">Zoom</Text>
               <Slider value={zoom} min={1} max={3} step={0.1} aria-label="zoom" onChange={setZoom}>
                 <SliderTrack><SliderFilledTrack bg="teal.500" /></SliderTrack>
                 <SliderThumb />
@@ -354,7 +327,7 @@ export const SolicitudForm = () => {
             </Box>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>Cancelar</Button>
+            <Button variant="ghost" mr={3} onClick={onClose} color="text.primary">Cancelar</Button>
             <Button colorScheme="teal" onClick={showCroppedImage}>Guardar Recorte</Button>
           </ModalFooter>
         </ModalContent>

@@ -11,8 +11,7 @@ import {
   VStack,
   Heading,
   Text,
-  useToast,
-  useColorModeValue, 
+  useToast
 } from "@chakra-ui/react";
 import { useAuth } from "@/app/context/auth-context";
 import { useRouter } from "next/navigation";
@@ -23,9 +22,9 @@ const FormSection = ({ title, children }: { title: string; children: React.React
     <Heading 
       as="h3" 
       size="md" 
-      color={useColorModeValue("gray.600", "gray.300")}
+      color="primary"
       borderBottomWidth="1px" 
-      borderColor={useColorModeValue("gray.200", "gray.600")}
+      borderColor="border"
       pb={2} 
       mb={2}
     >
@@ -42,11 +41,11 @@ const CourseFormControl = ({ id, label, isTextArea = false }: {
 }) => {
   return (
     <FormControl id={id} isRequired={true}>
-      <FormLabel fontWeight="medium">{label}</FormLabel>
+      <FormLabel fontWeight="bold" color="text.primary">{label}</FormLabel>
       {isTextArea ? (
-        <Textarea name={id} placeholder={`Describe ${label.toLowerCase()} aquí...`} rows={4}/>
+        <Textarea name={id} placeholder={`Describe ${label.toLowerCase()} aquí...`} rows={4} bg="background" borderColor="border" focusBorderColor="primary" color="text.primary" />
       ) : (
-        <Input type="text" name={id} placeholder={`Escribe ${label.toLowerCase()} aquí...`} />
+        <Input type="text" name={id} placeholder={`Escribe ${label.toLowerCase()} aquí...`} bg="background" borderColor="border" focusBorderColor="primary" color="text.primary" />
       )}
     </FormControl>
   );
@@ -57,13 +56,10 @@ export const CourseForm = () => {
   const router = useRouter();
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  
-  // ✨ NUEVO ESTADO PARA LA IMAGEN
   const [coverImage, setCoverImage] = useState<File | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    
     if (isLoading) return;
     
     if (!user || user.rol !== 'proveedor') {
@@ -72,7 +68,6 @@ export const CourseForm = () => {
     }
 
     setIsLoading(true);
-
     const formData = new FormData(event.currentTarget);
 
     try {
@@ -99,66 +94,44 @@ export const CourseForm = () => {
       }
 
       if (!coverImage) {
-          toast({ 
-            title: "Falta la imagen de portada", 
-            description: "Es obligatorio subir una imagen representativa para el curso.", 
-            status: "warning" 
-          });
+          toast({ title: "Falta la imagen de portada", description: "Es obligatorio subir una imagen representativa para el curso.", status: "warning" });
           setIsLoading(false);
           return;
       }
 
-      // ✨ MAGIA: EMPAQUETAMOS TODO EN UN FORMDATA PARA MANDAR EL ARCHIVO
       const finalFormData = new FormData();
       finalFormData.append('userId', user.id || '');
       finalFormData.append('tipo', 'formulacion-curso-directa');
-      finalFormData.append('payload', JSON.stringify(payload)); // Mandamos los datos de texto como string
+      finalFormData.append('payload', JSON.stringify(payload)); 
       
       if (coverImage) {
         finalFormData.append('cover', coverImage);
       }
 
-      // ✨ Usamos fetch directo para que el navegador ponga los headers multipart/form-data automáticamente
-      const response = await fetch('/api/courses', {
-        method: 'POST',
-        body: finalFormData
-      });
+      const response = await fetch('/api/courses', { method: 'POST', body: finalFormData });
 
       if (!response.ok) {
         const err = await response.json().catch(()=>({}));
         throw new Error(err.error || "Error al enviar al servidor");
       }
 
-      toast({
-        title: "Curso formulado y enviado.",
-        description: "Tu propuesta está siendo revisada por Coordinación.",
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
-
+      toast({ title: "Curso formulado y enviado.", description: "Tu propuesta está siendo revisada por Coordinación.", status: "success", duration: 5000, isClosable: true });
       router.push(`/profile/${user.id}`); 
     } catch (error: any) {
       console.error(error);
-      toast({
-        title: "Error al enviar la propuesta.",
-        description: error.message || "Por favor, inténtalo de nuevo más tarde.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+      toast({ title: "Error al enviar la propuesta.", description: error.message || "Por favor, inténtalo de nuevo más tarde.", status: "error", duration: 5000, isClosable: true });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Box maxW="3xl" mx="auto" p={{ base: 5, md: 8 }} my={8} bg={useColorModeValue("white", "gray.700")} rounded="lg" shadow="xl">
+    <Box maxW="3xl" mx="auto" p={{ base: 6, md: 8 }} my={{ base: 8, md: 12 }} bg="surface" rounded="xl" shadow="xl" borderWidth="1px" borderColor="border">
       <VStack spacing={4} align="stretch" mb={8}>
-        <Heading as="h1" size="xl" textAlign="center" color="teal.500">
+        <Heading as="h1" size="lg" textAlign="center" color="primary" fontWeight="bold">
           Formulación de Nuevo Curso
         </Heading>
-        <Text fontSize="lg" textAlign="center" color="gray.500">
+        <Text fontSize="md" textAlign="center" color="text.muted">
           Completa la siguiente información para proponer un nuevo programa de formación.
         </Text>
       </VStack>
@@ -167,14 +140,15 @@ export const CourseForm = () => {
         <VStack spacing={8}> 
           
           <FormSection title="1. Identificación del Curso">
-            {/* ✨ EL INPUT DE LA FOTO (OPCIONAL) */}
             <FormControl id="cover" isRequired={true}>
-              <FormLabel fontWeight="medium">Imagen de Portada</FormLabel>
+              <FormLabel fontWeight="bold" color="text.primary">Imagen de Portada</FormLabel>
               <Input 
                 type="file" 
                 accept="image/png, image/jpeg, image/jpg" 
                 p={1}
                 onChange={(e) => setCoverImage(e.target.files?.[0] || null)}
+                bg="background" borderColor="border" focusBorderColor="primary" color="text.primary"
+                sx={{ '::file-selector-button': { height: 8, padding: 0, mr: 4, background: 'none', border: 'none', fontWeight: 'bold', color: 'text.primary' } }}
               />
             </FormControl>
 
@@ -200,16 +174,7 @@ export const CourseForm = () => {
             <CourseFormControl id="cronograma" label="Cronograma de Ejecución Anual" isTextArea />
           </FormSection>
 
-          <Button
-            type="submit"
-            colorScheme="teal"
-            size="lg" 
-            width="full"
-            mt={6}
-            isLoading={isLoading}
-            loadingText="Enviando Formulación..."
-            isDisabled={isLoading}
-          >
+          <Button type="submit" colorScheme="teal" size="lg" width="full" mt={6} isLoading={isLoading} loadingText="Enviando Formulación..." isDisabled={isLoading} shadow="md">
             Enviar Formulación
           </Button>
         </VStack>

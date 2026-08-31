@@ -53,7 +53,9 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
   const [observacionesEvaluacion, setObservacionesEvaluacion] = useState('');
   const [evaluationFile, setEvaluationFile] = useState<File | null>(null);
 
-  const RUBRICA_EVALUACION_URL = '/sample-local.pdf'; 
+  // ✨ Rutas temporales de los documentos locales
+  const RUBRICA_EVALUACION_URL = '/rubrica.pdf'; 
+  const PROTOCOLO_EVALUACION_URL = '/protocolo.pdf'; // ⚠ REEMPLAZAR CUANDO TENGAS EL ARCHIVO DEFINITIVO
 
   const toast = useToast();
   const router = useRouter(); 
@@ -309,6 +311,7 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
                         observacionesEvaluacion={observacionesEvaluacion}
                         setObservacionesEvaluacion={setObservacionesEvaluacion}
                         rubricaUrl={RUBRICA_EVALUACION_URL}
+                        protocoloUrl={PROTOCOLO_EVALUACION_URL} // ✨ Inyectado en el componente hijo
                         onFileChange={setEvaluationFile}
                     />
                 </Box>

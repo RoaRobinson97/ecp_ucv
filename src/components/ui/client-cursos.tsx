@@ -16,12 +16,22 @@ const CourseCard = ({ titulo, descripcion, image }: any) => {
     const finalImage = image && image.startsWith('/') ? `http://localhost:8080${image}` : (image || '');
 
     return (
-        <Card _hover={{ transform: 'translateY(-5px)', shadow: 'lg' }} transition="all 0.2s" height="100%" overflow="hidden" variant="outline">
+        <Card 
+            _hover={{ transform: 'translateY(-5px)', shadow: 'lg' }} 
+            transition="all 0.2s" 
+            height="100%" 
+            overflow="hidden" 
+            variant="outline"
+            // ✨ CORRECCIÓN VISUAL: Utilizamos los tokens semánticos estructurales
+            bg="surface"
+            borderColor="border"
+        >
             <Image src={finalImage} alt={titulo} objectFit="cover" w="100%" h="200px" fallbackSrc={placeholderImage} />
             <CardBody>
                 <Stack mt="4" spacing="3">
                     <Heading size="md" noOfLines={2}>{titulo}</Heading>
-                    <Text color="gray.600" noOfLines={3} fontSize="sm">
+                    {/* ✨ CORRECCIÓN VISUAL: Reemplazamos gray.600 por text.muted */}
+                    <Text color="text.muted" noOfLines={3} fontSize="sm">
                         {descripcion || "Sin descripción disponible."}
                     </Text>
                 </Stack>
@@ -92,9 +102,12 @@ export function ClientCourses({ initialCourses }: { initialCourses: Course[] }) 
                             placeholder="Buscar por nombre o tema del curso..." 
                             value={searchTerm}
                             onChange={handleSearch}
-                            bg="white"
+                            // ✨ CORRECCIÓN VISUAL: Reemplazamos bg="white" por "surface" y fijamos colores
+                            bg="surface"
+                            color="text.primary"
+                            borderColor="border"
                             shadow="sm"
-                            focusBorderColor="teal.500"
+                            focusBorderColor="primary"
                         />
                     </InputGroup>
                 </Box>
@@ -102,8 +115,9 @@ export function ClientCourses({ initialCourses }: { initialCourses: Course[] }) 
 
             <Box flex="1">
                 {paginatedCourses.length === 0 ? (
-                    <Box textAlign="center" py={20} bg="gray.50" rounded="md" border="1px dashed" borderColor="gray.200">
-                        <Text fontSize="lg" color="gray.500">No se encontraron cursos que coincidan con tu búsqueda.</Text>
+                    // ✨ CORRECCIÓN VISUAL: Reemplazamos gray.50 y gray.200 por tokens
+                    <Box textAlign="center" py={20} bg="surface" rounded="md" border="1px dashed" borderColor="border">
+                        <Text fontSize="lg" color="text.muted">No se encontraron cursos que coincidan con tu búsqueda.</Text>
                     </Box>
                 ) : (
                     <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={10}>
@@ -134,7 +148,7 @@ export function ClientCourses({ initialCourses }: { initialCourses: Course[] }) 
                     
                     {getPageNumbers().map((p, index) => (
                         p === '...' ? (
-                            <Text key={`ellipsis-${index}`} px={2} color="gray.500" fontWeight="bold">...</Text>
+                            <Text key={`ellipsis-${index}`} px={2} color="text.muted" fontWeight="bold">...</Text>
                         ) : (
                             <Button
                                 key={index}

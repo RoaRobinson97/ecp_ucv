@@ -7,7 +7,6 @@ import {
     Button,
     VStack,
     Heading,
-    useColorModeValue,
     Text,
     Link,
     Flex,
@@ -69,27 +68,36 @@ export const LoginForm = () => {
         setFormData({ email, password });
     };
 
-    const formBgColor = useColorModeValue("white", "gray.700");
-
     return (
         <Box
-            bg={formBgColor}
-            p={8}
-            rounded="lg"
-            shadow="lg"
+            bg="surface"
+            p={{ base: 6, md: 8 }}
+            rounded="xl"
+            shadow="xl"
+            borderWidth="1px"
+            borderColor="border"
             w="full"
             maxW="md"
+            mx="auto"
+            my={{ base: 8, md: 12 }} // Consistencia de márgenes con el RegisterForm
         >
-            <Heading as="h1" size="xl" textAlign="center" mb={6}>
+            <Heading 
+                as="h1" 
+                size="lg" 
+                textAlign="center" 
+                mb={8} 
+                color="text.primary"
+                fontWeight="bold"
+            >
                 Iniciar Sesión
             </Heading>
             
             <form onSubmit={handleLogin}>
-                <VStack spacing={4} align="stretch">
+                <VStack spacing={5} align="stretch">
                     
-                    {process.env.NODE_ENV === 'development' && (
+                    {/* {process.env.NODE_ENV === 'development' && (
                         <DevLoginHelper onUserSelect={handleDevUserSelect} />
-                    )}
+                    )} */}
 
                     {error && (
                         <Alert status="error" rounded="md">
@@ -99,18 +107,22 @@ export const LoginForm = () => {
                     )}
 
                     <FormControl id="email" isRequired>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel fontWeight="semibold" color="text.primary">Email</FormLabel>
                         <Input
                             type="email"
                             name="email"
                             placeholder="tu.correo@ejemplo.com"
                             value={formData.email}
                             onChange={handleChange}
+                            bg="background"
+                            borderColor="border"
+                            focusBorderColor="primary"
+                            color="text.primary"
                         />
                     </FormControl>
 
                     <FormControl id="password" isRequired>
-                        <FormLabel>Contraseña</FormLabel>
+                        <FormLabel fontWeight="semibold" color="text.primary">Contraseña</FormLabel>
                         <InputGroup>
                             <Input
                                 type={showPassword ? 'text' : 'password'}
@@ -118,9 +130,18 @@ export const LoginForm = () => {
                                 placeholder="********"
                                 value={formData.password}
                                 onChange={handleChange}
+                                bg="background"
+                                borderColor="border"
+                                focusBorderColor="primary"
+                                color="text.primary"
                             />
                             <InputRightElement>
-                                <Button variant="ghost" onClick={() => setShowPassword(!showPassword)}>
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    color="text.muted"
+                                    _hover={{ bg: "transparent", color: "text.primary" }}
+                                >
                                     {showPassword ? <ViewOffIcon /> : <ViewIcon />}
                                 </Button>
                             </InputRightElement>
@@ -128,18 +149,22 @@ export const LoginForm = () => {
                     </FormControl>
 
                     <Flex justify="flex-end">
-                        <Link color="teal.500" fontSize="sm">
+                        <Link color="primary" fontSize="sm" fontWeight="medium" _hover={{ textDecoration: 'underline' }}>
                             ¿Olvidaste tu contraseña?
                         </Link>
                     </Flex>
 
                     <Button
                         type="submit"
-                        colorScheme="teal"
+                        bg="primary"
+                        color="white"
+                        _hover={{ bg: "teal.600" }} // Asumiendo que el primary base es teal
                         size="lg"
                         w="full"
+                        mt={6}
+                        shadow="md"
                         isLoading={isLoading}
-                        mt={4}
+                        loadingText="Accediendo..."
                     >
                         Acceder
                     </Button>
@@ -147,9 +172,9 @@ export const LoginForm = () => {
                 </VStack>
             </form>
 
-            <Text mt={6} textAlign="center">
+            <Text mt={8} textAlign="center" color="text.muted">
                 ¿Aún no tienes una cuenta?{' '}
-                <Link color="teal.500" href="/registro" fontWeight="bold">
+                <Link color="primary" href="/registro" fontWeight="bold" _hover={{ textDecoration: 'underline' }}>
                     Regístrate
                 </Link>
             </Text>

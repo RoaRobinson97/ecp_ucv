@@ -6,7 +6,6 @@ import {
     Flex,
     Heading,
     Spacer,
-    useColorModeValue,
     HStack,
     Menu,
     MenuButton,
@@ -34,8 +33,6 @@ export const Navbar = () => {
 
     const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
-    const menuButtonColor = useColorModeValue("primary.500", "whiteAlpha.900");
-
     const codigo_proveedor = user?.codigo_proveedor;
     const safeUserId = user?.id || (user as any)?.userID || (user as any)?.sub;
 
@@ -50,7 +47,6 @@ export const Navbar = () => {
 
     const showFormulateButton = isAuthenticated && !!codigo_proveedor && courses.length === 0 && !isAdmin;
     const showCohortButton = !isCohortOpen && isAuthenticated && !!codigo_proveedor && courses.length > 0 && !isAdmin;
-    const showMisCursosButton = isAuthenticated && !!codigo_proveedor && !isAdmin;
     
     const showLoginRegisterButtons = !isAuthenticated;
     const showSolicitudButton = isAuthenticated && !codigo_proveedor && (userRoles as string[]).includes('visitante');
@@ -58,10 +54,9 @@ export const Navbar = () => {
 
     const courseId = courses.length > 0 ? courses[0].id : null;
 
-    // ✨ NUEVO: Verificamos si el usuario ya tiene una solicitud en revisión
     useEffect(() => {
         if (showSolicitudButton && safeUserId) {
-            fetch(`http://localhost:8080/providers?usuario_id=${safeUserId}`)
+            fetch(`http://127.0.0.1:8080/providers?usuario_id=${safeUserId}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data && data.length > 0) {
@@ -76,7 +71,7 @@ export const Navbar = () => {
     }, [showSolicitudButton, safeUserId]);
 
     return (
-        <Box bg={"navbar"} px={{ base: 4, md: 8 }} py={3} shadow="md">
+        <Box bg="navbar" px={{ base: 4, md: 8 }} py={3} shadow="md">
             <Flex alignItems="center" maxW="container.xl" mx="auto">
                 <NextLink href="/" passHref>
                     <Flex alignItems="center" gap={{base: 2, md: 4}} cursor="pointer">
@@ -86,17 +81,25 @@ export const Navbar = () => {
                             width={{ base: "40px", md: "50px" }}
                             height="auto"
                         />
-                        <Heading size={{ base: "md", md: "lg" }} color={useColorModeValue("primary.500", "primary.300")}>
-                            Educación Continua y Permanente
+                        {/* ✨ CORRECCIÓN VISUAL: Jerarquía institucional, ajuste de espaciado y grosor */}
+                        <Heading 
+                            as="h1" 
+                            size={{ base: "sm", md: "md" }} 
+                            color="whiteAlpha.900"
+                            fontWeight="extrabold"
+                            letterSpacing="tight"
+                            lineHeight="1.2"
+                            textTransform="uppercase"
+                            fontSize={{ base: "14px", md: "18px" }} // Forzamos un tamaño exacto y elegante
+                        >
+                            Educación Continua <br /> y Permanente
                         </Heading>
                     </Flex>
                 </NextLink>
                 <Spacer />
                 <HStack spacing={{ base: 2, md: 4 }}>
-                    {/* === Authenticated User View === */}
                     {isHydrated && isAuthenticated ? (
                         <>
-                            {/* --- Provider Specific Buttons --- */}
                             {codigo_proveedor && (
                                 <HStack spacing={{ base: 2, md: 4 }}>
                                     {showFormulateButton && (
@@ -117,7 +120,6 @@ export const Navbar = () => {
                                 </HStack>
                             )}
 
-                            {/* --- Visitor Specific Button --- */}
                             {showSolicitudButton && (
                                 hasPendingRequest ? (
                                     <Tooltip label="Solicitud en revisión" hasArrow placement="bottom">
@@ -134,16 +136,9 @@ export const Navbar = () => {
                                 )
                             )}
 
-                            {/* --- NEW "Mis Cursos" Button for Providers --- */}
-                            {/* {showMisCursosButton && user?.id && ( 
-                                <NextLink href={`/mis-cursos?codigo_proveedor=${user.codigo_proveedor}`} passHref> 
-                                    <GhostButton size={"md"}>Mis Cursos</GhostButton> 
-                                </NextLink>
-                            )} */}
-
-                            {/* --- User Menu --- */}
                             <Menu>
-                                <MenuButton as={IconButton} aria-label="Opciones de usuario" icon={<FaUserCircle size="24px" />} variant="ghost" color={menuButtonColor} />
+                                {/* ✨ CORRECCIÓN VISUAL: Ícono blanco fijo */}
+                                <MenuButton as={IconButton} aria-label="Opciones de usuario" icon={<FaUserCircle size="24px" />} variant="ghost" color="whiteAlpha.900" _hover={{ bg: 'whiteAlpha.200' }} />
                                 <MenuList>
                                     <MenuItem as={NextLink} href={`/profile/${user?.id}`}>Mi Perfil</MenuItem>
                                     {showAdminPanelLink && (
@@ -154,7 +149,6 @@ export const Navbar = () => {
                             </Menu>
                         </>
                     ) : (
-                        /* === Unauthenticated User View === */
                         isHydrated && showLoginRegisterButtons && (
                             <>
                                 <NextLink href="/login" passHref>
@@ -166,7 +160,6 @@ export const Navbar = () => {
                             </>
                         )
                     )}
-                    {/* --- Always Visible --- */}
                     <ColorModeSwitcher />
                 </HStack>
             </Flex>
