@@ -14,20 +14,29 @@ import { Course } from '@/data/types';
 const CourseCard = ({ titulo, descripcion, image }: any) => {
     const placeholderImage = "https://placehold.co/400x200/cccccc/ffffff/png?text=Curso";
     
-    // 1. Tomamos el dominio real (Asegúrate de tener esto en tu servidor y HACER REBUILD)
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    
-    // 2. Lógica de limpieza extrema:
+    // ✨ LÓGICA DE RUTADO DE IMÁGENES CORREGIDA PARA FRONTEND LOCAL
     let finalImage = image || '';
     
-    // Si la BD viene "sucia" con el localhost quemado, lo extirpamos y ponemos el baseUrl
-    if (finalImage.includes('localhost:8080')) {
-        finalImage = finalImage.replace('http://localhost:8080', baseUrl);
-        finalImage = finalImage.replace('http://127.0.0.1:8080', baseUrl); // Por si acaso
-    } 
-    // Si la BD viene limpia (ruta relativa), la concatenamos normalmente
-    else if (finalImage.startsWith('/')) {
-        finalImage = `${baseUrl}${finalImage}`;
+    if (finalImage) {
+        // 1. Si la base de datos guardó un localhost sucio, lo limpiamos y extraemos solo el path
+        if (finalImage.includes('localhost:8080')) {
+            const url = new URL(finalImage);
+            finalImage = url.pathname; // Extrae solo "/uploads/..."
+        }
+        
+        // 2. Si es una ruta externa genuina (ej. un bucket S3 futuro), la dejamos quieta.
+        else if (finalImage.startsWith('http')) {
+            // No hacemos nada
+        }
+        
+        // 3. Si no empieza con '/', se lo agregamos para que Next.js entienda que es relativo a la raíz (carpeta public)
+        else if (!finalImage.startsWith('/')) {
+            // ATENCIÓN: Asegúrate de que este prefijo coincida con la ruta real en tu BD
+            // Si la BD solo guarda "178...jpg", y tu imagen está en "/uploads/providers/ZW17.../covers/178...jpg"
+            // Tendrás un problema porque el Frontend no puede adivinar el ID del proveedor (ZW17...).
+            // Asumo que la BD SÍ guarda "/uploads/..."
+            finalImage = finalImage.startsWith('uploads') ? `/${finalImage}` : finalImage;
+        }
     }
 
     return (
@@ -40,7 +49,17 @@ const CourseCard = ({ titulo, descripcion, image }: any) => {
             bg="surface"
             borderColor="border"
         >
-            <Image src={finalImage} alt={titulo} objectFit="cover" w="100%" h="200px" fallbackSrc={placeholderImage} />
+            <Image 
+                src={finalImage || placeholderImage} // Fallback interno si viene vacía
+                alt={titulo} 
+                objectFit="cover" 
+                w="100%" 
+                h="200px" 
+                // Fallback de Chakra si falla la carga física
+                fallbackSrc={placeholderImage} 
+                // ✨ FIX: Evita el error molesto en consola si falla el primer intento
+                onError={(e: any) => { e.currentTarget.src = placeholderImage; }} 
+            />
             <CardBody>
                 <Stack mt="4" spacing="3">
                     <Heading size="md" noOfLines={2} color="text.primary">{titulo}</Heading>
