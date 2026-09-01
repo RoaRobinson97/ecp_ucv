@@ -14,10 +14,21 @@ import { Course } from '@/data/types';
 const CourseCard = ({ titulo, descripcion, image }: any) => {
     const placeholderImage = "https://placehold.co/400x200/cccccc/ffffff/png?text=Curso";
     
-    // ✨ CORRECCIÓN CRÍTICA DE LA IMAGEN: 
-    // Usamos la variable de entorno para que en producción apunte al dominio correcto
+    // 1. Tomamos el dominio real (Asegúrate de tener esto en tu servidor y HACER REBUILD)
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    const finalImage = image && image.startsWith('/') ? `${baseUrl}${image}` : (image || '');
+    
+    // 2. Lógica de limpieza extrema:
+    let finalImage = image || '';
+    
+    // Si la BD viene "sucia" con el localhost quemado, lo extirpamos y ponemos el baseUrl
+    if (finalImage.includes('localhost:8080')) {
+        finalImage = finalImage.replace('http://localhost:8080', baseUrl);
+        finalImage = finalImage.replace('http://127.0.0.1:8080', baseUrl); // Por si acaso
+    } 
+    // Si la BD viene limpia (ruta relativa), la concatenamos normalmente
+    else if (finalImage.startsWith('/')) {
+        finalImage = `${baseUrl}${finalImage}`;
+    }
 
     return (
         <Card 
