@@ -347,6 +347,15 @@
               "RDPZ907YG7U",
               "_MM2jTY1EUk"
             ]
+          },
+          {
+            "id_adenda": "ADENDA-1788574580780",
+            "archivo_url": "/uploads/legal/xItZiJZEKE8/1788574580781-sample-local-pdf.pdf",
+            "compromiso_url": null,
+            "fecha": "2026-09-05T02:16:20.782Z",
+            "cursos_amparados": [
+              "nrQeqFACUHo"
+            ]
           }
         ],
         "carta_intencion_url": "/uploads/legal/xItZiJZEKE8/1786991840262-sample-local-pdf.pdf",
@@ -1110,6 +1119,42 @@
       "creado_en": "2026-08-30T20:50:31.622Z",
       "actualizado_en": "2026-08-30T20:50:31.622Z",
       "id": "q1ERqsMPGmE"
+    },
+    {
+      "usuario_id": "xItZiJZEKE8",
+      "tipo_curso": "formulacion-curso-directa",
+      "estado": "cerrado",
+      "estado_gestion": "cerrado",
+      "facultad": "Ciencias",
+      "coordinador_id": "4",
+      "facultad_origen": "Ciencias",
+      "coordinador_origen": "4",
+      "titulo": "Introducción al Análisis de Datos Ómicos con Machine Learning",
+      "denominacion": "Introducción al Análisis de Datos Ómicos con Machine Learning",
+      "proposito": "Formar a profesionales y estudiantes de las ciencias biológicas y computacionales en la aplicación de algoritmos de aprendizaje automático para el procesamiento, análisis y modelado predictivo de grandes volúmenes de datos genómicos.",
+      "fundamentacion": "La secuenciación de nueva generación ha generado una cantidad sin precedentes de datos biológicos. El análisis manual de esta información resulta inviable, haciendo imperativa la adopción de técnicas de Machine Learning. Este programa responde a la necesidad de la Facultad de Ciencias de integrar herramientas computacionales avanzadas en la investigación biológica, permitiendo extraer patrones ocultos en el ADN/ARN que faciliten el diagnóstico clínico y la investigación básica.",
+      "duracion": "120 horas académicas (80 horas virtuales sincrónicas, 40 horas prácticas de laboratorio presencial). Modalidad Mixta.",
+      "estructura_costos": "Honorarios de facilitadores (50%), uso de plataforma tecnológica y servidores de cálculo (20%), material de apoyo (10%), aranceles administrativos UCV - DEU (20%). Costo estimado por participante: $120.",
+      "perfil_docente": "Perfil del Facilitador: Profesional con título de cuarto nivel (Maestría o Doctorado) en Ciencias de la Computación, Bioinformática o áreas afines, con sólida experiencia comprobable en docencia universitaria y publicaciones científicas indizadas en el área de ciencia de datos.",
+      "perfiles": "Perfil de Ingreso y Egreso:\n\nIngreso: Dirigido a estudiantes de los últimos semestres o profesionales egresados en Biología, Computación, Medicina o carreras afines, con conocimientos básicos de estadística.\n\nEgreso: Al finalizar, el participante será capaz de limpiar, preprocesar y aplicar modelos de clasificación y regresión sobre conjuntos de datos biológicos utilizando Python, garantizando rigor y reproducibilidad científica.",
+      "exigencias": "El participante debe disponer de un computador personal con un mínimo de 8GB de RAM, procesador i5 o equivalente, conexión a internet estable y el entorno de desarrollo Anaconda (Python 3.10+) instalado.",
+      "estructura_curricular": "El programa se articula en tres módulos secuenciales y progresivos. Cada módulo consta de sesiones teóricas magistrales seguidas de laboratorios prácticos de programación, culminando en la resolución de un problema biológico real con código.",
+      "evaluacion": "Evaluación continua y formativa bajo enfoque de resolución de problemas. Asignaciones prácticas de código (40%), Proyecto final aplicado a un dataset público del NCBI (40%), y presentación oral de resultados (20%).",
+      "cronograma": "Ejecución proyectada en dos cohortes anuales. Cohorte I: Marzo - Julio. Cohorte II: Septiembre - Enero. Sesiones virtuales los días viernes (6:00 pm - 8:00 pm) y laboratorios presenciales los sábados (8:00 am - 12:00 pm).",
+      "contenido_competencias": "Módulo I: Fundamentos de Python para Ciencias\nContenido: Estructuras de datos, control de flujo, librerías científicas (NumPy, Pandas, Matplotlib).\nCompetencia: Manipula y transforma grandes volúmenes de datos tabulares de forma eficiente y reproducible.\n\nMódulo II: Aprendizaje Supervisado en Biociencias\nContenido: Regresión lineal/logística, Árboles de Decisión, Random Forest, Máquinas de Vectores de Soporte (SVM).\nCompetencia: Diseña, entrena y evalúa modelos predictivos para la clasificación automatizada de secuencias genéticas.\n\nMódulo III: Aprendizaje No Supervisado y Reducción de Dimensionalidad\nContenido: Clustering (K-Means, DBSCAN), Análisis de Componentes Principales (PCA).\nCompetencia: Identifica patrones ocultos y agrupaciones naturales en conjuntos de datos no etiquetados.",
+      "bibliografia": "McKinney, W. (2017). Python for Data Analysis: Data Wrangling with Pandas, NumPy, and IPython (2da ed.). O'Reilly Media.\nPedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., ... & Duchesnay, E. (2011). Scikit-learn: Machine Learning in Python. Journal of Machine Learning Research, 12, 2825-2830.\nVanderPlas, J. (2016). Python Data Science Handbook: Essential Tools for Working with Data. O'Reilly Media.",
+      "nombre": "Introducción al Análisis de Datos Ómicos con Machine Learning",
+      "descripcion": "La secuenciación de nueva generación ha generado una cantidad sin precedentes de datos biológicos. El análisis manual de esta información resulta inviable, haciendo imperativa la adopción de técnicas de Machine Learning. Este programa responde a la necesidad de la Facultad de Ciencias de integrar herramientas computacionales avanzadas en la investigación biológica, permitiendo extraer patrones ocultos en el ADN/ARN que faciliten el diagnóstico clínico y la investigación básica.",
+      "image_url": "/uploads/providers/xItZiJZEKE8/covers/1788574512026-images__1_.jpg",
+      "creado_en": "2026-09-05T02:15:12.034Z",
+      "actualizado_en": "2026-09-05T02:16:09.441Z",
+      "id": "nrQeqFACUHo",
+      "motivo_rechazo": "",
+      "clasificacion": "Formación para el mejoramiento técnico/profesional",
+      "calificacion": "100",
+      "archivo_evaluacion_url": "/uploads/courses/xItZiJZEKE8/evaluaciones/1788574569439-sample-local-pdf.pdf",
+      "contrato_id": "ADENDA-1788574580780",
+      "documento_legal_id": "ADENDA-1788574580780"
     }
   ],
   "course-cycles": [

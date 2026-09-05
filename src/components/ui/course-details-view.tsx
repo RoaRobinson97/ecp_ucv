@@ -1,5 +1,3 @@
-// components/ui/course-details-view.tsx
-
 "use client";
 
 import { 
@@ -65,31 +63,34 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
 
       <VStack spacing={6} align="stretch" p={6} bg={containerBg} rounded="xl" shadow="md" borderWidth="1px">
         
-        {/* Mapeo seguro combinando lo que manda Go y el Frontend */}
         <KeyDetail label="Denominación o Título del Curso" value={payload.titulo || payload.nombre || payload.denominacion} />
         
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-            <KeyDetail label="Duración Total" value={payload.duracion} />
+            <KeyDetail label="Duración y Modalidad" value={payload.duracion} />
             <KeyDetail label="Propósito General" value={payload.proposito || payload.objetivos} />
         </SimpleGrid>
 
         <KeyDetail label="Fundamentación y Justificación" value={payload.fundamentacion || payload.descripcion} />
         <KeyDetail label="Estructura de Costos" value={payload.estructura_costos || payload.costo} />
+        <KeyDetail label="Materiales y Servicios" value={payload.exigencias || payload.contenido} />
         
-        <DividerWithLabel label="Perfil Académico" />
+        <DividerWithLabel label="Perfiles" />
         
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-            <KeyDetail label="Docente Requerido" value={payload.perfil_docente} />
-            <KeyDetail label="Ingreso / Egreso" value={payload.perfiles} />
+            <KeyDetail label="Perfil de Ingreso y Egreso" value={payload.perfiles} />
+            <KeyDetail label="Perfil del Facilitador" value={payload.perfil_docente} />
         </SimpleGrid>
-
-        <KeyDetail label="Materiales y Servicios" value={payload.exigencias || payload.contenido} />
         
         <DividerWithLabel label="Plan de Estudios" />
 
-        <KeyDetail label="Estructura Curricular" value={payload.estructura_curricular || payload.contenido} />
+        <KeyDetail label="Contenido por Módulos y Competencias" value={payload.contenido_competencias} />
+
+        <KeyDetail label="Estructura Curricular General" value={payload.estructura_curricular || payload.contenido} />
         <KeyDetail label="Evaluación" value={payload.evaluacion} />
         <KeyDetail label="Cronograma Tentativo" value={payload.cronograma} />
+
+        <DividerWithLabel label="Referencias" />
+        <KeyDetail label="Bibliografía" value={payload.bibliografia} />
         
       </VStack>
     </Box>

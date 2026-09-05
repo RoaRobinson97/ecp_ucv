@@ -34,19 +34,38 @@ const FormSection = ({ title, children }: { title: string; children: React.React
   </VStack>
 );
 
-const CourseFormControl = ({ id, label, isTextArea = false }: { 
+const CourseFormControl = ({ id, label, isTextArea = false, placeholder = "", helperText = "" }: { 
   id: string; 
   label: string; 
   isTextArea?: boolean; 
+  placeholder?: string;
+  helperText?: string;
 }) => {
   return (
     <FormControl id={id} isRequired={true}>
       <FormLabel fontWeight="bold" color="text.primary">{label}</FormLabel>
       {isTextArea ? (
-        <Textarea name={id} placeholder={`Describe ${label.toLowerCase()} aquí...`} rows={4} bg="background" borderColor="border" focusBorderColor="primary" color="text.primary" />
+        <Textarea 
+            name={id} 
+            placeholder={placeholder || `Describe ${label.toLowerCase()} aquí...`} 
+            rows={4} 
+            bg="background" 
+            borderColor="border" 
+            focusBorderColor="primary" 
+            color="text.primary" 
+        />
       ) : (
-        <Input type="text" name={id} placeholder={`Escribe ${label.toLowerCase()} aquí...`} bg="background" borderColor="border" focusBorderColor="primary" color="text.primary" />
+        <Input 
+            type="text" 
+            name={id} 
+            placeholder={placeholder || `Escribe ${label.toLowerCase()} aquí...`} 
+            bg="background" 
+            borderColor="border" 
+            focusBorderColor="primary" 
+            color="text.primary" 
+        />
       )}
+      {helperText && <Text fontSize="xs" color="text.muted" mt={1}>{helperText}</Text>}
     </FormControl>
   );
 };
@@ -84,9 +103,17 @@ export const CourseForm = () => {
         estructura_curricular: (formData.get('estructura-curricular') as string)?.trim(),
         evaluacion: (formData.get('evaluacion') as string)?.trim(),
         cronograma: (formData.get('cronograma') as string)?.trim(),
+        // ✨ CAMPOS NUEVOS
+        contenido_competencias: (formData.get('contenido_competencias') as string)?.trim(),
+        bibliografia: (formData.get('bibliografia') as string)?.trim(),
       };
 
-      const hasEmptyFields = Object.values(payload).some(value => !value);
+      // Validamos los campos tradicionales
+      const requiredFields = { ...payload };
+      delete requiredFields.contenido_competencias;
+      delete requiredFields.bibliografia;
+
+      const hasEmptyFields = Object.values(requiredFields).some(value => !value);
       if (hasEmptyFields) {
           toast({ title: "Formulario incompleto", description: "Por favor, completa todos los campos requeridos.", status: "warning" });
           setIsLoading(false);
@@ -158,20 +185,51 @@ export const CourseForm = () => {
           </FormSection>
 
           <FormSection title="2. Detalles Operativos">
-            <CourseFormControl id="duracion" label="Duración (en horas)" />
+            <CourseFormControl 
+                id="duracion" 
+                label="Duración y Modalidad" 
+                placeholder="Ej: 200 horas (150 presenciales, 50 virtuales)"
+            />
             <CourseFormControl id="estructura-costos" label="Estructura de Costos" isTextArea />
-            <CourseFormControl id="perfil-docente" label="Perfil del Docente o Facilitador" isTextArea />
-          </FormSection>
-
-          <FormSection title="3. Requisitos de los Participantes">
-            <CourseFormControl id="perfiles" label="Perfiles de Ingreso y Egreso" isTextArea />
             <CourseFormControl id="exigencias" label="Exigencias en Materiales y Servicios" isTextArea />
           </FormSection>
 
-          <FormSection title="4. Contenido y Evaluación">
-            <CourseFormControl id="estructura-curricular" label="Estructura Curricular" isTextArea />
+          <FormSection title="3. Perfiles">
+            <CourseFormControl 
+                id="perfiles" 
+                label="Perfil de Ingreso y Egreso" 
+                isTextArea 
+                placeholder="Ingreso: Dirigido a... / Egreso: Al finalizar el participante será capaz de..."
+            />
+            <CourseFormControl 
+                id="perfil-docente" 
+                label="Perfil del Facilitador" 
+                isTextArea 
+                placeholder="Profesional experto en..."
+            />
+          </FormSection>
+
+          <FormSection title="4. Contenido por Módulos y Competencias">
+             <CourseFormControl 
+                id="contenido_competencias" 
+                label="Módulos, Contenido y Competencias" 
+                isTextArea 
+                placeholder="Ejemplo:&#10;Módulo 1: Marco Legal&#10;Contenido: Bases constitucionales...&#10;Competencia: Analiza críticamente..."
+                helperText="Estructura el texto separando claramente por Módulos, detallando el Contenido y la Competencia a desarrollar en cada uno."
+            />
+            <CourseFormControl id="estructura-curricular" label="Estructura Curricular General" isTextArea />
             <CourseFormControl id="evaluacion" label="Estrategias de Evaluación" isTextArea />
             <CourseFormControl id="cronograma" label="Cronograma de Ejecución Anual" isTextArea />
+          </FormSection>
+
+          <FormSection title="5. Referencias">
+             <CourseFormControl 
+                id="bibliografia" 
+                label="Bibliografía" 
+                isTextArea 
+                placeholder="Ejemplo: Acuña-Gómez, L. V., & Vargas-Ochoa, M. E. (2021). La investigación..."
+                helperText="Incluye las referencias bibliográficas utilizando el formato APA."
+             />
           </FormSection>
 
           <Button type="submit" colorScheme="teal" size="lg" width="full" mt={6} isLoading={isLoading} loadingText="Enviando Formulación..." isDisabled={isLoading} shadow="md">

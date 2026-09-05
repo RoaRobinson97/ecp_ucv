@@ -107,6 +107,9 @@ export interface PayloadFormulacionCurso {
   descripcion?: string;
   archivo_proyecto_url?: string;
   contrato_id?: string; 
+  // ✨ CAMPOS AÑADIDOS PARA MERCY
+  contenido_competencias?: string;
+  bibliografia?: string; 
 }
 
 export interface PayloadCierreCohorte {
