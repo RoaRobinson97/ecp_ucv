@@ -8,6 +8,8 @@ import {
 import { MdEmail, MdPhone } from 'react-icons/md'; 
 import NextLink from 'next/link';
 import { User, Course, FullProvider } from "@/data/types"; 
+import { userService } from '@/servicios/users-service';
+import { courseService } from '@/servicios/cursos-service';
 
 export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mode: string }) {
     const [myCourses, setMyCourses] = useState<Course[]>([]);
@@ -24,30 +26,24 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
     const isAdmin = safeUser.rol === 'admin' || safeUser.roles?.includes('admin') || safeUser.roles?.includes('deu_admin');
     const isCoordinador = safeUser.rol === 'coordinador' || safeUser.roles?.includes('coordinador');
 
-    // ✨ CORRECCIÓN CRÍTICA: Tomamos el dominio real para evitar errores de CORS y fallos de red
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
+    // ✨ CORRECCIÓN 1: Usamos el userService (que pasa por el proxy de Next.js) en vez de fetch directo
     useEffect(() => {
         if (isProveedor && safeUserId) {
-            fetch(`${baseUrl}/providers?usuario_id=${safeUserId}`)
-                .then(r => r.json())
+            userService.getProviderDetails(String(safeUserId))
                 .then(d => {
-                    if (d && d.length > 0) setProviderData(d[0]);
+                    if (d) setProviderData(d);
                 })
                 .catch(e => console.error("Error hidratando proveedor:", e));
         }
-    }, [isProveedor, safeUserId, baseUrl]);
+    }, [isProveedor, safeUserId]);
 
+    // ✨ CORRECCIÓN 2: Usamos el courseService para evitar el bloqueo de CORS en prod
     useEffect(() => {
         async function loadMyCourses() {
             if (isProveedor && safeUserId) {
                 try {
-                    const [resCourses, resRequests] = await Promise.all([
-                        fetch(`${baseUrl}/courses?usuario_id=${safeUserId}`).then(r => r.ok ? r.json() : []),
-                        fetch(`${baseUrl}/course-requests?usuario_id=${safeUserId}`).then(r => r.ok ? r.json() : [])
-                    ]);
-                    
-                    const allData = [...resCourses, ...resRequests];
+                    const res = await courseService.getCoursesByUserId(String(safeUserId), { limit: 100 });
+                    const allData = res.courses || [];
 
                     const cursosLegales = allData.filter((c: any) => {
                         const hasContract = !!(c.documento_legal_id || c.contrato_id);
@@ -60,15 +56,14 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
                         return hasContract && isVigente;
                     });
                     
-                    const uniqueCourses = Array.from(new Map(cursosLegales.map(c => [c.id, c])).values());
-                    setMyCourses(uniqueCourses as Course[]);
+                    setMyCourses(cursosLegales as Course[]);
                 } catch (e) { 
                     console.error("Error cargando cursos:", e); 
                 }
             }
         }
         loadMyCourses();
-    }, [safeUserId, isProveedor, baseUrl]);
+    }, [safeUserId, isProveedor]);
 
     // ✨ LÓGICA DE IDENTIDAD INSTITUCIONAL VS PROVEEDOR
     let displayName = "";
@@ -90,7 +85,6 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
         displayBadge = "COORDINADOR";
         badgeColor = "blue";
     } else {
-        // Lógica normal para proveedores mortales
         displayName = (isProveedor && providerData?.nombre_proveedor)
             ? providerData.nombre_proveedor 
             : `${safeUser.first_name || safeUser.nombres || ''} ${safeUser.last_name || safeUser.apellidos || ''}`.trim();
@@ -105,15 +99,22 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
         }
     }
 
+    // ✨ CORRECCIÓN 3: Limpiamos la URL del avatar igual que hicimos con los cursos
     const rawAvatar = providerData?.archivos?.logo || safeUser?.archivos?.logo || safeUser?.provider_avatar_url || safeUser?.avatar_url;
-    
-    // ✨ LIMPIEZA DE AVATAR (Previene error de localhost en la imagen del proveedor)
     let finalAvatarUrl = isInstitutional ? undefined : (rawAvatar || `https://i.pravatar.cc/150?u=${safeUserId}`);
-    if (finalAvatarUrl && finalAvatarUrl.includes('localhost:8080')) {
-        const urlObj = new URL(finalAvatarUrl);
-        finalAvatarUrl = `${baseUrl}${urlObj.pathname}`;
-    } else if (finalAvatarUrl && finalAvatarUrl.startsWith('/')) {
-        finalAvatarUrl = `${baseUrl}${finalAvatarUrl}`;
+    
+    if (finalAvatarUrl && typeof finalAvatarUrl === 'string') {
+        if (finalAvatarUrl.includes('localhost:8080') || finalAvatarUrl.includes('127.0.0.1:8080')) {
+            try {
+                const urlObj = new URL(finalAvatarUrl);
+                finalAvatarUrl = urlObj.pathname;
+            } catch (e) {
+                finalAvatarUrl = finalAvatarUrl.replace(/http:\/\/(localhost|127\.0\.0\.1):8080/g, '');
+            }
+        }
+        if (finalAvatarUrl.startsWith('uploads/')) {
+            finalAvatarUrl = `/${finalAvatarUrl}`;
+        }
     }
 
     const extraEmails = (isProveedor && providerData?.emails_contacto) ? providerData.emails_contacto : [];
@@ -133,7 +134,6 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
 
     return (
         <Box p={6} bg={useColorModeValue("white", "gray.700")} shadow="xl" rounded="lg" borderTop="6px solid" borderColor={brandColor} maxW="3xl" mx="auto">
-            
             <HStack justify="space-between" mb={4}>
                 <Heading size="xl">
                     {isAdmin ? "Panel de Administración" : isCoordinador ? "Panel de Coordinación" : "Mi Perfil"}
@@ -154,7 +154,6 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
                 
                 <VStack spacing={1}>
                     <Heading size="lg" textAlign="center">{displayName}</Heading>
-                    
                     {displayBadge && (
                         <Badge colorScheme={badgeColor} variant="solid" px={3} py={1} rounded="md" textTransform="uppercase" letterSpacing="wide">
                             {displayBadge}
@@ -173,14 +172,12 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
                         <Icon as={MdEmail} />
                         <Text>{providerData?.email || safeUser.email}</Text>
                     </HStack>
-
                     {extraEmails?.map((email: string) => (
                         <HStack key={email} spacing={2} fontSize="sm" color={textColor}>
                             <Icon as={MdEmail} opacity={0.6} />
                             <Text>{email}</Text>
                         </HStack>
                     ))}
-
                     {extraPhones?.map((phone: string) => (
                         <HStack key={phone} spacing={2} fontSize="sm" color={textColor}>
                             <Icon as={MdPhone} color="green.500" />
@@ -193,7 +190,6 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
             {isProveedor && (
                 <>
                     <Heading size="md" mb={3} color="gray.600">Mis Cursos Disponibles</Heading>
-                    
                     {myCourses.length > 0 ? (
                         <TableContainer border="1px" borderColor="gray.100" rounded="md">
                             <Table variant="simple" size="sm">
