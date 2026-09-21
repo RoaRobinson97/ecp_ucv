@@ -205,6 +205,23 @@
       "facultad": "Odontología"
     },
     {
+      "id": "13",
+      "ci": 12000012,
+      "email": "coord.extension@gmail.com",
+      "password": "123",
+      "first_name": "Héctor",
+      "last_name": "Gómez",
+      "date_of_birth": "1975-08-14",
+      "gender": "male",
+      "education": "posgrado",
+      "address": "Sede Dirección de Extensión Universitaria",
+      "rol": "coordinador",
+      "roles": [
+        "coordinador"
+      ],
+      "facultad": "Dirección de Extensión de Estudio"
+    },
+    {
       "ci": 18123456,
       "email": "carlos.mendoza@gmail.com",
       "password": "123",
