@@ -8,7 +8,6 @@ import {
 import { MdEmail, MdPhone } from 'react-icons/md'; 
 import NextLink from 'next/link';
 import { User, Course, FullProvider } from "@/data/types"; 
-import { courseService } from '@/servicios/cursos-service';
 
 export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mode: string }) {
     const [myCourses, setMyCourses] = useState<Course[]>([]);
@@ -25,24 +24,27 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
     const isAdmin = safeUser.rol === 'admin' || safeUser.roles?.includes('admin') || safeUser.roles?.includes('deu_admin');
     const isCoordinador = safeUser.rol === 'coordinador' || safeUser.roles?.includes('coordinador');
 
+    // ✨ CORRECCIÓN CRÍTICA: Tomamos el dominio real para evitar errores de CORS y fallos de red
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
     useEffect(() => {
         if (isProveedor && safeUserId) {
-            fetch(`http://localhost:8080/providers?usuario_id=${safeUserId}`)
+            fetch(`${baseUrl}/providers?usuario_id=${safeUserId}`)
                 .then(r => r.json())
                 .then(d => {
                     if (d && d.length > 0) setProviderData(d[0]);
                 })
                 .catch(e => console.error("Error hidratando proveedor:", e));
         }
-    }, [isProveedor, safeUserId]);
+    }, [isProveedor, safeUserId, baseUrl]);
 
     useEffect(() => {
         async function loadMyCourses() {
             if (isProveedor && safeUserId) {
                 try {
                     const [resCourses, resRequests] = await Promise.all([
-                        fetch(`http://localhost:8080/courses?usuario_id=${safeUserId}`).then(r => r.ok ? r.json() : []),
-                        fetch(`http://localhost:8080/course-requests?usuario_id=${safeUserId}`).then(r => r.ok ? r.json() : [])
+                        fetch(`${baseUrl}/courses?usuario_id=${safeUserId}`).then(r => r.ok ? r.json() : []),
+                        fetch(`${baseUrl}/course-requests?usuario_id=${safeUserId}`).then(r => r.ok ? r.json() : [])
                     ]);
                     
                     const allData = [...resCourses, ...resRequests];
@@ -66,7 +68,7 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
             }
         }
         loadMyCourses();
-    }, [safeUserId, isProveedor]);
+    }, [safeUserId, isProveedor, baseUrl]);
 
     // ✨ LÓGICA DE IDENTIDAD INSTITUCIONAL VS PROVEEDOR
     let displayName = "";
@@ -104,8 +106,15 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
     }
 
     const rawAvatar = providerData?.archivos?.logo || safeUser?.archivos?.logo || safeUser?.provider_avatar_url || safeUser?.avatar_url;
-    // Si es institucional, evitamos avatares random y forzamos sus iniciales institucionales
-    const avatarUrl = isInstitutional ? undefined : (rawAvatar || `https://i.pravatar.cc/150?u=${safeUserId}`);
+    
+    // ✨ LIMPIEZA DE AVATAR (Previene error de localhost en la imagen del proveedor)
+    let finalAvatarUrl = isInstitutional ? undefined : (rawAvatar || `https://i.pravatar.cc/150?u=${safeUserId}`);
+    if (finalAvatarUrl && finalAvatarUrl.includes('localhost:8080')) {
+        const urlObj = new URL(finalAvatarUrl);
+        finalAvatarUrl = `${baseUrl}${urlObj.pathname}`;
+    } else if (finalAvatarUrl && finalAvatarUrl.startsWith('/')) {
+        finalAvatarUrl = `${baseUrl}${finalAvatarUrl}`;
+    }
 
     const extraEmails = (isProveedor && providerData?.emails_contacto) ? providerData.emails_contacto : [];
     const extraPhones = (isProveedor && providerData?.telefonos_contacto) ? providerData.telefonos_contacto : [];
@@ -137,7 +146,7 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
                 <Avatar 
                     size="2xl" 
                     name={displayName} 
-                    src={avatarUrl} 
+                    src={finalAvatarUrl} 
                     border="4px solid" 
                     borderColor={isInstitutional ? "gray.300" : brandColor} 
                     bg={isInstitutional ? "gray.600" : undefined}
@@ -165,7 +174,6 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
                         <Text>{providerData?.email || safeUser.email}</Text>
                     </HStack>
 
-                    {/* Los extras solo se mapean si existen (y típicamente solo existen en proveedores) */}
                     {extraEmails?.map((email: string) => (
                         <HStack key={email} spacing={2} fontSize="sm" color={textColor}>
                             <Icon as={MdEmail} opacity={0.6} />
@@ -182,7 +190,6 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
                 </VStack>
             </VStack>
 
-            {/* Solo mostramos la tabla de cursos si el usuario es proveedor */}
             {isProveedor && (
                 <>
                     <Heading size="md" mb={3} color="gray.600">Mis Cursos Disponibles</Heading>
