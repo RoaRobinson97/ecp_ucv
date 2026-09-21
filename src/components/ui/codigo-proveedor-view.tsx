@@ -15,7 +15,7 @@ export function CodigoProveedorView({ payload }: CodigoProveedorViewProps) {
   
   const isInternalStr = payload.interno !== undefined ? String(payload.interno) : (payload.es_interno !== undefined ? String(payload.es_interno) : 'null');
   let relacionUCV = 'null';
-  if (isInternalStr === 'true') relacionUCV = 'PROVEEDOR INTERNO (UCV)';
+  if (isInternalStr === 'true') relacionUCV = 'COLABORADOR INTERNO (UCV)';
   if (isInternalStr === 'false') relacionUCV = 'PROVEEDOR EXTERNO';
 
   const docs = (payload as any).archivos || payload.documentos || {};
@@ -93,7 +93,7 @@ export function CodigoProveedorView({ payload }: CodigoProveedorViewProps) {
         {/* SECCIÓN 1: DATOS DEL FORMULARIO */}
         <Box>
           <Heading size="md" mb={4} color="gray.700" _dark={{ color: "gray.200" }} borderBottom="2px solid" borderColor="teal.500" pb={2} display="inline-block">
-            Datos del Proveedor
+            Datos del Colaborador
           </Heading>
           
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>

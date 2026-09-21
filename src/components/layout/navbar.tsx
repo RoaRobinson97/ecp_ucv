@@ -14,6 +14,19 @@ import {
     IconButton,
     Image,
     Tooltip,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalFooter,
+    ModalBody,
+    ModalCloseButton,
+    Button,
+    useDisclosure,
+    Text,
+    VStack,
+    Badge,
+    useColorModeValue,
 } from "@chakra-ui/react";
 import React, { useState, useEffect } from "react";
 import NextLink from 'next/link';
@@ -24,12 +37,12 @@ import { ColorModeSwitcher } from "../ui/color-mode-switcher";
 import {
     PrimaryButton,
     SecondaryButton,
-    GhostButton, 
 } from "../ui/buttons";
 
 export const Navbar = () => {
     const { isAuthenticated, logout, user, isHydrated } = useAuth();
     const { courses, isCohortOpen } = useGlobalData();
+    const { isOpen, onOpen, onClose } = useDisclosure();
 
     const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
@@ -53,6 +66,13 @@ export const Navbar = () => {
     const showAdminPanelLink = isAdmin;
 
     const courseId = courses.length > 0 ? courses[0].id : null;
+
+    // ✨ COLORES DINÁMICOS PARA EL MODAL (MODO CLARO / OSCURO)
+    const modalBg = useColorModeValue("white", "gray.800");
+    const modalBoxBg = useColorModeValue("gray.50", "whiteAlpha.100");
+    const modalBoxBorder = useColorModeValue("gray.200", "whiteAlpha.200");
+    const modalTextColor = useColorModeValue("gray.700", "gray.200");
+    const warningColor = useColorModeValue("red.600", "red.300");
 
     useEffect(() => {
         if (showSolicitudButton && safeUserId) {
@@ -81,7 +101,6 @@ export const Navbar = () => {
                             width={{ base: "40px", md: "50px" }}
                             height="auto"
                         />
-                        {/* ✨ CORRECCIÓN VISUAL: Jerarquía institucional, ajuste de espaciado y grosor */}
                         <Heading 
                             as="h1" 
                             size={{ base: "sm", md: "md" }} 
@@ -90,7 +109,7 @@ export const Navbar = () => {
                             letterSpacing="tight"
                             lineHeight="1.2"
                             textTransform="uppercase"
-                            fontSize={{ base: "14px", md: "18px" }} // Forzamos un tamaño exacto y elegante
+                            fontSize={{ base: "14px", md: "18px" }}
                         >
                             Educación Continua <br /> y Permanente
                         </Heading>
@@ -98,6 +117,21 @@ export const Navbar = () => {
                 </NextLink>
                 <Spacer />
                 <HStack spacing={{ base: 2, md: 4 }}>
+                    
+                    {/* Botón Informativo siempre visible para Visitantes */}
+                    {isHydrated && (!isAuthenticated || showSolicitudButton) && (
+                        <Button 
+                            variant="ghost" 
+                            color="whiteAlpha.900" 
+                            size="sm" 
+                            onClick={onOpen}
+                            fontWeight="medium"
+                            _hover={{ bg: 'whiteAlpha.200' }}
+                        >
+                            ¿Cómo ser Aliado?
+                        </Button>
+                    )}
+
                     {isHydrated && isAuthenticated ? (
                         <>
                             {codigo_proveedor && (
@@ -137,7 +171,6 @@ export const Navbar = () => {
                             )}
 
                             <Menu>
-                                {/* ✨ CORRECCIÓN VISUAL: Ícono blanco fijo */}
                                 <MenuButton as={IconButton} aria-label="Opciones de usuario" icon={<FaUserCircle size="24px" />} variant="ghost" color="whiteAlpha.900" _hover={{ bg: 'whiteAlpha.200' }} />
                                 <MenuList>
                                     <MenuItem as={NextLink} href={`/profile/${user?.id}`}>Mi Perfil</MenuItem>
@@ -163,6 +196,73 @@ export const Navbar = () => {
                     <ColorModeSwitcher />
                 </HStack>
             </Flex>
+
+            {/* MODAL INCRUSTADO */}
+            <Modal isOpen={isOpen} onClose={onClose} size="lg" isCentered>
+                <ModalOverlay backdropFilter="blur(3px)" />
+                <ModalContent bg={modalBg}>
+                    <ModalHeader color={useColorModeValue("teal.600", "teal.300")}>Requisitos para Alianzas Académicas</ModalHeader>
+                    <ModalCloseButton />
+                    
+                    <ModalBody>
+                        <VStack align="stretch" spacing={4}>
+                            <Text fontSize="sm" color={modalTextColor}>
+                                Para postularte como aliado académico de la Dirección de Extensión Universitaria (DEU), debes tener preparados los siguientes documentos. 
+                                <br/><br/>
+                                <b>Importante:</b> Todos los archivos deben estar estrictamente en formato <b>PDF</b>.
+                            </Text>
+
+                            <Box p={4} bg={modalBoxBg} rounded="md" borderWidth="1px" borderColor={modalBoxBorder}>
+                                <Badge colorScheme="teal" variant="solid" mb={3} px={2} py={1} rounded="md">Persona Natural</Badge>
+                                <VStack align="start" spacing={2} fontSize="sm" color={modalTextColor}>
+                                    <HStack><Text opacity={0.8}>📄</Text><Text>Cédula de Identidad</Text></HStack>
+                                    <HStack><Text opacity={0.8}>📄</Text><Text>Registro de Información Fiscal (RIF)</Text></HStack>
+                                    <HStack><Text opacity={0.8}>📄</Text><Text>Última Declaración de ISLR</Text></HStack>
+                                    <HStack><Text opacity={0.8}>📄</Text><Text>Resumen Curricular (Actualizado)</Text></HStack>
+                                    <HStack><Text opacity={0.8}>📄</Text><Text>Fondo Negro del Título Universitario</Text></HStack>
+                                </VStack>
+                            </Box>
+
+                            <Box p={4} bg={modalBoxBg} rounded="md" borderWidth="1px" borderColor={modalBoxBorder}>
+                                <Badge colorScheme="gray" variant="solid" mb={2} px={2} py={1} rounded="md">Persona Jurídica (Empresas)</Badge>
+                                <Text fontSize="xs" color={useColorModeValue("gray.500", "gray.400")} mb={3}>
+                                    Adicional a los documentos del representante legal, se requiere:
+                                </Text>
+                                <VStack align="start" spacing={2} fontSize="sm" color={modalTextColor}>
+                                    <HStack><Text opacity={0.8}>📄</Text><Text>Registro Mercantil o Acta Constitutiva</Text></HStack>
+                                </VStack>
+                            </Box>
+
+                            {!isAuthenticated && (
+                                <Text fontSize="sm" color={warningColor} textAlign="center" mt={2} fontWeight="semibold">
+                                    * Debes iniciar sesión o registrarte primero para poder postularte.
+                                </Text>
+                            )}
+
+                        </VStack>
+                    </ModalBody>
+
+                    <ModalFooter display="flex" justifyContent="space-between">
+                        <Button variant="ghost" onClick={onClose}>
+                            Cerrar
+                        </Button>
+                        
+                        {isAuthenticated ? (
+                            <NextLink href="/solicitar-organizacion" passHref>
+                                <Button colorScheme="teal" onClick={onClose}>
+                                    Ir al formulario de solicitud
+                                </Button>
+                            </NextLink>
+                        ) : (
+                            <NextLink href="/login" passHref>
+                                <Button colorScheme="teal" onClick={onClose}>
+                                    Iniciar sesión para postularse
+                                </Button>
+                            </NextLink>
+                        )}
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </Box>
     );
 };

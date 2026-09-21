@@ -27,8 +27,8 @@ export async function POST(request: Request) {
       const isUnderReview = existingProviders.some((p: any) => p.estado === 'under_review' || p.estado === 'pendiente');
       const isApproved = existingProviders.some((p: any) => p.estado === 'aprobada' || p.estado === 'approved');
 
-      if (isUnderReview) return NextResponse.json({ error: 'Ya tienes una solicitud de proveedor en revisión.' }, { status: 409 });
-      if (isApproved) return NextResponse.json({ error: 'Ya eres un proveedor aprobado.' }, { status: 409 });
+      if (isUnderReview) return NextResponse.json({ error: 'Ya tienes una solicitud de colaborador en revisión.' }, { status: 409 });
+      if (isApproved) return NextResponse.json({ error: 'Ya eres un colaborador aprobado.' }, { status: 409 });
     }
 
     // 2. EXTRAEMOS LOS TEXTOS
@@ -94,12 +94,12 @@ export async function POST(request: Request) {
       body: JSON.stringify(newProvider)
     });
 
-    if (!createRes.ok) throw new Error('Fallo al guardar el proveedor');
+    if (!createRes.ok) throw new Error('Fallo al guardar el colaborador');
     const createdProvider = await createRes.json();
     return NextResponse.json(createdProvider, { status: 201 });
 
   } catch (error) {
-    console.error("ERROR AL CREAR SOLICITUD DE PROVEEDOR:", error);
+    console.error("ERROR AL CREAR SOLICITUD DE COLABORADOR:", error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
@@ -124,13 +124,13 @@ export async function GET(request: Request) {
     }
     
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Fallo al obtener proveedores');
+    if (!res.ok) throw new Error('Fallo al obtener colaboradores');
     
     const data = await res.json();
     return NextResponse.json(data, { status: 200 });
     
   } catch (error) {
-    console.error("ERROR AL OBTENER PROVEEDORES:", error);
+    console.error("ERROR AL OBTENER COLABORADORES:", error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

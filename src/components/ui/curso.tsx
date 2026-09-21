@@ -280,7 +280,7 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
     // ✨ VARIABLES BLINDADAS PARA EL PROVEEDOR
     const displayName = provider 
         ? provider.nombre_proveedor || `${(provider as any).first_name || (provider as any).nombres || ''} ${(provider as any).last_name || (provider as any).apellidos || ''}`.trim() || "Proveedor sin nombre"
-        : "Proveedor sin nombre";
+        : "colaborador sin nombre";
 
     const rawLogo = (provider as any)?.archivos?.logo || (provider as any)?.provider_avatar_url || (provider as any)?.avatar_url;
     const providerAvatarUrl = rawLogo 

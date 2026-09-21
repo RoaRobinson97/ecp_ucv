@@ -34,7 +34,7 @@ export function UserProfileClient({ user }: { user: User | FullProvider }) {
                 .then(d => {
                     if (d && d.length > 0) setProviderData(d[0]);
                 })
-                .catch(e => console.error("Error hidratando proveedor:", e));
+                .catch(e => console.error("Error hidratando colaborador:", e));
         }
     }, [isProvider, safeUserId]);
 
@@ -172,7 +172,7 @@ export function UserProfileClient({ user }: { user: User | FullProvider }) {
                         </TableContainer>
                     ) : (
                         <Text textAlign="center" color={textColor} fontStyle="italic" py={4}>
-                            Este proveedor no tiene cursos disponibles para el público actualmente.
+                            Este colaborador no tiene cursos disponibles para el público actualmente.
                         </Text>
                     )}
                 </Box>

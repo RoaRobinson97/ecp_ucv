@@ -105,7 +105,7 @@ export function CierreCohorteView({ payload }: { payload: any }) {
 
       {dataReal.observaciones && (
         <Box p={4} rounded="md" bg="blue.50" border="1px solid" borderColor="blue.200">
-          <Text fontSize="sm" color="blue.600" fontWeight="bold" mb={1}>Observaciones del Proveedor</Text>
+          <Text fontSize="sm" color="blue.600" fontWeight="bold" mb={1}>Observaciones del Colaborador</Text>
           <Text fontSize="md">{dataReal.observaciones}</Text>
         </Box>
       )}

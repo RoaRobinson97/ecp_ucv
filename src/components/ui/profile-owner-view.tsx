@@ -33,7 +33,7 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
                 .then(d => {
                     if (d) setProviderData(d);
                 })
-                .catch(e => console.error("Error hidratando proveedor:", e));
+                .catch(e => console.error("Error hidratando colaborador:", e));
         }
     }, [isProveedor, safeUserId]);
 

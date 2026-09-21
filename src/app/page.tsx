@@ -36,10 +36,10 @@ export default async function HomePage() {
             >
                 <Box bgColor={'#33333399'} py={10} px={6}>
                     <Heading as="h1" size="2xl" mb={4}>
-                        Cursos Certificados por la UCV
+                        Cursos Avalados por la UCV
                     </Heading>
                     <Paragraph fontSize="lg" maxW="600px" mx="auto" mb={6}>
-                        Valida y eleva tu formación académica. Nuestra plataforma te permite certificar tus cursos online a través de la Universidad Central de Venezuela, o si eres un educador, solicitar la validación de tu contenido.
+                        Eleva tu formación académica. Nuestra plataforma te permite validar tus cursos en línea a través de la Universidad Central de Venezuela o, si eres educador, solicitar la validación de tu contenido.
                     </Paragraph>
                     <NextLink href="/cursos" passHref>
                         <PrimaryButton size="md">Ver Cursos</PrimaryButton>

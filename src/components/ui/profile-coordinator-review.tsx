@@ -163,7 +163,7 @@ export function ProfileCoordinatorReview({ user, mode }: { user: User | FullProv
     // ✨ VARIABLES BLINDADAS PARA RENDER
     const displayName = combinedUser.nombre_proveedor || combinedUser.nombre || 
         `${combinedUser.first_name || combinedUser.nombres || ''} ${combinedUser.last_name || combinedUser.apellidos || ''}`.trim() || 
-        "Proveedor sin nombre";
+        "colaborador sin nombre";
 
     const rawAvatar = combinedUser.archivos?.logo || combinedUser.provider_avatar_url || combinedUser.avatar_url;
     const avatarUrl = rawAvatar || `https://i.pravatar.cc/150?u=${safeUserId}`;
@@ -455,7 +455,7 @@ export function ProfileCoordinatorReview({ user, mode }: { user: User | FullProv
                             </FormControl>
                             
                             <Text fontSize="xx-small" color="gray.500">
-                                Nota: Al procesar esta carga, el sistema vinculará legalmente los cursos listados al expediente del proveedor.
+                                Nota: Al procesar esta carga, el sistema vinculará legalmente los cursos listados al expediente del colaborador.
                             </Text>
                         </VStack>
                     </ModalBody>

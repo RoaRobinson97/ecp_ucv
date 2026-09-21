@@ -189,7 +189,7 @@ export const SolicitudForm = () => {
     <Box maxW="xl" mx="auto" p={{ base: 6, md: 8 }} my={{ base: 8, md: 12 }} bg="surface" borderWidth="1px" borderColor="border" rounded="xl" shadow="xl">
       <VStack spacing={6} align="stretch">
         <Box textAlign="center">
-          <Heading as="h1" size="lg" mb={2} color="primary" fontWeight="bold">Únete como Proveedor</Heading>
+          <Heading as="h1" size="lg" mb={2} color="primary" fontWeight="bold">Únete como Colaborador</Heading>
           <Text fontSize="md" color="text.muted">Completa tu perfil público y entrega la documentación.</Text>
         </Box>
 
@@ -226,7 +226,7 @@ export const SolicitudForm = () => {
             <Divider borderColor="border" />
 
             <FormControl id="internal-type" as="fieldset" isRequired>
-              <FormLabel as="legend" fontWeight="bold" color="text.primary">¿El proveedor pertenece a la UCV?</FormLabel>
+              <FormLabel as="legend" fontWeight="bold" color="text.primary">¿El colaborador pertenece a la UCV?</FormLabel>
               <RadioGroup onChange={(value: any) => setIsInternal(value)} value={isInternal}>
                 <HStack spacing="24px">
                   <Radio value="true" colorScheme="teal">Sí, pertenece (Interno)</Radio>
@@ -252,7 +252,7 @@ export const SolicitudForm = () => {
             <VStack spacing={4} align="stretch" w="full">
               <Heading size="md" color="primary">Perfil Público</Heading>
               <FormControl id="providerName" isRequired>
-                <FormLabel color="text.primary">Nombre del Proveedor / Organización</FormLabel>
+                <FormLabel color="text.primary">Nombre del Colaborador / Organización</FormLabel>
                 <Input placeholder="Ej: Academia de Artes" value={providerName} onChange={(e) => setProviderName(e.target.value)} bg="background" borderColor="border" focusBorderColor="primary" color="text.primary" />
               </FormControl>
 

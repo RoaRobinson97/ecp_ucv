@@ -22,7 +22,7 @@ export function CoursePublicView({ course }: { course: any }) {
 
     const displayName = provider 
         ? provider.nombre_proveedor || `${provider.first_name || provider.nombres || ''} ${provider.last_name || provider.apellidos || ''}`.trim() || "Proveedor sin nombre"
-        : "Proveedor sin nombre";
+        : "Colaborador sin nombre";
 
     const rawLogo = provider?.archivos?.logo || provider?.provider_avatar_url || provider?.avatar_url;
     const providerAvatarUrl = rawLogo 
@@ -83,7 +83,7 @@ export function CoursePublicView({ course }: { course: any }) {
                                 )}
 
                                 <Text fontSize="sm" color="text.muted" lineHeight="tall" fontWeight="medium">
-                                    {provider.biografia || 'Proveedor de contenido educativo verificado por la UCV.'}
+                                    {provider.biografia || 'Colaborador de contenido educativo verificado por la UCV.'}
                                 </Text>
                             </CardBody>
                         </Stack>

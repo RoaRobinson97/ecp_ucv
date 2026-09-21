@@ -88,7 +88,7 @@ export async function POST(
     }, { status: 200 });
 
   } catch (error) {
-    console.error(`ERROR EN ADMIN ACTIONS (Proveedores):`, error);
+    console.error(`ERROR EN ADMIN ACTIONS (Colaboradores):`, error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
