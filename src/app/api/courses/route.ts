@@ -133,43 +133,45 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 }
-
-// ==========================================
-// 2. GET: LEER CURSOS 
-// ==========================================
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     
-    let jsonServerUrl = 'http://localhost:8080/courses?';
+    let queryParams = '';
     
     const usuario_id = searchParams.get('usuario_id');
-    if (usuario_id) jsonServerUrl += `usuario_id=${usuario_id}&`;
+    if (usuario_id) queryParams += `usuario_id=${usuario_id}&`;
 
     const codigo_proveedor = searchParams.get('codigo_proveedor');
-    if (codigo_proveedor) jsonServerUrl += `codigo_proveedor=${codigo_proveedor}&`;
-
-    if (!usuario_id && !codigo_proveedor) {
-        const page = searchParams.get('_page') || searchParams.get('page');
-        const limit = searchParams.get('_limit') || searchParams.get('limit');
-        if (page) jsonServerUrl += `_page=${page}&`;
-        if (limit) jsonServerUrl += `_limit=${limit}&`;
-    }
+    if (codigo_proveedor) queryParams += `codigo_proveedor=${codigo_proveedor}&`;
 
     const estado = searchParams.get('estado');
-    if (estado) jsonServerUrl += `estado=${estado}&`;
+    if (estado) queryParams += `estado=${estado}&`;
 
-    if (jsonServerUrl.endsWith('&') || jsonServerUrl.endsWith('?')) {
-        jsonServerUrl = jsonServerUrl.slice(0, -1);
+    if (queryParams.endsWith('&')) {
+        queryParams = queryParams.slice(0, -1);
     }
 
-    const res = await fetch(jsonServerUrl, { 
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
-    });
+    // ✨ LA MAGIA: Traemos de AMBAS tablas para no perder los cursos en curso-requests
+    const [resCourses, resRequests] = await Promise.all([
+        fetch(`http://localhost:8080/courses?${queryParams}`, { 
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+        }),
+        fetch(`http://localhost:8080/course-requests?${queryParams}`, { 
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+        })
+    ]);
     
-    if (!res.ok) throw new Error('Fallo al obtener cursos');
-    let data = await res.json();
+    let dataCourses = resCourses.ok ? await resCourses.json() : [];
+    let dataRequests = resRequests.ok ? await resRequests.json() : [];
+    
+    // Unimos los arrays
+    let data = [...dataCourses, ...dataRequests];
+    
+    // Removemos duplicados por si acaso el mismo curso está en ambas tablas
+    data = Array.from(new Map(data.map(c => [c.id, c])).values());
     
     const cookieStore = await cookies();
     const token = cookieStore.get('auth_token')?.value;
@@ -186,18 +188,28 @@ export async function GET(request: Request) {
     const isAdminOrCoord = rol === 'admin' || rol === 'coordinador' || roles.includes('admin') || roles.includes('coordinador');
     const isOwner = usuario_id === userIdLogueado;
 
+    // Filtro de visibilidad pública
     if (!isAdminOrCoord && !isOwner) {
-        if (Array.isArray(data)) {
-            data = data.filter((c: any) => {
-                const estadoCurso = String(c.estado_gestion || c.estado).toLowerCase();
-                return estadoCurso === 'abierto' || estadoCurso === 'cerrado';
-            });
-        }
+        data = data.filter((c: any) => {
+            const estadoCurso = String(c.estado_gestion || c.estado).toLowerCase();
+            return estadoCurso === 'abierto' || estadoCurso === 'cerrado';
+        });
     } 
+
+    // Paginación en memoria controlada por Next.js
+    const page = parseInt(searchParams.get('_page') || searchParams.get('page') || '0');
+    const limit = parseInt(searchParams.get('_limit') || searchParams.get('limit') || '0');
+    
+    if (page > 0 && limit > 0) {
+        const start = (page - 1) * limit;
+        const end = start + limit;
+        data = data.slice(start, end);
+    }
 
     return NextResponse.json(data, { status: 200 });
     
   } catch (error) {
+    console.error("Error en API GET Courses:", error);
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 }

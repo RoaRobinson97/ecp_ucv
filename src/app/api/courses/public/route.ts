@@ -8,10 +8,16 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const limit = Number(searchParams.get('limit')) || 15;
 
-        const res = await fetch('http://localhost:8080/courses', { cache: 'no-store' });
-        if (!res.ok) throw new Error('Fallo al obtener cursos de la BD');
-
-        const allCourses = await res.json();
+        // ✨ TRAEMOS DE AMBAS TABLAS PARA EL CATÁLOGO
+        const [resCourses, resRequests] = await Promise.all([
+            fetch('http://localhost:8080/courses', { cache: 'no-store' }),
+            fetch('http://localhost:8080/course-requests', { cache: 'no-store' })
+        ]);
+        
+        const dataCourses = resCourses.ok ? await resCourses.json() : [];
+        const dataRequests = resRequests.ok ? await resRequests.json() : [];
+        
+        let allCourses = [...dataCourses, ...dataRequests];
 
         // FILTRO ESTRICTO EN EL BACKEND
         const publicCourses = allCourses.filter((c: any) => {
@@ -24,7 +30,9 @@ export async function GET(request: Request) {
         const adaptedCourses = publicCourses.slice(0, limit).map((c: any) => {
             let imgUrl = c.image_url || c.imagen || c.cover || null;
             if (imgUrl && imgUrl.startsWith('/')) {
-                imgUrl = `http://localhost:8080${imgUrl}`;
+                // Fix base URL para producción
+                const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+                imgUrl = `${baseUrl}${imgUrl}`;
             }
 
             return {
