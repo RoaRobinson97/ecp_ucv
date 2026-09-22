@@ -1,7 +1,11 @@
 "use client";
 
 import React from 'react';
-import { Box, Heading, Text, VStack, Divider, Flex, Card, CardHeader, CardBody, Avatar, Badge, Stack } from "@chakra-ui/react";
+import { 
+    Box, Heading, Text, Flex, VStack, Divider, Link as ChakraLink,
+    useColorModeValue, Card, CardHeader, CardBody, Badge, Avatar, Stack 
+} from "@chakra-ui/react";
+import NextLink from 'next/link';
 
 const formatProviderType = (type?: string): string => {
     const normalizedType = String(type).toLowerCase();
@@ -17,6 +21,35 @@ const formatProviderType = (type?: string): string => {
     }
 };
 
+const PublicationCard = ({ publication }: { publication: any }) => {
+    const cardBg = useColorModeValue("white", "gray.700");
+    const dividerColor = useColorModeValue("gray.200", "gray.600");
+    const dateColor = useColorModeValue("gray.500", "gray.400");
+    const titleColor = useColorModeValue("gray.800", "white");
+    const contentColor = useColorModeValue("gray.700", "gray.300");
+
+    const formattedDate = publication.fecha 
+        ? new Date(publication.fecha).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : 'Fecha no especificada';
+
+    return (
+        <Card bg={cardBg} variant="outline" borderColor={dividerColor} size="sm" shadow="sm" rounded="lg">
+            <CardHeader pb={2}>
+                <Heading size="sm" color={titleColor}>{publication.titulo}</Heading>
+                <Text fontSize="xs" color={dateColor} mt={1} suppressHydrationWarning>
+                    {formattedDate}
+                </Text>
+            </CardHeader>
+            <Divider borderColor={dividerColor} borderWidth="1px" />
+            <CardBody>
+                <Text fontSize="sm" color={contentColor} whiteSpace="pre-wrap" fontWeight="medium">
+                    {publication.contenido}
+                </Text>
+            </CardBody>
+        </Card>
+    );
+};
+
 export function CoursePublicView({ course }: { course: any }) {
     const provider = course?.providerDetails;
 
@@ -24,21 +57,51 @@ export function CoursePublicView({ course }: { course: any }) {
         ? provider.nombre_proveedor || `${provider.first_name || provider.nombres || ''} ${provider.last_name || provider.apellidos || ''}`.trim() || "Proveedor sin nombre"
         : "Colaborador sin nombre";
 
+    // ✨ CORRECCIÓN DE AVATAR PARA PRODUCCIÓN (Evitar el localhost)
     const rawLogo = provider?.archivos?.logo || provider?.provider_avatar_url || provider?.avatar_url;
-    const providerAvatarUrl = rawLogo 
-        ? (rawLogo.startsWith('/') ? `http://localhost:8080${rawLogo}` : rawLogo)
-        : `https://i.pravatar.cc/150?u=${provider?.id || 'default'}`;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    let providerAvatarUrl = rawLogo ? rawLogo : `https://i.pravatar.cc/150?u=${provider?.id || 'default'}`;
+    
+    if (providerAvatarUrl && typeof providerAvatarUrl === 'string') {
+        if (providerAvatarUrl.includes('localhost:8080') || providerAvatarUrl.includes('127.0.0.1:8080')) {
+            try {
+                const urlObj = new URL(providerAvatarUrl);
+                providerAvatarUrl = urlObj.pathname;
+            } catch (e) {
+                providerAvatarUrl = providerAvatarUrl.replace(/http:\/\/(localhost|127\.0\.0\.1):8080/g, '');
+            }
+        }
+        if (providerAvatarUrl.startsWith('uploads/')) {
+            providerAvatarUrl = `/${providerAvatarUrl}`;
+        }
+        if (providerAvatarUrl.startsWith('/')) {
+            providerAvatarUrl = `${baseUrl}${providerAvatarUrl}`;
+        }
+    }
+
+    const cardBg = useColorModeValue("white", "gray.800");
+    const headingColor = useColorModeValue("teal.600", "teal.300");
+    const subHeadingColor = useColorModeValue("gray.700", "gray.200");
+    const dividerColor = useColorModeValue("gray.200", "gray.600");
+    const mutedTextColor = useColorModeValue("gray.500", "gray.400");
+    const textColor = useColorModeValue("gray.800", "white");
+
+    // ✨ EXTRACCIÓN ROBUSTA DE COHORTE Y PUBLICACIONES
+    const cohorteActiva = course.cohorteActiva || (course.cohortes && course.cohortes.length > 0 ? course.cohortes[0] : null);
+    
+    // Sacamos las publicaciones de la cohorte activa, y si no hay, buscamos a nivel raíz del curso por si acaso
+    const publicacionesMostrar = cohorteActiva?.publicaciones || course.publications || course.publicaciones || [];
 
     return (
         <Box maxW="4xl" mx="auto" p={{ base: 4, md: 8 }} my={8}>
             <VStack spacing={8} align="stretch">
-                
-                {/* Cabecera del Curso */}
+
+                {/* Título Principal y Status */}
                 <Box textAlign="center" px={{ base: 2, md: 8 }}>
                     <Heading 
                         as="h1" 
                         size={{ base: "lg", md: "xl" }} 
-                        color="primary" 
+                        color={headingColor} 
                         fontWeight="extrabold"
                         letterSpacing="tight"
                         lineHeight="1.2"
@@ -47,8 +110,8 @@ export function CoursePublicView({ course }: { course: any }) {
                         {course.titulo || course.nombre}
                     </Heading>
                     <Badge 
-                        colorScheme={course.cohorteActiva?.estado === 'activa' ? 'blue' : 'gray'} 
-                        variant="solid" // ✨ CORRECCIÓN VISUAL: Alto contraste para la etiqueta
+                        colorScheme={cohorteActiva?.estado === 'activa' ? 'blue' : 'gray'} 
+                        variant="solid" 
                         px={4} 
                         py={1.5} 
                         borderRadius="full"
@@ -56,7 +119,7 @@ export function CoursePublicView({ course }: { course: any }) {
                         letterSpacing="wide"
                         fontWeight="bold"
                     >
-                        {course.cohorteActiva?.estado === 'activa' ? 'Inscripciones Abiertas' : 'Próximamente'}
+                        {cohorteActiva?.estado === 'activa' ? 'Inscripciones Abiertas' : 'Próximamente'}
                     </Badge>
                 </Box>
 
@@ -90,41 +153,52 @@ export function CoursePublicView({ course }: { course: any }) {
                     </Card>
                 )}
 
-                {/* Detalles Públicos */}
+                {/* Detalles Públicos Simplificados */}
                 <Card bg="surface" variant="outline" borderColor="border" shadow="md" rounded="xl">
                     <CardBody p={{ base: 4, md: 8 }}>
                         <VStack align="start" spacing={6} divider={<Divider borderColor="border" borderWidth="1px" />}>
+                            
                             <Box w="full">
                                 <Heading size="sm" mb={2} color="primary" textTransform="uppercase" letterSpacing="wide">Propósito del Curso</Heading>
-                                {/* ✨ CORRECCIÓN VISUAL: Añadido fontWeight="medium" a los bloques de lectura */}
-                                <Text color="text.primary" whiteSpace="pre-wrap" lineHeight="tall" fontWeight="medium">{course.proposito || 'No especificado.'}</Text>
+                                <Text color={textColor} whiteSpace="pre-wrap" lineHeight="tall" fontWeight="medium">
+                                    {course.proposito || 'No especificado.'}
+                                </Text>
                             </Box>
                             
-                            {course.fundamentacion && (
+                            {(course.fundamentacion || course.descripcion) && (
                                 <Box w="full">
                                     <Heading size="sm" mb={2} color="primary" textTransform="uppercase" letterSpacing="wide">Fundamentación</Heading>
-                                    <Text color="text.primary" whiteSpace="pre-wrap" lineHeight="tall" fontWeight="medium">{course.fundamentacion}</Text>
+                                    <Text color={textColor} whiteSpace="pre-wrap" lineHeight="tall" fontWeight="medium">
+                                        {course.fundamentacion || course.descripcion}
+                                    </Text>
                                 </Box>
                             )}
 
                             <Box w="full">
                                 <Heading size="sm" mb={2} color="primary" textTransform="uppercase" letterSpacing="wide">Duración Estimada</Heading>
-                                <Text color="text.primary" fontWeight="medium">{course.duracion || 'No especificada.'} horas académicas</Text>
+                                <Text color={textColor} fontWeight="medium">
+                                    {course.duracion || 'No especificada.'} {course.duracion && !isNaN(Number(course.duracion)) ? 'horas académicas' : ''}
+                                </Text>
                             </Box>
 
                             {course.perfil_docente && (
                                 <Box w="full">
                                     <Heading size="sm" mb={2} color="primary" textTransform="uppercase" letterSpacing="wide">Perfil del Docente</Heading>
-                                    <Text color="text.primary" whiteSpace="pre-wrap" lineHeight="tall" fontWeight="medium">{course.perfil_docente}</Text>
+                                    <Text color={textColor} whiteSpace="pre-wrap" lineHeight="tall" fontWeight="medium">
+                                        {course.perfil_docente}
+                                    </Text>
                                 </Box>
                             )}
 
-                            {course.cohorteActiva && (
+                            {cohorteActiva && (
                                 <Box w="full">
                                     <Heading size="sm" mb={2} color="primary" textTransform="uppercase" letterSpacing="wide">Fechas de la Cohorte Actual</Heading>
-                                    <Text color="text.primary" fontWeight="medium">Inicio: {new Date(course.cohorteActiva.fecha_inicio).toLocaleDateString()} | Fin: {new Date(course.cohorteActiva.fecha_fin).toLocaleDateString()}</Text>
+                                    <Text color={textColor} fontWeight="medium">
+                                        Inicio: {new Date(cohorteActiva.fecha_inicio).toLocaleDateString('es-VE')} | Fin: {new Date(cohorteActiva.fecha_fin).toLocaleDateString('es-VE')}
+                                    </Text>
                                 </Box>
                             )}
+
                         </VStack>
                     </CardBody>
                 </Card>
@@ -135,23 +209,12 @@ export function CoursePublicView({ course }: { course: any }) {
                         Anuncios y Novedades
                     </Heading>
                     
-                    {course.cohorteActiva?.publicaciones && course.cohorteActiva.publicaciones.length > 0 ? (
+                    {publicacionesMostrar.length > 0 ? (
                         <VStack spacing={4} align="stretch">
-                            {[...course.cohorteActiva.publicaciones]
+                            {[...publicacionesMostrar]
                                 .sort((a, b) => new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime())
                                 .map((pub: any) => (
-                                    <Card key={pub.id} bg="surface" variant="outline" borderColor="border" size="sm" shadow="md" rounded="lg">
-                                        <CardHeader pb={2}>
-                                            <Heading size="sm" color="text.primary">{pub.titulo}</Heading>
-                                            <Text fontSize="xs" color="text.muted" mt={1}>
-                                                {new Date(pub.fecha).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
-                                            </Text>
-                                        </CardHeader>
-                                        <Divider borderColor="border" borderWidth="1px" />
-                                        <CardBody>
-                                            <Text fontSize="sm" color="text.primary" whiteSpace="pre-wrap" lineHeight="tall" fontWeight="medium">{pub.contenido}</Text>
-                                        </CardBody>
-                                    </Card>
+                                    <PublicationCard key={pub.id} publication={pub} />
                                 ))}
                         </VStack>
                     ) : (
@@ -162,6 +225,7 @@ export function CoursePublicView({ course }: { course: any }) {
                         </Box>
                     )}
                 </Box>
+
             </VStack>
         </Box>
     );
