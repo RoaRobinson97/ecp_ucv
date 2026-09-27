@@ -42,21 +42,26 @@ export function ProfileCoordinatorReview({ user, mode }: { user: User | FullProv
     const isProvider = safeUser.rol === 'proveedor' || safeUser.roles?.includes('proveedor') || 'nombre_proveedor' in safeUser;
     const safeUserId = safeUser.usuario_id || safeUser.id || safeUser.ID;
 
-    // ✨ AUTO-HIDRATACIÓN: Buscamos la info completa del proveedor
+    // ✨ 1. HIDRATACIÓN DEL PROVEEDOR USANDO EL SERVICIO (Adiós localhost:8080)
     useEffect(() => {
-        if (isProvider && safeUserId) {
-            fetch(`http://localhost:8080/providers?usuario_id=${safeUserId}`)
-                .then(r => r.json())
-                .then(d => {
-                    if (d && d.length > 0) setProviderData(d[0]);
-                })
-                .catch(e => console.error("Error hidratando proveedor:", e));
+        async function loadProviderDetails() {
+            if (!isProvider || !safeUserId) return;
+            try {
+                const details = await userService.getProviderDetails(safeUserId);
+                if (details) {
+                    setProviderData(details);
+                }
+            } catch (e) {
+                console.error("Error hidratando proveedor con userService:", e);
+            }
         }
+        loadProviderDetails();
     }, [isProvider, safeUserId]);
 
     // ✨ FUSIONAMOS LA DATA (Base + Proveedor)
     const combinedUser = { ...safeUser, ...providerData };
     const providerLegalStatus = combinedUser.legal_status || null;
+    const miCoordId = combinedUser.coordinador_id ? String(combinedUser.coordinador_id) : null;
 
     useEffect(() => {
         async function checkLegalStatus() {
@@ -74,40 +79,39 @@ export function ProfileCoordinatorReview({ user, mode }: { user: User | FullProv
         if (isProvider && safeUserId) checkLegalStatus();
     }, [safeUserId, isProvider]);
 
-    // ✨ AUTO-CARGA DE CURSOS DESDE AMBAS TABLAS
+    // ✨ 2. CARGA DE CURSOS USANDO EL SERVICIO (Pasa por /api/courses que une ambas tablas)
     useEffect(() => {
         async function loadAllCourses() {
+            if (!safeUserId) return;
             setIsLoadingCourses(true);
             try {
-                // 1. Buscamos en ambas tablas del JSON-Server para no perder nada
-                const [resCourses, resRequests] = await Promise.all([
-                    fetch(`http://localhost:8080/courses?usuario_id=${safeUserId}`).then(r => r.ok ? r.json() : []),
-                    fetch(`http://localhost:8080/course-requests?usuario_id=${safeUserId}`).then(r => r.ok ? r.json() : [])
-                ]);
-                
-                let data = [...resCourses, ...resRequests];
+                const response = await courseService.getCoursesByUserId(safeUserId, { page: 1, limit: 100 });
+                let data = response?.courses || [];
 
-                // 2. Filtramos por la facultad/coordinación a la que pertenece el proveedor
-                if (providerData && providerData.coordinador_id) {
-                    const miCoordId = String(providerData.coordinador_id);
-                    data = data.filter((c: any) => 
-                        String(c.coordinador_id) === miCoordId || 
-                        String(c.coordinador_origen) === miCoordId
-                    );
+                // Filtramos por la coordinación a la que pertenece el proveedor (si existe el dato)
+                if (miCoordId) {
+                    data = data.filter((c: any) => {
+                        const coordCurso = c.coordinador_id ? String(c.coordinador_id) : null;
+                        const coordOrigen = c.coordinador_origen ? String(c.coordinador_origen) : null;
+                        // Si el curso tiene coordinador asignado, validamos que coincida
+                        if (coordCurso || coordOrigen) {
+                            return coordCurso === miCoordId || coordOrigen === miCoordId;
+                        }
+                        return true;
+                    });
                 }
 
                 setCourses(data);
             } catch (error) {
-                console.error("Error cargando cursos:", error);
+                console.error("Error cargando cursos con courseService:", error);
                 setCourses([]); 
             } finally {
                 setIsLoadingCourses(false);
             }
         }
         
-        // Esperamos a tener providerData para poder aplicar el filtro del coordinador
-        if (safeUserId && providerData) loadAllCourses();
-    }, [safeUserId, providerData]);
+        loadAllCourses();
+    }, [safeUserId, miCoordId]);
 
     // 3. ✨ FILTRO MAESTRO: Solo dejamos pasar los que ya fueron Aprobados
     const cursosAprobados = courses.filter((c: any) => {
@@ -166,7 +170,9 @@ export function ProfileCoordinatorReview({ user, mode }: { user: User | FullProv
         "colaborador sin nombre";
 
     const rawAvatar = combinedUser.archivos?.logo || combinedUser.provider_avatar_url || combinedUser.avatar_url;
-    const avatarUrl = rawAvatar || `https://i.pravatar.cc/150?u=${safeUserId}`;
+    const avatarUrl = rawAvatar 
+        ? String(rawAvatar).replace(/^https?:\/\/(localhost|127\.0\.0\.1):8080/, '') 
+        : `https://i.pravatar.cc/150?u=${safeUserId}`;
     
     const bioText = combinedUser.biografia || "No hay biografía disponible.";
     const extraEmails = combinedUser.emails_contacto || [];
@@ -245,7 +251,6 @@ export function ProfileCoordinatorReview({ user, mode }: { user: User | FullProv
                     </HStack>
                 </VStack>
 
-                {/* ✨ NUEVO: Muestra Biografía y Contactos al Coordinador */}
                 <Box textAlign="center" maxW="md" pt={2}>
                     <Text fontSize="sm" color={textColor} fontStyle="italic">
                         {bioText}

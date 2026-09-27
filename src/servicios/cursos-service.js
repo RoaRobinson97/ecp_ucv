@@ -68,6 +68,7 @@ class CourseService {
                 }
 
                 const coursesAdapted = rawCourses.map(backendCourse => ({
+                    ...backendCourse, // ✨ IMPORTANTE: Mantiene coordinador_id, coordinador_origen, contrato_id, etc.
                     id: String(backendCourse.id), 
                     titulo: backendCourse.nombre || backendCourse.titulo || "Curso Sin Título",
                     descripcion: backendCourse.descripcion || backendCourse.fundamentacion || "Sin descripción disponible.",
@@ -84,13 +85,13 @@ class CourseService {
                     estructura_curricular: backendCourse.estructura_curricular || null,
                     evaluacion: backendCourse.evaluacion || null,
                     cronograma: backendCourse.cronograma || null,
+                    contenido_competencias: backendCourse.contenido_competencias || null,
+                    bibliografia: backendCourse.bibliografia || null,
+                    cv_facilitador_url: backendCourse.cv_facilitador_url || null,
                     
-                    // Metadata administrativa
                     codigo_proveedor: backendCourse.codigo_proveedor || null,
                     user_id: backendCourse.usuario_id || backendCourse.user_id || null,
                     estado_gestion: backendCourse.estado || backendCourse.estado_gestion || backendCourse.status || 'under_review',
-                    
-                    // ✨ FIX VITAL: Inyectamos el ID legal para que el frontend lo reconozca
                     documento_legal_id: backendCourse.contrato_id || backendCourse.documento_legal_id || null, 
 
                     costo: backendCourse.costo || null,
@@ -153,6 +154,7 @@ class CourseService {
 
             // 5. Adaptamos el curso para el frontend
             const courseAdapted = {
+                ...backendCourse, // ✨ Agrégalo aquí también
                 id: String(backendCourse.id),
                 titulo: backendCourse.nombre || backendCourse.titulo || "Curso Sin Título",
                 descripcion: backendCourse.descripcion || backendCourse.fundamentacion || "Sin descripción disponible.",
@@ -169,6 +171,9 @@ class CourseService {
                 estructura_curricular: backendCourse.estructura_curricular,
                 evaluacion: backendCourse.evaluacion,
                 cronograma: backendCourse.cronograma,
+                contenido_competencias: backendCourse.contenido_competencias || null, // ✨
+                bibliografia: backendCourse.bibliografia || null,                     // ✨
+                cv_facilitador_url: backendCourse.cv_facilitador_url || null,         // ✨
                 
                 codigo_proveedor: backendCourse.codigo_proveedor,
                 user_id: backendCourse.usuario_id || backendCourse.user_id,
