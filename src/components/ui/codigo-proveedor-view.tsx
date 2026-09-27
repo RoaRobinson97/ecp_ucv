@@ -16,7 +16,7 @@ export function CodigoProveedorView({ payload }: CodigoProveedorViewProps) {
   const isInternalStr = payload.interno !== undefined ? String(payload.interno) : (payload.es_interno !== undefined ? String(payload.es_interno) : 'null');
   let relacionUCV = 'null';
   if (isInternalStr === 'true') relacionUCV = 'COLABORADOR INTERNO (UCV)';
-  if (isInternalStr === 'false') relacionUCV = 'PROVEEDOR EXTERNO';
+  if (isInternalStr === 'false') relacionUCV = 'COLABORADOR EXTERNO';
 
   const docs = (payload as any).archivos || payload.documentos || {};
   const avatarUrl = docs.logo || docs.avatar || payload.avatar_url || null;

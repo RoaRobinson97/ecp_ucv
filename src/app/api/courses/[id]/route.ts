@@ -14,7 +14,6 @@ export async function GET(
             return NextResponse.json({ error: 'ID de curso no proporcionado' }, { status: 400 });
         }
 
-        // Recuperamos la cookie del navegador para enviarla al backend de Go
         const cookieStore = await cookies();
         const token = cookieStore.get('auth_token')?.value;
         const headers: HeadersInit = { 'Cache-Control': 'no-cache' };
@@ -25,7 +24,7 @@ export async function GET(
 
         let backendCourse = null;
 
-        // 1. Intentar buscar en la tabla oficial de cursos con las credenciales puestas
+        // 1. Intentar buscar en la tabla oficial de cursos
         try {
             const res = await fetch(`http://localhost:8080/courses/${id}`, { headers, cache: 'no-store' });
             if (res.ok) backendCourse = await res.json();
@@ -54,33 +53,34 @@ export async function GET(
             return NextResponse.json({ error: 'Curso no encontrado' }, { status: 404 });
         }
 
-        // ✨ 4. BUSCAMOS Y ORDENAMOS LAS COHORTES (De la más nueva a la más vieja)
+        // 4. Buscamos y ordenamos las cohortes (de la más nueva a la más vieja)
         let cohortes = [];
         try {
             const cyclesRes = await fetch(`http://localhost:8080/course-cycles?course_id=${id}`, { headers, cache: 'no-store' });
             if (cyclesRes.ok) {
                 cohortes = await cyclesRes.json();
-                // Orden descendente: Las más recientes de primero
                 cohortes.sort((a: any, b: any) => new Date(b.creado_en || 0).getTime() - new Date(a.creado_en || 0).getTime());
             }
         } catch (e) {}
 
-        // Separamos la última cohorte
-        let ultimaCohorte = cohortes.length > 0 ? cohortes[0] : null;
-
-        // ✨ 5. BUSCAMOS LAS PUBLICACIONES Y SE LAS INYECTAMOS SOLO A LA ÚLTIMA COHORTE
+        // 5. Buscamos las publicaciones y las repartimos en sus cohortes
         try {
             const pubsRes = await fetch(`http://localhost:8080/publications?course_id=${id}`, { headers, cache: 'no-store' });
-            if (pubsRes.ok && ultimaCohorte) {
+            if (pubsRes.ok && cohortes.length > 0) {
                 const todasPublicaciones = await pubsRes.json();
-                // Filtramos para que solo queden las de la última cohorte, y las ordenamos por fecha
-                ultimaCohorte.publicaciones = todasPublicaciones
-                    .filter((p: any) => String(p.cohort_id) === String(ultimaCohorte.id))
-                    .sort((a: any, b: any) => new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime());
+                cohortes = cohortes.map((cohorte: any) => ({
+                    ...cohorte,
+                    publicaciones: todasPublicaciones
+                        .filter((p: any) => String(p.cohort_id) === String(cohorte.id))
+                        .sort((a: any, b: any) => new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime())
+                }));
             }
         } catch (e) {}
 
+        const ultimaCohorte = cohortes.length > 0 ? cohortes[0] : null;
+
         const courseAdapted = {
+            ...backendCourse, // ✨ Mantiene todos los campos originales del curso
             id: String(backendCourse.id),
             titulo: backendCourse.nombre || backendCourse.titulo || "Curso Sin Título",
             descripcion: backendCourse.descripcion || backendCourse.fundamentacion || "Sin descripción disponible.",
@@ -97,6 +97,11 @@ export async function GET(
             estructura_curricular: backendCourse.estructura_curricular || null,
             evaluacion: backendCourse.evaluacion || null,
             cronograma: backendCourse.cronograma || null,
+
+            // ✨ CAMPOS NUEVOS QUE SE ESTABAN PERDIENDO AL REFRESCAR
+            contenido_competencias: backendCourse.contenido_competencias || null,
+            bibliografia: backendCourse.bibliografia || null,
+            cv_facilitador_url: backendCourse.cv_facilitador_url || null,
             
             codigo_proveedor: backendCourse.codigo_proveedor || null,
             user_id: backendCourse.usuario_id || backendCourse.user_id || null,
@@ -107,7 +112,6 @@ export async function GET(
             tipo: backendCourse.tipo_curso || backendCourse.tipo || 'formulacion-curso-directa',
             link_certificados: backendCourse.link_certificados || null,
 
-            // ✨ PASAMOS LA DATA ESTRUCTURADA
             cohorteActiva: ultimaCohorte, 
             cohortes: cohortes
         };

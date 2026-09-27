@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-    Box, Heading, Text, Flex, VStack, Divider, Link as ChakraLink,
+    Box, Heading, Text, Flex, VStack, HStack, Divider, Link as ChakraLink,
     useColorModeValue, Card, CardHeader, CardBody, Grid, GridItem, Badge, Avatar, Stack,
     Button, Input, Textarea, FormControl, FormLabel, useToast
 } from "@chakra-ui/react";
@@ -13,9 +13,11 @@ import CohortManagementPanel from '@/components/formularios/gestion-cohorte-form
 
 const getStatusColorScheme = (status?: string): string => {
     switch (status) {
-        case 'aprobado': return 'green';
+        case 'aprobado':
+        case 'aprobada': return 'green';
         case 'abierto': return 'blue';
-        case 'rechazado': return 'red';
+        case 'rechazado':
+        case 'rechazada': return 'red';
         case 'cerrado': return 'gray';
         case 'pendiente':
         case 'under_review': return 'yellow';
@@ -26,9 +28,11 @@ const getStatusColorScheme = (status?: string): string => {
 
 const formatStatusText = (status?: string): string => {
     switch (status) {
-        case 'aprobado': return 'Aprobado';
+        case 'aprobado':
+        case 'aprobada': return 'Aprobado';
         case 'abierto': return 'Abierto';
-        case 'rechazado': return 'Rechazado';
+        case 'rechazado':
+        case 'rechazada': return 'Rechazado';
         case 'cerrado': return 'Cerrado';
         case 'pendiente':
         case 'under_review': return 'Pendiente Revisión';
@@ -86,12 +90,9 @@ const PublicationCard = ({ publication }: { publication: any }) => {
         <Card bg={cardBg} variant="outline" borderColor={dividerColor} size="sm">
             <CardHeader pb={2}>
                 <Heading size="sm" color={titleColor}>{publication.titulo}</Heading>
-                
-                {/* ✨ FIX: suppressHydrationWarning le dice a React que ignore la diferencia de formato entre el servidor y el navegador */}
                 <Text fontSize="xs" color={dateColor} mt={1} suppressHydrationWarning>
                     {formattedDate}
                 </Text>
-
             </CardHeader>
             <Divider borderColor={dividerColor} />
             <CardBody>
@@ -114,8 +115,11 @@ export function CourseOwnerView({ initialCourse, currentUser }: { initialCourse:
     const [isSubmittingPub, setIsSubmittingPub] = useState(false);
     
     const cardBg = useColorModeValue("white", "gray.800");
+    const innerBoxBg = useColorModeValue("gray.100", "gray.700");
+    const innerBoxBorder = useColorModeValue("gray.200", "gray.600");
     const headingColor = useColorModeValue("teal.600", "teal.300");
     const subHeadingColor = useColorModeValue("gray.700", "gray.200");
+    const labelColor = useColorModeValue("gray.600", "gray.400");
     const dividerColor = useColorModeValue("gray.200", "gray.600");
     const mutedTextColor = useColorModeValue("gray.500", "gray.400");
     const formCardBg = useColorModeValue("gray.50", "gray.800"); 
@@ -123,38 +127,11 @@ export function CourseOwnerView({ initialCourse, currentUser }: { initialCourse:
     const inputBorder = useColorModeValue("gray.300", "gray.600");
     const inputColor = useColorModeValue("gray.800", "white");
 
-    // ✨ DEBUG EN EL NAVEGADOR: Imprime la estructura perfectamente ordenada
-    useEffect(() => {
-        if (course) {
-            console.groupCollapsed(`📘 DATOS DEL CURSO: ${course.titulo}`);
-            
-            console.log("📌 Información Base:", {
-                id: course.id,
-                estado: course.estado_gestion,
-                doc_legal: course.documento_legal_id
-            });
-            
-            console.log("🎓 Última Cohorte (Más reciente):", course.cohorteActiva || "Ninguna");
-            
-            if (course.cohorteActiva) {
-                console.table(course.cohorteActiva.publicaciones || []);
-            }
-            
-            console.log("📚 Historial completo de cohortes:", course.cohortes);
-            
-            console.groupEnd();
-        }
-    }, [course]);
-
-    // ✨ FIX TIEMPO REAL: Refrescar el curso al montar para tener las cohortes y publicaciones más nuevas
-    // ✨ FIX TIEMPO REAL: Hacemos fetch a la API interna que SÍ une e inyecta las cohortes ordenadas
     useEffect(() => {
         if (initialCourse?.id) {
-            fetch(`/api/courses/${initialCourse.id}`)
-                .then(res => res.json())
+            courseService.getCourseById(initialCourse.id)
                 .then(freshData => {
-                    // Solo sobreescribimos si la data viene bien armada y sin errores
-                    if (freshData && !freshData.error) {
+                    if (freshData) {
                         setCourse(freshData);
                     }
                 })
@@ -171,9 +148,43 @@ export function CourseOwnerView({ initialCourse, currentUser }: { initialCourse:
         }
     }, [course.usuario_id, course.user_id]);
 
-    // ✨ EXTRACCIÓN DINÁMICA: Siempre leemos del array ya ordenado
     const ultimaCohorte = course.cohorteActiva || (course.cohortes?.length > 0 ? course.cohortes[0] : null);
     const publicacionesMostrar = ultimaCohorte?.publicaciones || [];
+
+    // ✨ Limpieza de URL para archivos (CV y Avatar)
+    const getCleanFileUrl = (url?: string | null) => {
+        if (!url || typeof url !== 'string') return null;
+        let clean = url.replace(/^https?:\/\/(localhost|127\.0\.0\.1):8080/, '');
+        if (clean.startsWith('uploads/')) clean = `/${clean}`;
+        return clean;
+    };
+
+    const cvFacilitadorUrl = getCleanFileUrl(course.cv_facilitador_url);
+
+    // ✨ Desglose de Módulos en tarjetas
+    const parseModulos = (rawText?: string) => {
+        if (!rawText || typeof rawText !== 'string') return [];
+        const blocks = rawText.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+        
+        return blocks.map((block, idx) => {
+            const lines = block.split('\n').map(l => l.trim());
+            const headerLine = lines.find(l => /^m[oó]dulo/i.test(l)) || `Módulo ${idx + 1}`;
+            const contenidoLine = lines.find(l => /^contenido:/i.test(l));
+            const competenciaLine = lines.find(l => /^competencia:/i.test(l));
+
+            if (contenidoLine || competenciaLine) {
+                return {
+                    isStructured: true,
+                    header: headerLine,
+                    contenido: contenidoLine ? contenidoLine.replace(/^contenido:\s*/i, '') : 'No especificado',
+                    competencia: competenciaLine ? competenciaLine.replace(/^competencia:\s*/i, '') : 'No especificado'
+                };
+            }
+            return { isStructured: false, raw: block };
+        });
+    };
+
+    const modulosParsed = parseModulos(course.contenido_competencias);
 
     const handleAddPublication = async () => {
         if (!newPubTitle.trim() || !newPubContent.trim()) {
@@ -237,7 +248,8 @@ export function CourseOwnerView({ initialCourse, currentUser }: { initialCourse:
     const canCreatePublication = isOwner && !!ultimaCohorte && ultimaCohorte.estado === 'activa';
 
     const displayStatus = course.estado_gestion || course.estado;
-    const providerAvatarUrl = provider ? (provider.archivos?.logo ?? provider.provider_avatar_url ?? provider.avatar_url ?? `https://i.pravatar.cc/150?u=${provider.id}`) : undefined;
+    const rawAvatar = provider ? (provider.archivos?.logo ?? provider.provider_avatar_url ?? provider.avatar_url) : null;
+    const providerAvatarUrl = provider ? (getCleanFileUrl(rawAvatar) ?? `https://i.pravatar.cc/150?u=${provider.id}`) : undefined;
 
     return (
         <Box maxW="5xl" mx="auto" p={{ base: 4, md: 8 }} my={8}>
@@ -320,6 +332,37 @@ export function CourseOwnerView({ initialCourse, currentUser }: { initialCourse:
                             </GridItem>
                             <GridItem><KeyDetail label="Perfil del Docente" value={course.perfil_docente} /></GridItem>
                             <GridItem><KeyDetail label="Perfiles de Ingreso/Egreso" value={course.perfiles} /></GridItem>
+                            
+                            {/* ✨ SÍNTESIS CURRICULAR DEL FACILITADOR (PDF) */}
+                            <GridItem colSpan={{ base: 1, md: 2 }}>
+                                <Text fontWeight="semibold" fontSize="sm" color={labelColor} mb={1}>
+                                    Síntesis Curricular del Facilitador(es) (PDF)
+                                </Text>
+                                <Box p={3} bg={innerBoxBg} borderWidth="1px" borderColor={innerBoxBorder} borderRadius="md">
+                                    {cvFacilitadorUrl ? (
+                                        <HStack justify="space-between" align="center" flexWrap="wrap" gap={2}>
+                                            <Text fontSize="sm" color={inputColor}>
+                                                Documento PDF adjunto con el resumen curricular del facilitador.
+                                            </Text>
+                                            <Button
+                                                as="a"
+                                                href={cvFacilitadorUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                size="sm"
+                                                colorScheme="teal"
+                                            >
+                                                Ver / Descargar CV (PDF)
+                                            </Button>
+                                        </HStack>
+                                    ) : (
+                                        <Text as="i" fontSize="sm" color="gray.500">
+                                            No se adjuntó archivo PDF en esta formulación.
+                                        </Text>
+                                    )}
+                                </Box>
+                            </GridItem>
+
                             <GridItem colSpan={{ base: 1, md: 2 }}><KeyDetail label="Exigencias" value={course.exigencias} /></GridItem>
 
                             <GridItem colSpan={{ base: 1, md: 2 }} pt={6}>
@@ -327,9 +370,61 @@ export function CourseOwnerView({ initialCourse, currentUser }: { initialCourse:
                                     Aspectos Curriculares y Logísticos
                                 </Heading>
                             </GridItem>
+
+                            {/* ✨ DESGLOSE DE MÓDULOS Y COMPETENCIAS */}
+                            <GridItem colSpan={{ base: 1, md: 2 }}>
+                                <Text fontWeight="semibold" fontSize="sm" color={labelColor} mb={2}>
+                                    Contenido por Módulos y Competencias
+                                </Text>
+                                {modulosParsed.length > 0 ? (
+                                    <VStack spacing={3} align="stretch" w="100%">
+                                        {modulosParsed.map((mod, idx) => (
+                                            <Box key={idx} p={4} bg={innerBoxBg} borderWidth="1px" borderColor={innerBoxBorder} rounded="md">
+                                                {mod.isStructured ? (
+                                                    <VStack align="start" spacing={2}>
+                                                        <Badge colorScheme="teal" variant="subtle" px={2} py={0.5} rounded="md" fontSize="xs">
+                                                            {mod.header}
+                                                        </Badge>
+                                                        <Box>
+                                                            <Text fontSize="xs" fontWeight="bold" color="teal.500" textTransform="uppercase">
+                                                                Contenido Programático:
+                                                            </Text>
+                                                            <Text fontSize="sm" color={inputColor} whiteSpace="pre-wrap">
+                                                                {mod.contenido}
+                                                            </Text>
+                                                        </Box>
+                                                        <Box>
+                                                            <Text fontSize="xs" fontWeight="bold" color="teal.500" textTransform="uppercase">
+                                                                Competencia a Desarrollar:
+                                                            </Text>
+                                                            <Text fontSize="sm" color={inputColor} whiteSpace="pre-wrap">
+                                                                {mod.competencia}
+                                                            </Text>
+                                                        </Box>
+                                                    </VStack>
+                                                ) : (
+                                                    <Text fontSize="sm" color={inputColor} whiteSpace="pre-wrap">
+                                                        {mod.raw}
+                                                    </Text>
+                                                )}
+                                            </Box>
+                                        ))}
+                                    </VStack>
+                                ) : (
+                                    <Box p={2} bg={innerBoxBg} borderWidth="1px" borderColor={innerBoxBorder} borderRadius="md">
+                                        <Text as="i" color="gray.500">No especificado</Text>
+                                    </Box>
+                                )}
+                            </GridItem>
+
                             <GridItem><KeyDetail label="Estructura Curricular" value={course.estructura_curricular} /></GridItem>
                             <GridItem><KeyDetail label="Estrategias de Evaluación" value={course.evaluacion} /></GridItem>
                             <GridItem colSpan={{ base: 1, md: 2 }}><KeyDetail label="Cronograma Anual" value={course.cronograma} /></GridItem>
+
+                            {/* ✨ BIBLIOGRAFÍA */}
+                            <GridItem colSpan={{ base: 1, md: 2 }}>
+                                <KeyDetail label="Bibliografía" value={course.bibliografia} />
+                            </GridItem>
                         </Grid>
                     </CardBody>
                 </Card>

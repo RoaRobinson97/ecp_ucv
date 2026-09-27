@@ -1219,8 +1219,8 @@
     {
       "usuario_id": "uUX_mH13HTY",
       "tipo_curso": "formulacion-curso-directa",
-      "estado": "aprobada",
-      "estado_gestion": "aprobada",
+      "estado": "cerrado",
+      "estado_gestion": "cerrado",
       "facultad": "Dirección de Extensión de Estudio",
       "coordinador_id": "13",
       "facultad_origen": "Dirección de Extensión de Estudio",
@@ -1244,12 +1244,8 @@
       "image_url": "/uploads/providers/uUX_mH13HTY/covers/1790525433057-images__13_.jpg",
       "cv_facilitador_url": "/uploads/providers/uUX_mH13HTY/facilitadores/1790525433058-sample-local-pdf.pdf",
       "creado_en": "2026-09-27T16:10:33.067Z",
-      "actualizado_en": "2026-09-27T16:27:39.507Z",
-      "id": "QWV3cr1sDTE",
-      "motivo_rechazo": "",
-      "clasificacion": "Formación para todo público",
-      "calificacion": "100",
-      "archivo_evaluacion_url": "/uploads/courses/uUX_mH13HTY/evaluaciones/1790526459505-images__10_.jpg"
+      "actualizado_en": "2026-09-27T16:10:33.067Z",
+      "id": "QWV3cr1sDTE"
     }
   ],
   "course-cycles": [

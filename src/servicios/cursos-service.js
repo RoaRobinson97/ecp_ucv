@@ -121,40 +121,37 @@ class CourseService {
 
     async getCourseById(courseId) {
         try {
-            // 1. Buscamos el curso base
-            const backendCourse = await ApiService.get('courses', courseId);
+            // 1. Buscamos el curso base (pasa por /api/courses/[id] que ya trae cohortes y publicaciones)
+            const backendCourse = await ApiService.get(`courses/${courseId}`);
             if (!backendCourse) throw new Error(`Curso ${courseId} no encontrado.`);
 
-            // 2. Buscamos las cohortes de este curso
-            let cohortes = [];
-            try {
-                const queryCohortes = await fetch(`http://localhost:8080/course-cycles?course_id=${courseId}&_t=${Date.now()}`);
-                if (queryCohortes.ok) {
-                    cohortes = await queryCohortes.json();
-                    // Ordenamos de la más reciente a la más antigua
-                    cohortes.sort((a, b) => new Date(b.creado_en || 0).getTime() - new Date(a.creado_en || 0).getTime());
+            let cohortes = Array.isArray(backendCourse.cohortes) ? backendCourse.cohortes : [];
+
+            // 2. Solo si no vinieron cohortes desde la API interna (ej. en Server Component directo), intentamos buscarlas
+            if (cohortes.length === 0 && typeof window === 'undefined') {
+                try {
+                    const queryCohortes = await fetch(`http://localhost:8080/course-cycles?course_id=${courseId}&_t=${Date.now()}`);
+                    if (queryCohortes.ok) {
+                        cohortes = await queryCohortes.json();
+                        cohortes.sort((a, b) => new Date(b.creado_en || 0).getTime() - new Date(a.creado_en || 0).getTime());
+                    }
+                    const queryPubs = await fetch(`http://localhost:8080/publications?course_id=${courseId}&_t=${Date.now()}`);
+                    if (queryPubs.ok) {
+                        const publicaciones = await queryPubs.json();
+                        cohortes = cohortes.map(cohorte => ({
+                            ...cohorte,
+                            publicaciones: publicaciones.filter(pub => String(pub.cohort_id) === String(cohorte.id))
+                        }));
+                    }
+                } catch (err) {
+                    console.warn("No se pudieron cargar las cohortes en fallback");
                 }
-            } catch (err) { console.warn("No se pudieron cargar las cohortes"); }
+            }
 
-            // 3. Buscamos las publicaciones globales
-            let publicaciones = [];
-            try {
-                const queryPubs = await fetch(`http://localhost:8080/publications?course_id=${courseId}&_t=${Date.now()}`);
-                if (queryPubs.ok) publicaciones = await queryPubs.json();
-            } catch (err) { console.warn("No se pudieron cargar publicaciones"); }
+            const ultimaCohorte = backendCourse.cohorteActiva || (cohortes.length > 0 ? cohortes[0] : null);
 
-            // 4. ENSAMBLAJE MAGISTRAL: Repartimos las publicaciones en sus respectivas cohortes
-            cohortes = cohortes.map(cohorte => {
-                return {
-                    ...cohorte,
-                    // Filtramos las pubs que le pertenecen a esta cohorte específica
-                    publicaciones: publicaciones.filter(pub => String(pub.cohort_id) === String(cohorte.id))
-                };
-            });
-
-            // 5. Adaptamos el curso para el frontend
             const courseAdapted = {
-                ...backendCourse, // ✨ Agrégalo aquí también
+                ...backendCourse,
                 id: String(backendCourse.id),
                 titulo: backendCourse.nombre || backendCourse.titulo || "Curso Sin Título",
                 descripcion: backendCourse.descripcion || backendCourse.fundamentacion || "Sin descripción disponible.",
@@ -171,9 +168,9 @@ class CourseService {
                 estructura_curricular: backendCourse.estructura_curricular,
                 evaluacion: backendCourse.evaluacion,
                 cronograma: backendCourse.cronograma,
-                contenido_competencias: backendCourse.contenido_competencias || null, // ✨
-                bibliografia: backendCourse.bibliografia || null,                     // ✨
-                cv_facilitador_url: backendCourse.cv_facilitador_url || null,         // ✨
+                contenido_competencias: backendCourse.contenido_competencias || null,
+                bibliografia: backendCourse.bibliografia || null,
+                cv_facilitador_url: backendCourse.cv_facilitador_url || null,
                 
                 codigo_proveedor: backendCourse.codigo_proveedor,
                 user_id: backendCourse.usuario_id || backendCourse.user_id,
@@ -184,7 +181,7 @@ class CourseService {
                 tipo: backendCourse.tipo_curso || backendCourse.tipo || 'formulacion-curso-directa',
                 link_certificados: backendCourse.link_certificados || null,
 
-                // ✨ INYECTAMOS LAS COHORTES ENSAMBLADAS
+                cohorteActiva: ultimaCohorte,
                 cohortes: cohortes
             };
 
