@@ -4,17 +4,17 @@ import React, { useState, useEffect } from "react";
 import { 
     Box, Heading, Text, Avatar, VStack, useColorModeValue, Divider, 
     Table, Thead, Tbody, Tr, Th, Td, TableContainer, Badge,
-    HStack, Icon, Spinner, Center
+    HStack, Icon, Spinner, Center, Link as ChakraLink
 } from '@chakra-ui/react';
+import NextLink from 'next/link';
 import { Course, User, FullProvider } from "@/data/types"; 
 import { MdEmail, MdPhone } from 'react-icons/md'; 
 import { courseService } from "@/servicios/cursos-service";
+import { userService } from "@/servicios/users-service";
 
 export function UserProfileClient({ user }: { user: User | FullProvider }) {
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoadingCourses, setIsLoadingCourses] = useState(false);
-    
-    // ✨ FIX 1: Estado para atrapar la info del proveedor si el componente superior no la envió
     const [providerData, setProviderData] = useState<any>(null);
 
     const cardBg = useColorModeValue("white", "gray.700");
@@ -23,40 +23,49 @@ export function UserProfileClient({ user }: { user: User | FullProvider }) {
     const tableBorder = useColorModeValue("gray.100", "gray.600");
     const brandColor = "teal.500";
 
-    const isProvider = user.rol === 'proveedor';
-    const safeUserId = (user as any).id || (user as any).usuario_id || (user as any).ID;
+    const safeUser = user as any;
+    const isProvider = safeUser.rol === 'proveedor' || safeUser.roles?.includes('proveedor');
+    const safeUserId = safeUser.id || safeUser.usuario_id || safeUser.ID || safeUser.sub;
 
-    // ✨ AUTO-HIDRATACIÓN: Buscamos la info del proveedor (avatar, bio) directo de la BD
+    // ✨ Usamos userService para que funcione en producción sin errores de localhost
     useEffect(() => {
         if (isProvider && safeUserId) {
-            fetch(`http://localhost:8080/providers?usuario_id=${safeUserId}`)
-                .then(r => r.json())
+            userService.getProviderDetails(String(safeUserId))
                 .then(d => {
-                    if (d && d.length > 0) setProviderData(d[0]);
+                    if (d) setProviderData(d);
                 })
                 .catch(e => console.error("Error hidratando colaborador:", e));
         }
     }, [isProvider, safeUserId]);
 
-    // ✨ Unimos la data del usuario base con la del proveedor
-    const combinedUser = { ...(user as any), ...providerData };
+    const combinedUser = { ...safeUser, ...providerData };
 
-    // Adaptado a los nombres combinados
     const displayName = (isProvider && combinedUser.nombre_proveedor) 
         ? combinedUser.nombre_proveedor 
-        : `${combinedUser.first_name || combinedUser.nombres || ''} ${combinedUser.last_name || combinedUser.apellidos || ''}`.trim() || 'Usuario Desconocido';
+        : `${combinedUser.first_name || combinedUser.nombres || ''} ${combinedUser.last_name || combinedUser.apellidos || ''}`.trim() || 'Usuario';
 
     const bioText = (isProvider && combinedUser.biografia) 
         ? combinedUser.biografia 
         : "Usuario de la plataforma.";
 
-    // ✨ FIX AVATAR: Ya lee correctamente desde la data combinada
+    // ✨ SIN IMÁGENES RANDOM: Si no hay logo propio, queda undefined y Chakra muestra las iniciales
     const rawAvatar = combinedUser.archivos?.logo || combinedUser.provider_avatar_url || combinedUser.avatar_url;
-    const avatarUrl = rawAvatar 
-        ? (rawAvatar.startsWith('/') ? `http://localhost:8080${rawAvatar}` : rawAvatar) 
-        : `https://i.pravatar.cc/150?u=${safeUserId}`;
+    let avatarUrl = rawAvatar || undefined;
 
-    // Extraer arreglos de contacto
+    if (avatarUrl && typeof avatarUrl === 'string') {
+        if (avatarUrl.includes('localhost:8080') || avatarUrl.includes('127.0.0.1:8080')) {
+            try {
+                const urlObj = new URL(avatarUrl);
+                avatarUrl = urlObj.pathname;
+            } catch (e) {
+                avatarUrl = avatarUrl.replace(/http:\/\/(localhost|127\.0\.0\.1):8080/g, '');
+            }
+        }
+        if (avatarUrl.startsWith('uploads/')) {
+            avatarUrl = `/${avatarUrl}`;
+        }
+    }
+
     const extraEmails = (isProvider && combinedUser.emails_contacto) ? combinedUser.emails_contacto : [];
     const extraPhones = (isProvider && combinedUser.telefonos_contacto) ? combinedUser.telefonos_contacto : [];
 
@@ -65,11 +74,11 @@ export function UserProfileClient({ user }: { user: User | FullProvider }) {
             if (!isProvider || !safeUserId) return;
             setIsLoadingCourses(true);
             try {
-                const result = await courseService.getCoursesByUserId(safeUserId);
-                const publicCourses = result.courses.filter((c: any) => {
+                const result = await courseService.getCoursesByUserId(String(safeUserId), { limit: 100 });
+                const publicCourses = (result.courses || []).filter((c: any) => {
+                    const hasContract = !!(c.documento_legal_id || c.contrato_id);
                     const estado = String(c.estado_gestion || c.estado).toLowerCase();
-                    // ✨ FIX 2: Agregamos "cerrado" para que los cursos con amparo legal aparezcan
-                    return estado === 'aprobado' || estado === 'abierto' || estado === 'cerrado';
+                    return hasContract && (estado === 'aprobado' || estado === 'aprobada' || estado === 'abierto' || estado === 'cerrado');
                 });
                 setCourses(publicCourses);
             } catch (error) {
@@ -92,7 +101,13 @@ export function UserProfileClient({ user }: { user: User | FullProvider }) {
         <Box p={8} bg={cardBg} shadow="xl" rounded="lg" maxW="2xl" mx="auto" borderTop="4px solid" borderColor={brandColor}>
             
             <VStack spacing={4} align="center" mb={6}>
-                <Avatar size="2xl" name={displayName} src={avatarUrl} border="2px solid" borderColor={brandColor} />
+                <Avatar 
+                    size="2xl" 
+                    name={displayName} 
+                    src={avatarUrl} 
+                    border="2px solid" 
+                    borderColor={brandColor} 
+                />
                 
                 <VStack spacing={1}>
                     <Heading size="xl" textAlign="center">{displayName}</Heading>
@@ -110,7 +125,6 @@ export function UserProfileClient({ user }: { user: User | FullProvider }) {
                     </Text>
                 </Box>
 
-                {/* SECCIÓN DE CONTACTO */}
                 <VStack spacing={2} pt={4} w="full" align="center">
                     <HStack spacing={2} fontSize="sm" color="teal.500" fontWeight="bold">
                         <Icon as={MdEmail} />
@@ -153,7 +167,9 @@ export function UserProfileClient({ user }: { user: User | FullProvider }) {
                                     {courses.map((course: any) => (
                                         <Tr key={course.id}>
                                             <Td fontWeight="medium">
-                                                <Text noOfLines={1}>{course.titulo || course.nombre}</Text>
+                                                <ChakraLink as={NextLink} href={`/curso/${course.id}`} color="teal.500" _hover={{ textDecoration: 'underline' }}>
+                                                    <Text noOfLines={1}>{course.titulo || course.nombre}</Text>
+                                                </ChakraLink>
                                             </Td>
                                             <Td textAlign="center">
                                                 <Badge 

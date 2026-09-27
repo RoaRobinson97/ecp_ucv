@@ -9,13 +9,23 @@ import {
   Input,
   Textarea,
   VStack,
+  HStack,
   Heading,
   Text,
-  useToast
+  useToast,
+  Badge,
+  useColorModeValue
 } from "@chakra-ui/react";
 import { useAuth } from "@/app/context/auth-context";
 import { useRouter } from "next/navigation";
 import { PayloadFormulacionCurso } from '@/data/types';
+import { solicitudesService } from '@/servicios/solicitudes-service';
+
+interface ModuloItem {
+  titulo: string;
+  contenido: string;
+  competencia: string;
+}
 
 const FormSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <VStack spacing={4} align="stretch" w="full">
@@ -76,6 +86,30 @@ export const CourseForm = () => {
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [facilitadorCv, setFacilitadorCv] = useState<File | null>(null);
+
+  const [modulos, setModulos] = useState<ModuloItem[]>([
+    { titulo: '', contenido: '', competencia: '' }
+  ]);
+
+  const cardModuloBg = useColorModeValue("gray.50", "whiteAlpha.50");
+
+  const handleAddModulo = () => {
+    setModulos((prev) => [...prev, { titulo: '', contenido: '', competencia: '' }]);
+  };
+
+  const handleRemoveModulo = (index: number) => {
+    if (modulos.length <= 1) return;
+    setModulos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleModuloChange = (index: number, field: keyof ModuloItem, value: string) => {
+    setModulos((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -86,10 +120,39 @@ export const CourseForm = () => {
       return;
     }
 
+    const hasEmptyModulos = modulos.some(
+      (m) => !m.titulo.trim() || !m.contenido.trim() || !m.competencia.trim()
+    );
+    if (hasEmptyModulos) {
+      toast({
+        title: "Módulos incompletos",
+        description: "Por favor, completa el nombre, contenido y competencia de todos los módulos.",
+        status: "warning"
+      });
+      return;
+    }
+
+    if (!coverImage) {
+      toast({ title: "Falta la imagen de portada", description: "Es obligatorio subir una imagen representativa para el curso.", status: "warning" });
+      return;
+    }
+
+    if (!facilitadorCv) {
+      toast({ title: "Falta el CV del facilitador", description: "Es obligatorio adjuntar el resumen curricular del facilitador en formato PDF.", status: "warning" });
+      return;
+    }
+
     setIsLoading(true);
     const formData = new FormData(event.currentTarget);
 
     try {
+      const contenidoCompetenciasString = modulos
+        .map(
+          (m, idx) =>
+            `Módulo ${idx + 1}: ${m.titulo.trim()}\nContenido: ${m.contenido.trim()}\nCompetencia: ${m.competencia.trim()}`
+        )
+        .join('\n\n');
+
       const payload: PayloadFormulacionCurso = {
         titulo: (formData.get('denominacion') as string)?.trim(), 
         denominacion: (formData.get('denominacion') as string)?.trim(), 
@@ -103,25 +166,14 @@ export const CourseForm = () => {
         estructura_curricular: (formData.get('estructura-curricular') as string)?.trim(),
         evaluacion: (formData.get('evaluacion') as string)?.trim(),
         cronograma: (formData.get('cronograma') as string)?.trim(),
-        // ✨ CAMPOS NUEVOS
-        contenido_competencias: (formData.get('contenido_competencias') as string)?.trim(),
+        contenido_competencias: contenidoCompetenciasString,
         bibliografia: (formData.get('bibliografia') as string)?.trim(),
       };
 
-      // Validamos los campos tradicionales
       const requiredFields = { ...payload };
-      delete requiredFields.contenido_competencias;
-      delete requiredFields.bibliografia;
-
       const hasEmptyFields = Object.values(requiredFields).some(value => !value);
       if (hasEmptyFields) {
           toast({ title: "Formulario incompleto", description: "Por favor, completa todos los campos requeridos.", status: "warning" });
-          setIsLoading(false);
-          return;
-      }
-
-      if (!coverImage) {
-          toast({ title: "Falta la imagen de portada", description: "Es obligatorio subir una imagen representativa para el curso.", status: "warning" });
           setIsLoading(false);
           return;
       }
@@ -130,17 +182,11 @@ export const CourseForm = () => {
       finalFormData.append('userId', user.id || '');
       finalFormData.append('tipo', 'formulacion-curso-directa');
       finalFormData.append('payload', JSON.stringify(payload)); 
-      
-      if (coverImage) {
-        finalFormData.append('cover', coverImage);
-      }
+      finalFormData.append('cover', coverImage);
+      finalFormData.append('cv_facilitador', facilitadorCv);
 
-      const response = await fetch('/api/courses', { method: 'POST', body: finalFormData });
-
-      if (!response.ok) {
-        const err = await response.json().catch(()=>({}));
-        throw new Error(err.error || "Error al enviar al servidor");
-      }
+      // ✨ AHORA USA EL SERVICIO EN LUGAR DE FETCH DIRECTO
+      await solicitudesService.createSolicitud(finalFormData);
 
       toast({ title: "Curso formulado y enviado.", description: "Tu propuesta está siendo revisada por Coordinación.", status: "success", duration: 5000, isClosable: true });
       router.push(`/profile/${user.id}`); 
@@ -205,18 +251,129 @@ export const CourseForm = () => {
                 id="perfil-docente" 
                 label="Perfil del Facilitador" 
                 isTextArea 
-                placeholder="Profesional experto en..."
+                placeholder="Profesional con título de cuarto nivel o experiencia comprobable en..."
             />
+
+            <FormControl id="cv_facilitador" isRequired={true}>
+              <FormLabel fontWeight="bold" color="text.primary">
+                Síntesis Curricular del Facilitador(es) (PDF){" "}
+                {facilitadorCv && <Text as="span" color="teal.500" fontSize="sm" ml={2}>(✓ Archivo cargado)</Text>}
+              </FormLabel>
+              <Input 
+                type="file" 
+                accept=".pdf,application/pdf" 
+                p={1}
+                onChange={(e) => setFacilitadorCv(e.target.files?.[0] || null)}
+                bg="background" borderColor="border" focusBorderColor="primary" color="text.primary"
+                sx={{ '::file-selector-button': { height: 8, padding: 0, mr: 4, background: 'none', border: 'none', fontWeight: 'bold', color: 'text.primary' } }}
+              />
+              <Text fontSize="xs" color="text.muted" mt={1}>
+                Adjunta en un único archivo PDF el resumen curricular actualizado y soportes de quien(es) dictará(n) el curso.
+              </Text>
+            </FormControl>
           </FormSection>
 
           <FormSection title="4. Contenido por Módulos y Competencias">
-             <CourseFormControl 
-                id="contenido_competencias" 
-                label="Módulos, Contenido y Competencias" 
-                isTextArea 
-                placeholder="Ejemplo:&#10;Módulo 1: Marco Legal&#10;Contenido: Bases constitucionales...&#10;Competencia: Analiza críticamente..."
-                helperText="Estructura el texto separando claramente por Módulos, detallando el Contenido y la Competencia a desarrollar en cada uno."
-            />
+            <Box w="full">
+              <HStack justify="space-between" align="center" mb={2}>
+                <FormLabel fontWeight="bold" color="text.primary" mb={0}>
+                  Desglose de Módulos, Contenido Temático y Competencias <Text as="span" color="red.500">*</Text>
+                </FormLabel>
+                <Button 
+                  size="sm" 
+                  colorScheme="teal" 
+                  onClick={handleAddModulo}
+                >
+                  + Agregar Módulo
+                </Button>
+              </HStack>
+              
+              <Text fontSize="xs" color="text.muted" mb={4} lineHeight="tall">
+                Detalla cada unidad temática del programa. Puedes añadir tantos módulos como requiera el curso usando el botón <b>(+ Agregar Módulo)</b>. En cada bloque especifica el título de la unidad, los temas que se impartirán y la destreza verificable que desarrollará el estudiante.
+              </Text>
+
+              <VStack spacing={4} align="stretch" w="full">
+                {modulos.map((modulo, index) => (
+                  <Box 
+                    key={index} 
+                    p={5} 
+                    bg={cardModuloBg} 
+                    borderWidth="1px" 
+                    borderColor="border" 
+                    rounded="lg"
+                  >
+                    <HStack justify="space-between" align="center" mb={4} pb={2} borderBottomWidth="1px" borderColor="border">
+                      <Badge colorScheme="teal" variant="solid" px={2.5} py={1} rounded="md" fontSize="xs">
+                        MÓDULO {index + 1}
+                      </Badge>
+                      {modulos.length > 1 && (
+                        <Button
+                          size="xs"
+                          colorScheme="red"
+                          variant="outline"
+                          onClick={() => handleRemoveModulo(index)}
+                        >
+                          − Quitar módulo
+                        </Button>
+                      )}
+                    </HStack>
+
+                    <VStack spacing={4} align="stretch">
+                      <FormControl isRequired>
+                        <FormLabel fontSize="sm" fontWeight="semibold" color="text.primary" mb={1}>
+                          Nombre del Módulo
+                        </FormLabel>
+                        <Input
+                          value={modulo.titulo}
+                          onChange={(e) => handleModuloChange(index, 'titulo', e.target.value)}
+                          placeholder="Ej: Fundamentos de Python para Ciencias"
+                          size="md"
+                          bg="background"
+                          borderColor="border"
+                          focusBorderColor="primary"
+                          color="text.primary"
+                        />
+                      </FormControl>
+
+                      <FormControl isRequired>
+                        <FormLabel fontSize="sm" fontWeight="semibold" color="text.primary" mb={1}>
+                          Contenido Programático
+                        </FormLabel>
+                        <Textarea
+                          value={modulo.contenido}
+                          onChange={(e) => handleModuloChange(index, 'contenido', e.target.value)}
+                          placeholder="Ej: Estructuras de datos, control de flujo, librerías científicas (NumPy, Pandas, Matplotlib)..."
+                          rows={3}
+                          fontSize="sm"
+                          bg="background"
+                          borderColor="border"
+                          focusBorderColor="primary"
+                          color="text.primary"
+                        />
+                      </FormControl>
+
+                      <FormControl isRequired>
+                        <FormLabel fontSize="sm" fontWeight="semibold" color="text.primary" mb={1}>
+                          Competencia a Desarrollar
+                        </FormLabel>
+                        <Textarea
+                          value={modulo.competencia}
+                          onChange={(e) => handleModuloChange(index, 'competencia', e.target.value)}
+                          placeholder="Ej: Manipula y transforma grandes volúmenes de datos tabulares de forma eficiente y reproducible."
+                          rows={2}
+                          fontSize="sm"
+                          bg="background"
+                          borderColor="border"
+                          focusBorderColor="primary"
+                          color="text.primary"
+                        />
+                      </FormControl>
+                    </VStack>
+                  </Box>
+                ))}
+              </VStack>
+            </Box>
+
             <CourseFormControl id="estructura-curricular" label="Estructura Curricular General" isTextArea />
             <CourseFormControl id="evaluacion" label="Estrategias de Evaluación" isTextArea />
             <CourseFormControl id="cronograma" label="Cronograma de Ejecución Anual" isTextArea />

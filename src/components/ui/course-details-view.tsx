@@ -1,7 +1,7 @@
 "use client";
 
 import { 
-  Box, Heading, Text, VStack, SimpleGrid, useColorModeValue, HStack 
+  Box, Heading, Text, VStack, SimpleGrid, useColorModeValue, HStack, Button, Badge
 } from '@chakra-ui/react';
 import { PayloadFormulacionCurso } from '@/data/types';
 
@@ -14,12 +14,13 @@ const KeyDetail = ({ label, value }: { label: string; value?: string }) => {
   const labelColor = useColorModeValue("gray.700", "gray.300");
   const boxBg = useColorModeValue("white", "gray.700");
   const boxBorder = useColorModeValue("gray.200", "gray.600");
+  const textColor = useColorModeValue("gray.800", "white");
 
   return (
     <VStack align="start" spacing={1} w="100%">
       <Text fontWeight="bold" fontSize="sm" color={labelColor} textTransform="uppercase">{label}</Text>
       <Box w="100%" p={3} bg={boxBg} border="1px" borderColor={boxBorder} rounded="md">
-        <Text whiteSpace="pre-wrap" color={useColorModeValue("gray.800", "white")}>
+        <Text whiteSpace="pre-wrap" color={textColor}>
           {value || 'No especificado'}
         </Text>
       </Box>
@@ -38,7 +39,13 @@ const DividerWithLabel = ({ label }: { label: string }) => (
 );
 
 export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: CourseDetailsViewProps) {
-  
+  const containerBg = useColorModeValue("gray.50", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.700");
+  const cardBorder = useColorModeValue("gray.200", "gray.600");
+  const labelColor = useColorModeValue("gray.700", "gray.300");
+  const textColor = useColorModeValue("gray.800", "white");
+  const mutedText = useColorModeValue("gray.500", "gray.400");
+
   if (!payload) {
     return (
       <Box p={5} textAlign="center">
@@ -51,11 +58,51 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
     let tituloLimpio = tipo.replace(/-/g, ' ');
     tituloLimpio = tituloLimpio.charAt(0).toUpperCase() + tituloLimpio.slice(1);
     return tituloLimpio
-      .replace('Formulacion', 'Detalles de Formulacion')
+      .replace('Formulacion', 'Detalles de Formulación')
       .replace('curso directa', 'Directa');
   };
 
-  const containerBg = useColorModeValue("gray.50", "gray.900");
+  // ✨ Limpiamos la URL del PDF del facilitador por si viene con localhost o sin slash inicial
+  const getCleanFileUrl = (url?: string | null) => {
+    if (!url || typeof url !== 'string') return null;
+    let clean = url;
+    if (clean.includes('localhost:8080') || clean.includes('127.0.0.1:8080')) {
+      try {
+        clean = new URL(clean).pathname;
+      } catch (e) {
+        clean = clean.replace(/http:\/\/(localhost|127\.0\.0\.1):8080/g, '');
+      }
+    }
+    if (clean.startsWith('uploads/')) clean = `/${clean}`;
+    return clean;
+  };
+
+  const cvFacilitadorUrl = getCleanFileUrl(payload.cv_facilitador_url);
+
+  // ✨ Parseamos el texto de los módulos para mostrarlos en tarjetas estructuradas
+  const parseModulos = (rawText?: string) => {
+    if (!rawText || typeof rawText !== 'string') return [];
+    const blocks = rawText.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+    
+    return blocks.map((block, idx) => {
+      const lines = block.split('\n').map(l => l.trim());
+      const headerLine = lines.find(l => /^m[oó]dulo/i.test(l)) || `Módulo ${idx + 1}`;
+      const contenidoLine = lines.find(l => /^contenido:/i.test(l));
+      const competenciaLine = lines.find(l => /^competencia:/i.test(l));
+
+      if (contenidoLine || competenciaLine) {
+        return {
+          isStructured: true,
+          header: headerLine,
+          contenido: contenidoLine ? contenidoLine.replace(/^contenido:\s*/i, '') : 'No especificado',
+          competencia: competenciaLine ? competenciaLine.replace(/^competencia:\s*/i, '') : 'No especificado'
+        };
+      }
+      return { isStructured: false, raw: block };
+    });
+  };
+
+  const modulosParsed = parseModulos(payload.contenido_competencias);
 
   return (
     <Box mb={10}>
@@ -80,10 +127,85 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
             <KeyDetail label="Perfil de Ingreso y Egreso" value={payload.perfiles} />
             <KeyDetail label="Perfil del Facilitador" value={payload.perfil_docente} />
         </SimpleGrid>
+
+        {/* ✨ NUEVO: SÍNTESIS CURRICULAR DEL FACILITADOR (PDF) */}
+        <VStack align="start" spacing={1} w="100%">
+          <Text fontWeight="bold" fontSize="sm" color={labelColor} textTransform="uppercase">
+            Síntesis Curricular del Facilitador(es) (PDF)
+          </Text>
+          <Box w="100%" p={3} bg={cardBg} border="1px" borderColor={cardBorder} rounded="md">
+            {cvFacilitadorUrl ? (
+              <HStack justify="space-between" align="center" flexWrap="wrap" gap={2}>
+                <Text fontSize="sm" color={textColor}>
+                  Documento PDF adjunto con el resumen curricular del facilitador.
+                </Text>
+                <Button
+                  as="a"
+                  href={cvFacilitadorUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  size="sm"
+                  colorScheme="teal"
+                >
+                  Ver / Descargar CV (PDF)
+                </Button>
+              </HStack>
+            ) : (
+              <Text fontSize="sm" color={mutedText} fontStyle="italic">
+                No se adjuntó archivo PDF en esta formulación.
+              </Text>
+            )}
+          </Box>
+        </VStack>
         
         <DividerWithLabel label="Plan de Estudios" />
 
-        <KeyDetail label="Contenido por Módulos y Competencias" value={payload.contenido_competencias} />
+        {/* ✨ NUEVO: DESGLOSE DE MÓDULOS EN TARJETAS */}
+        <VStack align="start" spacing={2} w="100%">
+          <Text fontWeight="bold" fontSize="sm" color={labelColor} textTransform="uppercase">
+            Contenido por Módulos y Competencias
+          </Text>
+          
+          {modulosParsed.length > 0 ? (
+            <VStack spacing={3} align="stretch" w="100%">
+              {modulosParsed.map((mod, idx) => (
+                <Box key={idx} p={4} bg={cardBg} border="1px" borderColor={cardBorder} rounded="md">
+                  {mod.isStructured ? (
+                    <VStack align="start" spacing={2}>
+                      <Badge colorScheme="teal" variant="subtle" px={2} py={0.5} rounded="md" fontSize="xs">
+                        {mod.header}
+                      </Badge>
+                      <Box>
+                        <Text fontSize="xs" fontWeight="bold" color="teal.500" textTransform="uppercase">
+                          Contenido Programático:
+                        </Text>
+                        <Text fontSize="sm" color={textColor} whiteSpace="pre-wrap">
+                          {mod.contenido}
+                        </Text>
+                      </Box>
+                      <Box>
+                        <Text fontSize="xs" fontWeight="bold" color="teal.500" textTransform="uppercase">
+                          Competencia a Desarrollar:
+                        </Text>
+                        <Text fontSize="sm" color={textColor} whiteSpace="pre-wrap">
+                          {mod.competencia}
+                        </Text>
+                      </Box>
+                    </VStack>
+                  ) : (
+                    <Text fontSize="sm" color={textColor} whiteSpace="pre-wrap">
+                      {mod.raw}
+                    </Text>
+                  )}
+                </Box>
+              ))}
+            </VStack>
+          ) : (
+            <Box w="100%" p={3} bg={cardBg} border="1px" borderColor={cardBorder} rounded="md">
+              <Text color={mutedText}>No especificado</Text>
+            </Box>
+          )}
+        </VStack>
 
         <KeyDetail label="Estructura Curricular General" value={payload.estructura_curricular || payload.contenido} />
         <KeyDetail label="Evaluación" value={payload.evaluacion} />

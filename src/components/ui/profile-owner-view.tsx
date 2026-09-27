@@ -26,7 +26,6 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
     const isAdmin = safeUser.rol === 'admin' || safeUser.roles?.includes('admin') || safeUser.roles?.includes('deu_admin');
     const isCoordinador = safeUser.rol === 'coordinador' || safeUser.roles?.includes('coordinador');
 
-    // ✨ CORRECCIÓN 1: Usamos el userService (que pasa por el proxy de Next.js) en vez de fetch directo
     useEffect(() => {
         if (isProveedor && safeUserId) {
             userService.getProviderDetails(String(safeUserId))
@@ -37,7 +36,6 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
         }
     }, [isProveedor, safeUserId]);
 
-    // ✨ CORRECCIÓN 2: Usamos el courseService para evitar el bloqueo de CORS en prod
     useEffect(() => {
         async function loadMyCourses() {
             if (isProveedor && safeUserId) {
@@ -87,7 +85,7 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
     } else {
         displayName = (isProveedor && providerData?.nombre_proveedor)
             ? providerData.nombre_proveedor 
-            : `${safeUser.first_name || safeUser.nombres || ''} ${safeUser.last_name || safeUser.apellidos || ''}`.trim();
+            : `${safeUser.first_name || safeUser.nombres || ''} ${safeUser.last_name || safeUser.apellidos || ''}`.trim() || "Usuario";
         bioText = (isProveedor && providerData?.biografia) 
             ? providerData.biografia 
             : "Usuario de la plataforma.";
@@ -99,9 +97,9 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
         }
     }
 
-    // ✨ CORRECCIÓN 3: Limpiamos la URL del avatar igual que hicimos con los cursos
+    // ✨ SIN IMÁGENES RANDOM: Si no tiene foto subida, queda undefined y muestra sus iniciales
     const rawAvatar = providerData?.archivos?.logo || safeUser?.archivos?.logo || safeUser?.provider_avatar_url || safeUser?.avatar_url;
-    let finalAvatarUrl = isInstitutional ? undefined : (rawAvatar || `https://i.pravatar.cc/150?u=${safeUserId}`);
+    let finalAvatarUrl = isInstitutional ? undefined : (rawAvatar || undefined);
     
     if (finalAvatarUrl && typeof finalAvatarUrl === 'string') {
         if (finalAvatarUrl.includes('localhost:8080') || finalAvatarUrl.includes('127.0.0.1:8080')) {

@@ -14,6 +14,7 @@ export async function POST(request: Request) {
     const contentType = request.headers.get('content-type') || '';
     let payload: any = {};
     let coverFile: File | null = null;
+    let cvFacilitadorFile: File | null = null;
     let userId = '';
     let tipo = 'formulacion-curso-directa';
 
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
         userId = (formData.get('userId') as string) || payload.userId || payload.usuario_id;
         tipo = (formData.get('tipo') as string) || payload.tipo || tipo;
         coverFile = (formData.get('cover') || formData.get('archivo_proyecto') || formData.get('archivo')) as File | null;
+        cvFacilitadorFile = formData.get('cv_facilitador') as File | null;
 
     } else if (contentType.includes('application/json')) {
         payload = await request.json();
@@ -64,6 +66,13 @@ export async function POST(request: Request) {
         image_url = await saveFileAndGetUrl(coverFile, folderName);
     } else if (!image_url) {
       return NextResponse.json({ error: 'Falta imagen de portada' }, { status: 400 });
+    }
+
+    // 📄 GUARDAMOS EL PDF DEL CV DEL FACILITADOR
+    let cv_facilitador_url = payload.cv_facilitador_url || null;
+    if (cvFacilitadorFile && cvFacilitadorFile.size > 0) {
+        const cvFolder = `providers/${userId}/facilitadores`;
+        cv_facilitador_url = await saveFileAndGetUrl(cvFacilitadorFile, cvFolder);
     }
 
     // 👨‍🏫 BÚSQUEDA CRUZADA DE FACULTAD
@@ -111,6 +120,7 @@ export async function POST(request: Request) {
       nombre: payload.titulo || payload.denominacion || payload.nombre || "Curso sin título",
       descripcion: payload.fundamentacion || payload.descripcion || "",
       image_url: image_url,
+      cv_facilitador_url: cv_facilitador_url,
       
       creado_en: new Date().toISOString(),
       actualizado_en: new Date().toISOString()
@@ -133,6 +143,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 }
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

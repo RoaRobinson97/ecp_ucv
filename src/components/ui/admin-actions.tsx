@@ -28,7 +28,7 @@ import { userService } from '@/servicios/users-service';
 interface AdminActionsProps {
   solicitudId: string;
   solicitudTipo: string;
-  currentUserId?: string; // ✨ Ahora recibimos el ID del usuario logueado
+  currentUserId?: string;
 }
 
 const CLASIFICACION_REQUIERE_REMISION = 'Formación para el mejoramiento técnico/profesional';
@@ -53,9 +53,20 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
   const [observacionesEvaluacion, setObservacionesEvaluacion] = useState('');
   const [evaluationFile, setEvaluationFile] = useState<File | null>(null);
 
-  // ✨ Rutas temporales de los documentos locales
+  // ✨ Colores definidos arriba para respetar las reglas de Hooks y dar contraste al Radio
+  const panelBg = useColorModeValue('gray.100', 'gray.700');
+  const boxBorderColor = useColorModeValue('gray.300', 'gray.600');
+  const descTextColor = useColorModeValue('gray.600', 'gray.400');
+  const radioBorderColor = useColorModeValue('gray.400', 'gray.400');
+  const radioBg = useColorModeValue('white', 'gray.800');
+  const indirectBoxBorder = useColorModeValue('teal.300', 'teal.600');
+  const indirectBoxBg = useColorModeValue('teal.50', 'gray.800');
+  const inputBg = useColorModeValue('white', 'gray.800');
+  const inputBorder = useColorModeValue('gray.300', 'gray.600');
+  const inputHoverBorder = useColorModeValue('gray.400', 'gray.500');
+
   const RUBRICA_EVALUACION_URL = '/rubrica.pdf'; 
-  const PROTOCOLO_EVALUACION_URL = '/protocolo.pdf'; // ⚠ REEMPLAZAR CUANDO TENGAS EL ARCHIVO DEFINITIVO
+  const PROTOCOLO_EVALUACION_URL = '/protocolo.pdf';
 
   const toast = useToast();
   const router = useRouter(); 
@@ -92,11 +103,7 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
   }, [isIndirecta]);
   
   const isClassifiedForRemission = isCourseRequest && currentClassification === CLASIFICACION_REQUIERE_REMISION;
-  
-  // ✨ LA LÓGICA MAGISTRAL BLINDADA: Comparamos como Strings absolutos
   const isRemissionSelfHandled = isClassifiedForRemission && String(selectedFaculty) === String(currentUserId);
-  
-  // ✨ Si es auto-manejada (se eligió a sí mismo), YA NO requiere remisión.
   const requiresRemision = isDirecta && isClassifiedForRemission && !isRemissionSelfHandled; 
   
   const handleClassificationChange = (value: string) => {
@@ -133,13 +140,11 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
           formData.append('estado', 'aprobada');
           formData.append('calificacion', calificacion);
           formData.append('archivo_evaluacion', evaluationFile as Blob); 
-          // ✨ NUEVO: Guardamos la clasificación incluso si se auto-aprueba
           formData.append('clasificacion', currentClassification); 
 
           await solicitudesService.updateStatusWithFile(solicitudId, solicitudTipo, formData);
       } else {
           await solicitudesService.updateStatus(solicitudId, solicitudTipo, nuevoEstado, motivo_rechazo as any, {
-              // ✨ NUEVO: También la guardamos si se rechaza
               clasificacion: currentClassification 
           });
       }
@@ -187,7 +192,7 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
           {
               coordinador_id: selectedFaculty, 
               facultad: nombreFacultad,
-              tipo_curso: 'formulacion-curso-indirecta' // 🔥 ¡BINGO! Cambio de naturaleza del curso
+              tipo_curso: 'formulacion-curso-indirecta'
           }
       );
       
@@ -216,20 +221,38 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
   };
 
   return (
-    <Box mt={0} p={6} rounded="lg" bg={useColorModeValue('gray.100', 'gray.700')}>
+    <Box mt={0} p={6} rounded="lg" bg={panelBg}>
       <Heading as="h3" size="md" mb={4}>Acciones del Administrador</Heading>
       
       {isDirecta && (
-        <VStack spacing={6} align="stretch" mb={8} p={4} rounded="md" border="1px" borderColor={useColorModeValue('gray.300', 'gray.600')}>
+        <VStack spacing={6} align="stretch" mb={8} p={4} rounded="md" border="1px" borderColor={boxBorderColor}>
           <Heading as="h4" size="sm">Clasificación Administrativa del Curso</Heading>
           
           <RadioGroup onChange={handleClassificationChange} value={currentClassification}>
             <Stack direction="column" spacing={4}>
               {CLASSIFICATION_OPTIONS.map((op) => (
-                <Radio key={op.value} value={op.value} size="md">
-                  <VStack align="start" spacing={0}>
+                <Radio 
+                  key={op.value} 
+                  value={op.value} 
+                  size="md"
+                  colorScheme="teal"
+                  borderColor={radioBorderColor}
+                  bg={radioBg}
+                  sx={{
+                    '.chakra-radio__control': {
+                      borderWidth: '2px',
+                      borderColor: radioBorderColor,
+                      bg: radioBg,
+                    },
+                    '.chakra-radio__control[data-checked]': {
+                      borderColor: 'teal.500',
+                      bg: 'teal.500',
+                    }
+                  }}
+                >
+                  <VStack align="start" spacing={0} ml={1}>
                     <Text fontWeight="semibold">{op.value}</Text>
-                    <Text fontSize="sm" color={useColorModeValue("gray.600", "gray.400")}>{op.description}</Text>
+                    <Text fontSize="sm" color={descTextColor}>{op.description}</Text>
                   </VStack>
                 </Radio>
               ))}
@@ -245,6 +268,8 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
                 <Select 
                   placeholder="Selecciona la facultad de revisión"
                   value={selectedFaculty}
+                  bg={inputBg}
+                  borderColor={inputBorder}
                   sx={{ cursor: 'pointer' }} 
                   onChange={(e) => setSelectedFaculty(e.target.value)}
                 >
@@ -253,7 +278,6 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
                   ))}
                 </Select>
               )}
-              {/* ✨ AVISO CLARO CUANDO SE ELIGE A SÍ MISMO */}
               {isRemissionSelfHandled && (
               <Box mt={3} p={3} bg="blue.50" borderLeft="4px solid" borderColor="blue.500" rounded="md">
                 <Text color="blue.700" fontWeight="semibold" fontSize="sm">
@@ -267,10 +291,10 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
       )}
       
       {isIndirecta && (
-        <Box mb={8} p={4} rounded="md" border="1px" borderColor={useColorModeValue('teal.300', 'teal.600')} bg={useColorModeValue('teal.50', 'gray.800')}>
+        <Box mb={8} p={4} rounded="md" border="1px" borderColor={indirectBoxBorder} bg={indirectBoxBg}>
             <Heading as="h4" size="sm" mb={1} color="teal.500">Clasificación Administrativa (Fija)</Heading>
             <Text fontWeight="bold">{CLASIFICACION_REQUIERE_REMISION}</Text>
-            <Text fontSize="sm" color={useColorModeValue("gray.600", "gray.400")}>
+            <Text fontSize="sm" color={descTextColor}>
                 Las solicitudes indirectas asumen esta clasificación por defecto. No pueden ser remitidas.
             </Text>
         </Box>
@@ -284,7 +308,6 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
       
       <Divider my={6} />
 
-      {/* ✨ RENDERIZADO CONDICIONAL: Si requiere remisión (y NO es a sí mismo), muestra botón de remitir */}
       {requiresRemision ? (
         <Box>
           <Text mb={4} fontWeight="bold">
@@ -301,7 +324,6 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
         </Box>
 
       ) : (
-        /* ✨ Si NO requiere remisión (porque es curso normal o se eligió a sí mismo), muestra evaluación */
         <Box>
             {isCourseRequest && (
                 <Box mb={8}>
@@ -311,7 +333,7 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
                         observacionesEvaluacion={observacionesEvaluacion}
                         setObservacionesEvaluacion={setObservacionesEvaluacion}
                         rubricaUrl={RUBRICA_EVALUACION_URL}
-                        protocoloUrl={PROTOCOLO_EVALUACION_URL} // ✨ Inyectado en el componente hijo
+                        protocoloUrl={PROTOCOLO_EVALUACION_URL}
                         onFileChange={setEvaluationFile}
                     />
                 </Box>
@@ -325,9 +347,9 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
                     placeholder="Escribe aquí las observaciones o el motivo del rechazo."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    bg={useColorModeValue('white', 'gray.800')}
-                    borderColor={useColorModeValue('gray.200', 'gray.600')}
-                    _hover={{ borderColor: useColorModeValue('gray.300', 'gray.500') }}
+                    bg={inputBg}
+                    borderColor={inputBorder}
+                    _hover={{ borderColor: inputHoverBorder }}
                 />
                 <Button
                     colorScheme="red"
@@ -341,7 +363,6 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
             
             <Divider my={6} />
 
-            {/* ✨ AVISO VISUAL DE BOTÓN BLOQUEADO */}
             {isCourseRequest && (!calificacion || !evaluationFile) && (
                 <Text color="red.500" fontSize="sm" fontWeight="bold" textAlign="center" mb={4}>
                     ⚠ Debes ingresar la calificación y subir el archivo de evidencia para poder Aprobar.

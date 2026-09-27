@@ -310,6 +310,24 @@
       "facultad": null,
       "codigo_proveedor": null,
       "id": "o_0JXdTSy04"
+    },
+    {
+      "ci": 19845621,
+      "email": "valeria.mendez@gmail.com",
+      "password": "123",
+      "first_name": "Valeria",
+      "last_name": "Méndez",
+      "date_of_birth": "15-06-1988",
+      "gender": "femenino",
+      "education": "postgrado",
+      "address": "Los Chaguaramos, Caracas",
+      "rol": "proveedor",
+      "roles": [
+        "proveedor"
+      ],
+      "facultad": null,
+      "codigo_proveedor": "GJyKKNRg3eQ",
+      "id": "uUX_mH13HTY"
     }
   ],
   "roles": [],
@@ -491,6 +509,31 @@
         "carta_intencion_url": "/uploads/legal/2zI7tejks4M/1787100922016-sample-local-pdf.pdf",
         "carta_compromiso_url": "/uploads/legal/2zI7tejks4M/1787100922018-sample-local-pdf.pdf"
       }
+    },
+    {
+      "usuario_id": "uUX_mH13HTY",
+      "coordinador_id": "13",
+      "nombre_proveedor": "Centro Venezolano de Geomática e Inteligencia Espacial C.A.",
+      "biografia": "Organización especializada en sistemas de información geográfica (SIG), teledetección satelital y modelado espacial aplicado a la gestión ambiental y planificación urbana. Conformada por investigadores y profesionales egresados de la UCV, enfocada en la capacitación técnica mediante software libre (QGIS, Python) para el sector público y privado.",
+      "tipo_persona": "juridical",
+      "tipo_lucro": "lucrativo",
+      "es_interno": false,
+      "estado": "aprobada",
+      "archivos": {
+        "logo": "/uploads/providers/uUX_mH13HTY/1790518116729-avatar.jpg",
+        "ci": "/uploads/providers/uUX_mH13HTY/1790518116730-sample-local-pdf.pdf",
+        "rif": "/uploads/providers/uUX_mH13HTY/1790518116731-sample-local-pdf.pdf",
+        "islr": "/uploads/providers/uUX_mH13HTY/1790518116732-sample-local-pdf.pdf",
+        "curriculum": "/uploads/providers/uUX_mH13HTY/1790518116733-sample-local-pdf.pdf",
+        "titulo": "/uploads/providers/uUX_mH13HTY/1790518116733-sample-local-pdf.pdf",
+        "registro_mercantil": "/uploads/providers/uUX_mH13HTY/1790518116734-sample-local-pdf.pdf"
+      },
+      "fecha_creacion": "2026-09-27T14:08:36.736Z",
+      "id": "GJyKKNRg3eQ",
+      "estado_gestion": "aprobada",
+      "motivo_rechazo": null,
+      "fecha_actualizacion": "2026-09-27T14:21:02.701Z",
+      "clasificacion": ""
     }
   ],
   "courses": [],
@@ -1172,6 +1215,41 @@
       "archivo_evaluacion_url": "/uploads/courses/xItZiJZEKE8/evaluaciones/1788574569439-sample-local-pdf.pdf",
       "contrato_id": "ADENDA-1788574580780",
       "documento_legal_id": "ADENDA-1788574580780"
+    },
+    {
+      "usuario_id": "uUX_mH13HTY",
+      "tipo_curso": "formulacion-curso-directa",
+      "estado": "aprobada",
+      "estado_gestion": "aprobada",
+      "facultad": "Dirección de Extensión de Estudio",
+      "coordinador_id": "13",
+      "facultad_origen": "Dirección de Extensión de Estudio",
+      "coordinador_origen": "13",
+      "titulo": "Sistemas de Información Geográfica (SIG) y Análisis Espacial Automatizado con QGIS y Python",
+      "denominacion": "Sistemas de Información Geográfica (SIG) y Análisis Espacial Automatizado con QGIS y Python",
+      "proposito": "Capacitar a profesionales y técnicos en el procesamiento, análisis y modelado de datos geoespaciales mediante el uso avanzado de QGIS y la automatización de flujos de trabajo cartográficos utilizando el entorno de programación PyQGIS.",
+      "fundamentacion": "La gestión territorial, la planificación urbana y el monitoreo ambiental en Venezuela demandan el procesamiento eficiente de grandes volúmenes de información georreferenciada. El uso tradicional de herramientas SIG de escritorio de forma manual limita la escalabilidad de los proyectos. Este programa formativo responde a la necesidad de modernizar las capacidades técnicas de los profesionales del área, integrando el software libre de código abierto (QGIS) con lenguajes de programación (Python) para automatizar geoprocesos, optimizar la toma de decisiones territoriales y reducir costos operativos en instituciones públicas y privadas.",
+      "duracion": "96 horas académicas (64 horas virtuales sincrónicas, 32 horas prácticas de taller). Modalidad Mixta.",
+      "estructura_costos": "Honorarios profesionales de facilitadores (50%), mantenimiento de servidores de mapas y plataforma virtual (20%), guías prácticas y datasets satelitales procesados (10%), aranceles institucionales UCV - DEU (20%). Costo estimado por participante: $110.",
+      "perfil_docente": "Profesional con título de cuarto nivel (Maestría o Especialización) en Sistemas de Información Geográfica, Geomática, Teledetección o Ciencias de la Computación, con un mínimo de 5 años de experiencia comprobable en ejecución de proyectos de ordenamiento territorial y docencia universitaria.",
+      "perfiles": "Ingreso: Dirigido a geógrafos, ingenieros (agrónomos, civiles, forestales, geodestas), biólogos, urbanistas, arquitectos y profesionales o estudiantes de los últimos semestres de áreas afines con conocimientos básicos de cartografía digital.\n\nEgreso: Al culminar el curso, el participante será capaz de diseñar bases de datos espaciales, ejecutar análisis multicriterio sobre modelos digitales de elevación, procesar imágenes satelitales multiespectrales y desarrollar scripts en Python (PyQGIS) para automatizar la producción cartográfica.",
+      "exigencias": "Computador personal con procesador de 64 bits (mínimo Core i5 o Ryzen 5), 8 GB de memoria RAM, 20 GB de espacio libre en disco duro, conexión estable a internet y versión LTR de QGIS (3.34 o superior) instalada.",
+      "estructura_curricular": "El programa se articula en tres módulos teórico-prácticos secuenciales. Cada módulo combina sesiones demostrativas en vivo con laboratorios guiados utilizando datos cartográficos reales de Venezuela (IGVSB, INE, misiones satelitales), culminando con el desarrollo de un proyecto integrador.",
+      "evaluacion": "Evaluación continua basada en entregables prácticos: Laboratorios de procesamiento cartográfico y limpieza topológica (30%), Desarrollo de un script funcional de automatización en PyQGIS (35%), y Defensa de Proyecto Final aplicado a un caso de estudio real (35%).",
+      "cronograma": "Tres cohortes anuales proyectadas. Cohorte I: Febrero - Abril. Cohorte II: Junio - Agosto. Cohorte III: Octubre - Diciembre. Sesiones sincrónicas los días martes y jueves (6:00 pm a 8:00 pm) y talleres prácticos los sábados (8:00 am a 12:00 pm).",
+      "contenido_competencias": "Módulo 1: Fundamentos Geodésicos y Gestión de Datos Vectoriales en QGIS\nContenido: Sistemas de referencia de coordenadas oficiales en Venezuela (REGVEN / WGS84), proyecciones cartográficas, reglas de topología avanzada, consultas espaciales SQL y diseño de bases de datos espaciales en formato Geopackage.\nCompetencia: Estructura, normaliza y depura bases de datos geoespaciales garantizando la integridad topológica y la precisión cartográfica según estándares nacionales.\n\nMódulo 2: Análisis Ráster, Modelado Digital del Terreno y Teledetección\nContenido: Procesamiento de Modelos Digitales de Elevación (DEM), delimitación automática de cuencas y redes de drenaje, álgebra de mapas e índices espectrales (NDVI, NDWI) a partir de imágenes satelitales Sentinel-2 y Landsat.\nCompetencia: Extrae y modela variables morfométricas y ambientales a partir de sensores remotos para la evaluación de riesgos socio-naturales y recursos hídricos.\n\nMódulo 3: Automatización de Geoprocesos y Cartografía con PyQGIS\nContenido: Introducción a la consola de Python en QGIS, arquitectura de la API de PyQGIS, iteración sobre capas vectoriales y ráster, creación de scripts personalizados para la caja de herramientas y exportación masiva de mapas.\nCompetencia: Desarrolla scripts reproducibles en Python para automatizar flujos de trabajo repetitivos de análisis espacial y producción cartográfica en lote.",
+      "bibliografia": "Cutts, A., & Graser, A. (2018). Learn QGIS: Your step-by-step guide to the fundamentals of QGIS 3.4 (4ta ed.). Packt Publishing.\nGraser, A. (2016). Learning QGIS: Use QGIS to create great maps and perform all the geoprocessing tasks you need (3ra ed.). Packt Publishing.\nLawhead, J. (2019). Learning Geospatial Analysis with Python: Understand GIS fundamentals and perform remote sensing data analysis using Python 3 (3ra ed.). Packt Publishing.\nOlaya, V. (2020). Sistemas de Información Geográfica (Edición revisada). LibreTexts.",
+      "nombre": "Sistemas de Información Geográfica (SIG) y Análisis Espacial Automatizado con QGIS y Python",
+      "descripcion": "La gestión territorial, la planificación urbana y el monitoreo ambiental en Venezuela demandan el procesamiento eficiente de grandes volúmenes de información georreferenciada. El uso tradicional de herramientas SIG de escritorio de forma manual limita la escalabilidad de los proyectos. Este programa formativo responde a la necesidad de modernizar las capacidades técnicas de los profesionales del área, integrando el software libre de código abierto (QGIS) con lenguajes de programación (Python) para automatizar geoprocesos, optimizar la toma de decisiones territoriales y reducir costos operativos en instituciones públicas y privadas.",
+      "image_url": "/uploads/providers/uUX_mH13HTY/covers/1790525433057-images__13_.jpg",
+      "cv_facilitador_url": "/uploads/providers/uUX_mH13HTY/facilitadores/1790525433058-sample-local-pdf.pdf",
+      "creado_en": "2026-09-27T16:10:33.067Z",
+      "actualizado_en": "2026-09-27T16:27:39.507Z",
+      "id": "QWV3cr1sDTE",
+      "motivo_rechazo": "",
+      "clasificacion": "Formación para todo público",
+      "calificacion": "100",
+      "archivo_evaluacion_url": "/uploads/courses/uUX_mH13HTY/evaluaciones/1790526459505-images__10_.jpg"
     }
   ],
   "course-cycles": [
