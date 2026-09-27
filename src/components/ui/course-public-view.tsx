@@ -57,27 +57,11 @@ export function CoursePublicView({ course }: { course: any }) {
         ? provider.nombre_proveedor || `${provider.first_name || provider.nombres || ''} ${provider.last_name || provider.apellidos || ''}`.trim() || "Proveedor sin nombre"
         : "Colaborador sin nombre";
 
-    // ✨ CORRECCIÓN DE AVATAR PARA PRODUCCIÓN (Evitar el localhost)
+    // ✨ SACAMOS LA URL DIRECTO DE PROVIDER DETAILS (sin inyectarle localhost:8080)
     const rawLogo = provider?.archivos?.logo || provider?.provider_avatar_url || provider?.avatar_url;
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    let providerAvatarUrl = rawLogo ? rawLogo : `https://i.pravatar.cc/150?u=${provider?.id || 'default'}`;
-    
-    if (providerAvatarUrl && typeof providerAvatarUrl === 'string') {
-        if (providerAvatarUrl.includes('localhost:8080') || providerAvatarUrl.includes('127.0.0.1:8080')) {
-            try {
-                const urlObj = new URL(providerAvatarUrl);
-                providerAvatarUrl = urlObj.pathname;
-            } catch (e) {
-                providerAvatarUrl = providerAvatarUrl.replace(/http:\/\/(localhost|127\.0\.0\.1):8080/g, '');
-            }
-        }
-        if (providerAvatarUrl.startsWith('uploads/')) {
-            providerAvatarUrl = `/${providerAvatarUrl}`;
-        }
-        if (providerAvatarUrl.startsWith('/')) {
-            providerAvatarUrl = `${baseUrl}${providerAvatarUrl}`;
-        }
-    }
+    const providerAvatarUrl = rawLogo 
+        ? String(rawLogo).replace(/^https?:\/\/(localhost|127\.0\.0\.1):8080/, '') 
+        : `https://i.pravatar.cc/150?u=${provider?.id || 'default'}`;
 
     const cardBg = useColorModeValue("white", "gray.800");
     const headingColor = useColorModeValue("teal.600", "teal.300");
