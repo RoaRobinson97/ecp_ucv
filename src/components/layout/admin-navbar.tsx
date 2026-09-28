@@ -14,7 +14,7 @@ export function AdminNavbar() {
   const links = [
     { name: 'Dashboard', href: '/admin/dashboard' },
     { name: 'Solicitudes', href: '/admin/solicitudes' },
-    { name: 'Usuarios', href: '/admin/usuarios' },
+    // { name: 'Usuarios', href: '/admin/usuarios' },
   ];
 
   return (

@@ -196,7 +196,7 @@ export const SolicitudForm = () => {
         <form onSubmit={handleSubmit}>
           <VStack spacing={6}>
             <FormControl id="facultad" isRequired>
-              <FormLabel fontWeight="bold" color="text.primary">¿A qué Facultad diriges tu solicitud?</FormLabel>
+              <FormLabel fontWeight="bold" color="text.primary">¿A qué Dependencia diriges tu solicitud?</FormLabel>
               <Select
                 placeholder={isLoadingFacultades ? "Cargando facultades..." : "Selecciona una facultad"}
                 value={facultadId}
