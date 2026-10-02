@@ -14,7 +14,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import NextLink from 'next/link';
-import { Pagination } from '@/components/ui/'; 
+import { Pagination } from '@/components/ui/pagination'; 
 import { Course } from '@/data/types'; 
 
 interface MyCoursesClientPageProps {
@@ -30,7 +30,7 @@ const getStatusColorScheme = (status: string | undefined): string => {
     case 'rechazado': return 'red';
     case 'cerrado': return 'orange';
     case 'pendiente': return 'gray';
-    case 'under_review': return 'yellow'; // ✨ Añadí este por si acaso
+    case 'under_review': return 'yellow';
     default: return 'blue'; 
   }
 };
@@ -39,7 +39,7 @@ const formatStatusText = (status: string | undefined): string => {
   if (!status) return 'Desconocido';
   const textMap: Record<string, string> = {
     pendiente: 'Pendiente Revisión',
-    under_review: 'Bajo Revisión', // ✨ Añadí este por si acaso
+    under_review: 'Bajo Revisión',
     aprobado: 'Aprobado',
     rechazado: 'Rechazado',
     abierto: 'Cohorte Abierta',
@@ -101,9 +101,8 @@ export default function MyCoursesClientPage({ courses, currentPage, totalPages }
         ))}
       </SimpleGrid>
 
-      {/* Solo mostramos la paginación si hay más de 1 página */}
       {totalPages > 1 && (
-         < currentPage={currentPage} totalPages={totalPages} />
+         <Pagination currentPage={currentPage} totalPages={totalPages} />
       )}
     </Box>
   );

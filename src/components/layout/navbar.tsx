@@ -235,7 +235,7 @@ export const Navbar = () => {
                                 <VStack align="start" spacing={2} fontSize="sm" color={modalTextColor}>
                                     <HStack><Text opacity={0.8}>📄</Text><Text>Cédula de Identidad</Text></HStack>
                                     <HStack><Text opacity={0.8}>📄</Text><Text>Registro de Información Fiscal (RIF)</Text></HStack>
-                                    <HStack><Text opacity={0.8}>📄</Text><Text>Última Declaración de ISLR</Text></HStack>
+                                    <HStack><Text opacity={0.8}>📄</Text><Text>Última Declaración de ISLR (Opcional)</Text></HStack>
                                     <HStack><Text opacity={0.8}>📄</Text><Text>Resumen Curricular (Actualizado)</Text></HStack>
                                     <HStack><Text opacity={0.8}>📄</Text><Text>Fondo Negro del Título Universitario</Text></HStack>
                                 </VStack>
