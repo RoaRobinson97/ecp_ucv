@@ -1,10 +1,10 @@
 // src/config/config.js
 export const CONFIG = {
-    // Si el código corre en el navegador, usamos la ruta relativa (el navegador le pondrá el https y el dominio automáticamente).
-    // Si corre en el servidor Docker (SSR), usamos la IP local estricta.
+    // En el navegador usamos /api, que el proxy (src/app/api/[...path]) reenvía al backend Go.
+    // En el servidor (SSR) llamamos al backend directamente.
     API_URL: typeof window !== 'undefined' 
         ? '/api' 
-        : 'http://localhost:3000/api', 
+        : (process.env.INTERNAL_API_URL || 'http://localhost:8081'), 
         
     USE_MOCK_DATA: false, 
 };

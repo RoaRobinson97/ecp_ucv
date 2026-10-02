@@ -1,5 +1,23 @@
+import Cookies from 'js-cookie';
 import { ApiService } from './BaseApiService'; 
 import { CONFIG } from '../config/config';
+import { providerToLegacy } from './adapters';
+import { FACULTADES } from '../data/facultades';
+import { sessionFromToken } from '../utils/session';
+
+// Sesión del usuario que navega, en el navegador o en el servidor (SSR).
+async function getCurrentSession() {
+    if (typeof window !== 'undefined') {
+        return sessionFromToken(Cookies.get('auth_token'));
+    }
+    try {
+        const { cookies } = await import('next/headers');
+        const cookieStore = await cookies();
+        return sessionFromToken(cookieStore.get('auth_token')?.value);
+    } catch {
+        return null;
+    }
+}
 
 class UserService {
     
@@ -16,6 +34,24 @@ class UserService {
         }
     }
 
+    /**
+     * Busca el proveedor (de cursos) de un usuario. El propio usuario lo obtiene por el ID de
+     * proveedor de su token; los administradores, en el listado de proveedores. Sin sesión no hay
+     * acceso a los proveedores, así que devuelve null.
+     */
+    async findProviderByUserId(user_id) {
+        const session = await getCurrentSession();
+        if (!session) return null;
+
+        if (String(session.id) === String(user_id)) {
+            if (!session.provider_id) return null;
+            return await ApiService.get('providers', session.provider_id);
+        }
+
+        const response = await ApiService.get('providers', { type: 'courses', per_page: 1000 });
+        return (response?.proveedores || []).find(p => String(p.usuario_id) === String(user_id)) || null;
+    }
+
     async hasInitialContract(user_id) {
         if (CONFIG.USE_MOCK_DATA) {
             console.warn(`[MOCK] Validando estado legal aleatorio para: ${user_id}`);
@@ -26,16 +62,26 @@ class UserService {
         }
 
         try {
-            const proveedores = await ApiService.get('providers', { usuario_id: user_id });
-            
-            if (proveedores && proveedores.length > 0) {
-                const proveedor = proveedores[0];
-                return !!(proveedor.legal_status && proveedor.legal_status.tiene_carta_intencion);
-            }
-            return false;
+            const proveedor = await this.findProviderByUserId(user_id);
+            return !!(proveedor?.contratos_legales || []).some(c => c.tipo === 'inicial');
         } catch (error) {
             return false; 
         }
+    }
+
+    /**
+     * Registra el contrato inicial (carta de intención + compromiso) o una adenda del proveedor
+     * del usuario. Go ampara todos sus cursos aprobados que aún no tenían contrato.
+     */
+    async submitLegalDocuments(user_id, formData) {
+        const provider = await this.findProviderByUserId(user_id);
+        if (!provider) throw new Error("No se encontró el proveedor del usuario.");
+
+        const goFormData = new FormData();
+        for (const key of ['carta_intencion', 'carta_compromiso', 'adenda']) {
+            if (formData.has(key)) goFormData.append(key, formData.get(key));
+        }
+        return await ApiService.post(`admin/providers/${provider.id}/legal-contracts`, goFormData, true);
     }
 
     async getProviderDetails(user_id) {
@@ -59,19 +105,21 @@ class UserService {
                     p => String(p.id) === String(user.codigo_proveedor) || String(p.usuario_id) === String(user.id)
                 );
 
-                if (!providerData) {
-                    console.warn(`No se encontró data extra para el proveedor: ${user.codigo_proveedor}`);
-                    return user;
-                }
+            const provider = await this.findProviderByUserId(user_id).catch(() => null);
+            if (!provider) return user;
 
-                return { 
-                    ...providerData, 
-                    ...user, 
-                    provider_table_id: providerData.id 
-                };
-            }
-            
-            return user;
+            const providerData = providerToLegacy(provider);
+            // Go no devuelve el rol del usuario consultado: un proveedor activo es 'proveedor'.
+            const isApprovedProvider = provider.estado === 'active';
+
+            return { 
+                ...providerData, 
+                ...user, 
+                rol: isApprovedProvider ? 'proveedor' : (user.rol || 'visitante'),
+                roles: isApprovedProvider ? ['proveedor'] : (user.roles || ['visitante']),
+                codigo_proveedor: provider.codigo_proveedor,
+                provider_table_id: providerData.id 
+            };
         } catch (error) {
             console.error("Error en getProviderDetails:", error);
             throw error;
@@ -82,31 +130,17 @@ class UserService {
         return await ApiService.get(`providers/public/${codigo_proveedor}`);
     }
 
+    /**
+     * En Go hay un coordinador por facultad y las solicitudes se dirigen por facultad, así que la
+     * "lista de coordinadores" es la lista fija de facultades: `id` es el valor que espera la API.
+     */
     async getCoordinadores() {
-        try {
-            const coordinadores = await ApiService.get('users', { rol: 'coordinador' });
-            if (!coordinadores || !Array.isArray(coordinadores)) {
-                return [];
-            }
-            return coordinadores;
-        } catch (error) {
-            console.error("Error obteniendo coordinadores en UserService:", error);
-            return [];
-        }
+        return FACULTADES.map(f => ({ id: f.value, facultad: f.label }));
     }
 
+    /** Sesión derivada del JWT de Go, con los nombres de rol que usa la UI. */
     getUserFromToken(token) {
-        if (!token) return null;
-        try {
-            const base64Url = token.split('.')[1];
-            if (!base64Url) return null;
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = Buffer.from(base64, 'base64').toString('utf-8');
-            return JSON.parse(jsonPayload);
-        } catch (error) {
-            console.error("Error al decodificar el token JWT:", error);
-            return null;
-        }
+        return sessionFromToken(token);
     }
 
     async checkPendingProviderRequest(user_id) {

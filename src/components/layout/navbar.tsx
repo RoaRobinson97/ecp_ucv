@@ -32,6 +32,7 @@ import React, { useState, useEffect } from "react";
 import NextLink from 'next/link';
 import { FaUserCircle } from "react-icons/fa";
 import { useAuth } from "../../app/context/auth-context";
+import { userService } from "../../servicios/users-service";
 import { useGlobalData } from "../../app/context/global-data-context";
 import { ColorModeSwitcher } from "../ui/color-mode-switcher";
 import {
