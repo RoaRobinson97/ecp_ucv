@@ -328,6 +328,24 @@
       "facultad": null,
       "codigo_proveedor": "GJyKKNRg3eQ",
       "id": "uUX_mH13HTY"
+    },
+    {
+      "ci": 24156324,
+      "email": "jose@gmail.com",
+      "password": "123",
+      "first_name": "Jose",
+      "last_name": "Fernandez ",
+      "date_of_birth": "01-05-1999",
+      "gender": "masculino",
+      "education": "universitaria_incompleta",
+      "address": "Brennan cir apt 203",
+      "rol": "visitante",
+      "roles": [
+        "visitante"
+      ],
+      "facultad": null,
+      "codigo_proveedor": null,
+      "id": "8LZ8MTXcXJQ"
     }
   ],
   "roles": [],
@@ -402,7 +420,7 @@
       "coordinador_id": "5",
       "nombre_proveedor": "Instituto Venezolano de Finanzas y Datos C.A.",
       "biografia": "DataFinanzas C.A. es una firma consultora y de formación ejecutiva con sede en Caracas, especializada en econometría aplicada, inteligencia de negocios y finanzas corporativas. Conformada por un buró de economistas y estadísticos egresados de la UCV, la empresa se dedica a capacitar a la gerencia venezolana en la interpretación de datos macroeconómicos y la mitigación de riesgos financieros en entornos de alta volatilidad.",
-      "tipo_persona": "juridical",
+      "tipo_persona": "juridica",
       "tipo_lucro": "lucrativo",
       "es_interno": false,
       "estado": "aprobada",
@@ -443,7 +461,7 @@
       "coordinador_id": "4",
       "nombre_proveedor": "Instituto de Computación Científica y Biotecnología C.A.",
       "biografia": "ICC-Bio C.A. es una corporación científica venezolana fundada por investigadores de las ciencias básicas, enfocada en la intersección entre la computación de alto rendimiento, la biología molecular y la física aplicada. La empresa se dedica a proveer capacitación técnica de vanguardia a laboratorios, centros médicos y la industria farmacéutica, traduciendo métodos científicos rigurosos en soluciones tecnológicas de alcance industrial.",
-      "tipo_persona": "juridical",
+      "tipo_persona": "juridica",
       "tipo_lucro": "lucrativo",
       "es_interno": false,
       "estado": "aprobada",
@@ -515,7 +533,7 @@
       "coordinador_id": "13",
       "nombre_proveedor": "Centro Venezolano de Geomática e Inteligencia Espacial C.A.",
       "biografia": "Organización especializada en sistemas de información geográfica (SIG), teledetección satelital y modelado espacial aplicado a la gestión ambiental y planificación urbana. Conformada por investigadores y profesionales egresados de la UCV, enfocada en la capacitación técnica mediante software libre (QGIS, Python) para el sector público y privado.",
-      "tipo_persona": "juridical",
+      "tipo_persona": "juridica",
       "tipo_lucro": "lucrativo",
       "es_interno": false,
       "estado": "aprobada",
@@ -534,6 +552,28 @@
       "motivo_rechazo": null,
       "fecha_actualizacion": "2026-09-27T14:21:02.701Z",
       "clasificacion": ""
+    },
+    {
+      "usuario_id": "8LZ8MTXcXJQ",
+      "coordinador_id": "4",
+      "nombre_proveedor": "Jose Fernandez",
+      "biografia": "Egresado de la UCV",
+      "tipo_persona": "natural",
+      "tipo_lucro": "no_lucrativo",
+      "es_interno": false,
+      "estado": "under_review",
+      "archivos": {
+        "logo": "/uploads/providers/8LZ8MTXcXJQ/1790949535029-avatar.jpg",
+        "ci": "/uploads/providers/8LZ8MTXcXJQ/1790949535038-sample-local-pdf.pdf",
+        "rif": "/uploads/providers/8LZ8MTXcXJQ/1790949535040-sample-local-pdf.pdf",
+        "islr": null,
+        "curriculum": "/uploads/providers/8LZ8MTXcXJQ/1790949535087-sample-local-pdf.pdf",
+        "titulo": "/uploads/providers/8LZ8MTXcXJQ/1790949535090-sample-local-pdf.pdf",
+        "registro_mercantil": null
+      },
+      "fecha_creacion": "2026-10-02T13:58:55.114Z",
+      "fecha_actualizacion": "2026-10-02T13:58:55.114Z",
+      "id": "bFpRfCbw2qE"
     }
   ],
   "courses": [],
@@ -1246,6 +1286,37 @@
       "creado_en": "2026-09-27T16:10:33.067Z",
       "actualizado_en": "2026-09-27T16:10:33.067Z",
       "id": "QWV3cr1sDTE"
+    },
+    {
+      "usuario_id": "xItZiJZEKE8",
+      "tipo_curso": "formulacion-curso-directa",
+      "estado": "under_review",
+      "estado_gestion": "under_review",
+      "facultad": "Ciencias",
+      "coordinador_id": "4",
+      "facultad_origen": "Ciencias",
+      "coordinador_origen": "4",
+      "titulo": "PRUEBA 2/10",
+      "denominacion": "PRUEBA 2/10",
+      "proposito": "PRUEBA 2/10",
+      "fundamentacion": "PRUEBA 2/10",
+      "duracion": "120",
+      "estructura_costos": "PRUEBA 2/10",
+      "perfil_docente": "PRUEBA 2/10",
+      "perfiles": "PRUEBA 2/10",
+      "exigencias": "PRUEBA 2/10",
+      "estructura_curricular": "PRUEBA 2/10",
+      "evaluacion": "PRUEBA 2/10",
+      "cronograma": "PRUEBA 2/10",
+      "contenido_competencias": "Módulo 1: PRUEBA 2/10\nContenido: PRUEBA 2/10\nCompetencia: PRUEBA 2/10\n\nMódulo 2: PRUEBA 2/10\nContenido: PRUEBA 2/10\nCompetencia: PRUEBA 2/10",
+      "bibliografia": "PRUEBA 2/10",
+      "nombre": "PRUEBA 2/10",
+      "descripcion": "PRUEBA 2/10",
+      "image_url": "/uploads/providers/xItZiJZEKE8/covers/1790948378714-images__15_.jpg",
+      "cv_facilitador_url": "/uploads/providers/xItZiJZEKE8/facilitadores/1790948378715-sample-local-pdf.pdf",
+      "creado_en": "2026-10-02T13:39:38.725Z",
+      "actualizado_en": "2026-10-02T13:39:38.725Z",
+      "id": "aNgvGwSwOB8"
     }
   ],
   "course-cycles": [

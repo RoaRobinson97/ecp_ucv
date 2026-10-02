@@ -17,11 +17,11 @@ class SolicitudesService {
             }
 
             const timestamp = Date.now();
-
+            // Mandamos el status tal cual viene
             const paramsAdminProviders = { type: 'courses', status, _t: timestamp };
             const paramsAdminCourses = { status, page, _t: timestamp };
-            const paramsAdminClosures = { estado: status === 'under_review' ? 'under_review' : status, _t: timestamp };
-
+            const paramsAdminClosures = { estado: status, _t: timestamp };
+            
             // ✨ FIX: Evitamos mandar la palabra "undefined" a la API
             if (coordinador_id && coordinador_id !== 'undefined') {
                 paramsAdminProviders.coordinador_id = coordinador_id;
@@ -174,7 +174,7 @@ class SolicitudesService {
                     goFormData.append('userId', data.get('userId'));
                     goFormData.append('tipo_proveedor', 'courses'); 
                     
-                    const tipoPersona = data.get('tipo_persona') === 'juridica' ? 'juridical' : 'natural';
+                    const tipoPersona = data.get('tipo_persona') === 'juridica' ? 'juridica' : 'natural';
                     goFormData.append('tipo_persona', tipoPersona);
                     goFormData.append('tipo_lucro', data.get('tipo_lucro') || 'no_lucrativo');
                     goFormData.append('nombre', data.get('nombre_proveedor')); 

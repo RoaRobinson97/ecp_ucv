@@ -1,12 +1,12 @@
-// src/app/api/courses/[id]/closures/route.ts
 import { NextResponse } from 'next/server';
 import { saveFileAndGetUrl } from '../../../utils/fileHandler'; 
+import fs from 'fs';
+import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        // ✨ FIX: Next.js ahora exige hacer await a los params
         const resolvedParams = await params;
         const courseId = resolvedParams.id;
         const formData = await request.formData();
@@ -20,7 +20,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const archivoVouchers = formData.get('archivo_vouchers') as File | null;
         const archivoEncuesta = formData.get('archivo_encuesta') as File | null;
 
-        // Si falta un archivo, lanzamos error
         if (!archivoParticipantes || !archivoVouchers || !archivoEncuesta) {
             return NextResponse.json(
                 { error: 'Debes adjuntar los 3 archivos obligatorios.' },
@@ -37,15 +36,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const timestamp = Date.now();
         const folderName = `course-requests/${courseId}/closures/${timestamp}`;
         
-        const urlParticipantes = await saveFileAndGetUrl(archivoParticipantes, folderName);
-        const urlVouchers = await saveFileAndGetUrl(archivoVouchers, folderName);
-        const urlEncuesta = await saveFileAndGetUrl(archivoEncuesta, folderName);
+        // ✨ FIX: Crear directorio si no existe para evitar error 500
+        const basePath = path.join(process.cwd(), 'public', 'uploads', ...folderName.split('/'));
+        if (!fs.existsSync(basePath)) {
+            fs.mkdirSync(basePath, { recursive: true });
+        }
+        
+        let urlParticipantes, urlVouchers, urlEncuesta;
+        try {
+            urlParticipantes = await saveFileAndGetUrl(archivoParticipantes, folderName);
+            urlVouchers = await saveFileAndGetUrl(archivoVouchers, folderName);
+            urlEncuesta = await saveFileAndGetUrl(archivoEncuesta, folderName);
+        } catch (e) {
+            console.error("Error al guardar los archivos de cierre:", e);
+            return NextResponse.json({ error: 'Error al subir los documentos al servidor.' }, { status: 500 });
+        }
 
         const closureRequest = {
             id: `CIERRE-${timestamp}`,
             usuario_id: userId,
             curso_id: courseId,
-            // ✨ FIX MAESTRO: Va directo al anfitrión (ej. Ciencias) aunque el curso haya sido remitido a Medicina
             coordinador_id: course.coordinador_origen || course.coordinador_id, 
             estado: 'under_review', 
             fecha: new Date().toISOString(),

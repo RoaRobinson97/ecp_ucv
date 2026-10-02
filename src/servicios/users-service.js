@@ -99,6 +99,25 @@ class UserService {
             return null;
         }
     }
+
+    async checkPendingProviderRequest(user_id) {
+        if (!user_id || user_id === '0' || user_id === 'undefined') return false;
+        
+        try {
+            // Usamos ApiService que maneja las URLs automáticamente
+            const proveedores = await ApiService.get('providers', { usuario_id: user_id });
+            
+            if (proveedores && Array.isArray(proveedores) && proveedores.length > 0) {
+                return proveedores.some(req => 
+                    req.estado === 'under_review' || req.estado === 'pendiente'
+                );
+            }
+            return false;
+        } catch (error) {
+            console.error("Error al verificar solicitud pendiente en UserService:", error);
+            return false;
+        }
+    }
 }
 
 export const userService = new UserService();

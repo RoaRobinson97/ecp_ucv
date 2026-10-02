@@ -118,7 +118,9 @@ export function CodigoProveedorView({ payload }: CodigoProveedorViewProps) {
             <DocumentField label="Foto de Perfil (Avatar)" url={avatarUrl} />
             <DocumentField label="Cédula de Identidad" url={docs.ci || docs.cedula} />
             <DocumentField label="Registro de Información Fiscal (RIF)" url={docs.rif} />
-            <DocumentField label="Certificado ISLR" url={docs.islr} />
+            {docs.islr && docs.islr !== 'null' && docs.islr !== 'undefined' && (
+              <DocumentField label="Certificado ISLR" url={docs.islr} />
+            )}
             <DocumentField label="Resumen Curricular" url={docs.curriculum || docs.resumenes} />
             
             {/* ✨ Leemos directamente su llave dedicada */}

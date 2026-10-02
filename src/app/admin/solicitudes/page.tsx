@@ -1,13 +1,24 @@
 import { Box, Heading, Text, VStack } from '@chakra-ui/react';
 import { cookies } from 'next/headers'; 
 import { SolicitudesTable } from '@/components/ui/solicitudes-table';
+import { Pagination } from '@/components/ui/pagination'; 
 import { solicitudesService } from '@/servicios/solicitudes-service';
 import { userService } from '@/servicios/users-service';
 import { Solicitud, User } from '@/data/types';
 
 export const dynamic = 'force-dynamic';
 
-export default async function SolicitudesPage() {
+export default async function SolicitudesPage({
+  searchParams,
+}: {
+  // Atrapamos 'tipo' desde la URL en lugar de 'search'
+  searchParams: Promise<{ page?: string; tipo?: string }>; 
+}) {
+  const resolvedSearchParams = await searchParams;
+  const currentPage = parseInt(resolvedSearchParams.page || '1', 10);
+  const tipoFiltro = resolvedSearchParams.tipo || 'Todos'; 
+  const itemsPerPage = 10; 
+
   const cookieStore = await cookies();
   const token = cookieStore.get('auth_token')?.value;
 
@@ -18,15 +29,14 @@ export default async function SolicitudesPage() {
   let solicitudesUnificadas: any[] = [];
 
   try {
-      // ✨ FIX: Agregamos "as any" para que TypeScript deje pasar el parámetro
       const response = await solicitudesService.getAllSolicitudes({ 
-          limit: 100,
+          limit: 1000, 
+          status: 'all',
           coordinador_id: String(coordinadorId)
       } as any); 
       
       const solicitudes = response.solicitudes as Solicitud[];
       
-      // ✨ Filtro normal, limpio y sin parches
       const solicitudesFiltradas = solicitudes.filter(s => 
         ['codigo-proveedor', 'formulacion-curso-directa', 'formulacion-curso-indirecta', 'cierre-cohorte'].includes(s.tipo)
       );
@@ -56,17 +66,41 @@ export default async function SolicitudesPage() {
         const payloadData = sol.payload as Record<string, any>;
         const nombre_proveedor = payloadData?.nombre_proveedor;
 
+        // ✨ FIX MAESTRO: Atrapamos cualquier formato de fecha que use tu db.json
+        const fechaCruda = sol.fecha_creacion || 
+                           (sol as any).creado_en || 
+                           (sol as any).fecha || 
+                           (sol as any).actualizado_en || 
+                           payloadData?.creado_en || 
+                           payloadData?.fecha || 
+                           new Date().toISOString();
+
         return {
           ...sol,
           solicitante: nombre_proveedor || nombre_usuario,
           nombre: payloadData?.nombre_proveedor || payloadData?.titulo || payloadData?.titulo_curso || payloadData?.denominacion || 'Sin nombre',
-          fecha: sol.fecha_creacion
+          fecha: fechaCruda
         };
       });
 
   } catch (error) {
       console.error("Error cargando la gestión de solicitudes:", error);
   }
+
+  // 1. ORDEN CRONOLÓGICO (Más reciente primero)
+  solicitudesUnificadas.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+  // 2. FILTRADO DESDE EL SERVIDOR ANTES DE PAGINAR
+  let datosAFiltrar = solicitudesUnificadas;
+  if (tipoFiltro !== 'Todos') {
+      datosAFiltrar = solicitudesUnificadas.filter(sol => sol.tipo === tipoFiltro);
+  }
+
+  // 3. PAGINACIÓN PERFECTA SOBRE EL RESULTADO FILTRADO
+  const totalItems = datosAFiltrar.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedSolicitudes = datosAFiltrar.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <Box maxW="container.xl" mx="auto" py={10} px={6}>
@@ -78,9 +112,13 @@ export default async function SolicitudesPage() {
       </VStack>
       
       <SolicitudesTable 
-        educacionContinua={solicitudesUnificadas}
+        educacionContinua={paginatedSolicitudes} 
         grupoExtension={[]} 
       />
+
+      {totalPages > 1 && (
+        <Pagination currentPage={currentPage} totalPages={totalPages} />
+      )}
     </Box>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { 
-  Box, Heading, Text, VStack, SimpleGrid, useColorModeValue, HStack, Button, Badge
+  Box, Heading, Text, VStack, SimpleGrid, useColorModeValue, HStack, Button, Badge, Image 
 } from '@chakra-ui/react';
 import { PayloadFormulacionCurso } from '@/data/types';
 
@@ -62,7 +62,7 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
       .replace('curso directa', 'Directa');
   };
 
-  // ✨ Limpiamos la URL del PDF del facilitador por si viene con localhost o sin slash inicial
+  // ✨ Función limpiadora unificada para imágenes y PDFs
   const getCleanFileUrl = (url?: string | null) => {
     if (!url || typeof url !== 'string') return null;
     let clean = url;
@@ -78,8 +78,11 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
   };
 
   const cvFacilitadorUrl = getCleanFileUrl(payload.cv_facilitador_url);
+  
+  // ✨ Limpiamos la URL de la imagen de portada
+  const coverImageUrl = getCleanFileUrl(payload.image_url || payload.imagen || payload.cover);
 
-  // ✨ Parseamos el texto de los módulos para mostrarlos en tarjetas estructuradas
+  // Parseamos el texto de los módulos
   const parseModulos = (rawText?: string) => {
     if (!rawText || typeof rawText !== 'string') return [];
     const blocks = rawText.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
@@ -112,6 +115,29 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
         
         <KeyDetail label="Denominación o Título del Curso" value={payload.titulo || payload.nombre || payload.denominacion} />
         
+        {/* ✨ NUEVO: VISUALIZACIÓN DE LA PORTADA DEL CURSO MÁS PEQUEÑA Y CENTRADA */}
+        <VStack align="start" spacing={1} w="100%">
+          <Text fontWeight="bold" fontSize="sm" color={labelColor} textTransform="uppercase">
+            Imagen de Portada
+          </Text>
+          <Box w="100%" p={4} rounded="md" border="1px" borderColor={cardBorder} bg={cardBg} display="flex" justifyContent="center">
+            {coverImageUrl ? (
+              <Image 
+                src={coverImageUrl} 
+                alt={`Portada propuesta para ${payload.titulo || payload.nombre}`} 
+                objectFit="contain" 
+                maxW="300px" 
+                maxH="200px" 
+                borderRadius="md"
+                shadow="sm"
+                fallbackSrc="https://via.placeholder.com/300x200?text=Error+al+cargar+imagen"
+              />
+            ) : (
+              <Text color={mutedText} fontStyle="italic">No se proporcionó imagen de portada.</Text>
+            )}
+          </Box>
+        </VStack>
+
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
             <KeyDetail label="Duración y Modalidad" value={payload.duracion} />
             <KeyDetail label="Propósito General" value={payload.proposito || payload.objetivos} />
@@ -128,7 +154,6 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
             <KeyDetail label="Perfil del Facilitador" value={payload.perfil_docente} />
         </SimpleGrid>
 
-        {/* ✨ NUEVO: SÍNTESIS CURRICULAR DEL FACILITADOR (PDF) */}
         <VStack align="start" spacing={1} w="100%">
           <Text fontWeight="bold" fontSize="sm" color={labelColor} textTransform="uppercase">
             Síntesis Curricular del Facilitador(es) (PDF)
@@ -160,7 +185,6 @@ export function CourseDetailsView({ payload, tipo = "Formulación de Curso" }: C
         
         <DividerWithLabel label="Plan de Estudios" />
 
-        {/* ✨ NUEVO: DESGLOSE DE MÓDULOS EN TARJETAS */}
         <VStack align="start" spacing={2} w="100%">
           <Text fontWeight="bold" fontSize="sm" color={labelColor} textTransform="uppercase">
             Contenido por Módulos y Competencias

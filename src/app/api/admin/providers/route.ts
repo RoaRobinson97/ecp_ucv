@@ -2,19 +2,23 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers'; 
 
-// 🔥 OBLIGATORIO PARA QUE NEXT.JS NO CACHEE LA RUTA
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') || 'under_review';
+    const status = searchParams.get('status') || 'all';
     const coordinador_id = searchParams.get('coordinador_id');
     
-    // 1. ATAJO DIRECTO PARA EL ADMIN: Leemos el token
+    // ✨ Definimos la URL dinámica una sola vez para usarla en todos los fetch
+    const targetUrl = status === 'all' 
+        ? `http://localhost:8080/providers` 
+        : `http://localhost:8080/providers?estado=${status}`;
+
     const cookieStore = await cookies();
     const token = cookieStore.get('auth_token')?.value;
 
+    // 1. ATAJO DIRECTO PARA EL ADMIN
     if (token) {
         try {
             const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -24,14 +28,11 @@ export async function GET(request: Request) {
             const roles = v1Data.roles || decoded.roles || [];
             const rol = decoded.rol || v1Data.rol || '';
 
-            // SI ES ADMIN: Traemos los proveedores según el status y retornamos sin filtrar
             if (roles.includes('admin') || roles.includes('deu_admin') || rol === 'admin') {
-                const url = `http://localhost:8080/providers?estado=${status}`;
-                const res = await fetch(url, { cache: 'no-store' });
-                
+                const res = await fetch(targetUrl, { cache: 'no-store' });
                 if (!res.ok) throw new Error('Fallo al obtener proveedores');
-                const data = await res.json();
                 
+                const data = await res.json();
                 return NextResponse.json({ proveedores: data }, { status: 200 });
             }
         } catch (e) {
@@ -53,9 +54,8 @@ export async function GET(request: Request) {
         }
     }
 
-    // 3. TUBERÍA DIRECTA AL JSON SERVER: Traemos TODOS los proveedores
-    const url = `http://localhost:8080/providers?estado=${status}`;
-    const res = await fetch(url, { cache: 'no-store' });
+    // 3. TUBERÍA AL JSON SERVER USANDO LA URL DINÁMICA
+    const res = await fetch(targetUrl, { cache: 'no-store' });
     
     if (!res.ok) throw new Error('Fallo al obtener proveedores');
 

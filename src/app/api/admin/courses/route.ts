@@ -1,6 +1,7 @@
 // src/app/api/admin/courses/route.ts
 import { NextResponse } from 'next/server';
 import { saveFileAndGetUrl } from '../../utils/fileHandler'; 
+import { cookies } from 'next/headers'; 
 
 export const dynamic = 'force-dynamic';
 
@@ -100,18 +101,16 @@ export async function POST(request: Request) {
   }
 }
 
-import { cookies } from 'next/headers'; 
-import { userService } from '@/servicios/users-service';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const coordinador_id = searchParams.get('coordinador_id');
+    const statusParam = searchParams.get('status') || 'under_review'; // ✨ RECUPERAMOS EL PARÁMETRO STATUS
 
     // 1. IDENTIFICAR QUIÉN PREGUNTA (Rol y Facultad)
     let userData: any = null;
     const cookieStore = await cookies();
     const token = cookieStore.get('auth_token')?.value;
-    console.log('El token es:', token); 
 
     if (token) {
         try {
@@ -133,33 +132,28 @@ export async function GET(request: Request) {
 
                 adminData = adminData.filter((curso: any) => {
                     const estado = String(curso.estado_gestion || curso.estado || '').toLowerCase();
+                    
+                    // ✨ REGLA HISTORIAL COMPLETO ADMIN
+                    if (statusParam === 'all') return true;
+
                     if (['redirigida', 'remitida', 'rechazada', 'rechazado'].includes(estado)) return false;
 
                     const isUnderReview = estado === 'under_review' || estado === 'pendiente';
                     const hasContract = !!(curso.contrato_id || curso.numContrato || curso.documento_legal_id);
                     const isApprovedWithoutContract = (estado === 'aprobada' || estado === 'aprobado') && !hasContract;
 
-                    // El admin ve todo lo que cumpla esto, sin importar la facultad
                     return isUnderReview || isApprovedWithoutContract;
                 });
 
-                // Matamos la ejecución aquí
                 return NextResponse.json({ solicitudes: adminData }, { status: 200 });
             }
         } catch (e) {
             console.error("Error decodificando token:", e);
         }
     }
+    
     // 2. LÓGICA SIGUIENTE (Se obvia si el token ya dijo que es Admin)
     if (!userData && coordinador_id && coordinador_id !== 'undefined') {
-        try {
-            const userRes = await fetch(`http://localhost:8080/users/${coordinador_id}`, { cache: 'no-store' });
-            if (userRes.ok) userData = await userRes.json();
-        } catch (err) {
-            console.error("Error al buscar usuario:", err);
-        }
-    }
-    if (coordinador_id && coordinador_id !== 'undefined') {
         try {
             const userRes = await fetch(`http://localhost:8080/users/${coordinador_id}`, { cache: 'no-store' });
             if (userRes.ok) userData = await userRes.json();
@@ -189,6 +183,13 @@ export async function GET(request: Request) {
         const estado = String(curso.estado_gestion || curso.estado || '').toLowerCase();
         const facultadCurso = String(curso.facultad || '').toLowerCase().trim();
         const facultadOrigen = String(curso.facultad_origen || curso.facultad || '').toLowerCase().trim();
+
+        // ✨ NUEVA REGLA: Si queremos TODO el historial para el Coordinador
+        if (statusParam === 'all') {
+            if (isAdmin) return true;
+            if (isCoordinador) return (facultadCurso === miFacultad) || (facultadOrigen === miFacultad);
+            return false;
+        }
 
         // Limpieza básica: basura fuera
         if (['redirigida', 'remitida', 'rechazada', 'rechazado'].includes(estado)) return false;

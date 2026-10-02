@@ -19,6 +19,7 @@ import {
   useDisclosure,
   Text,
 } from "@chakra-ui/react";
+import { FaDownload } from 'react-icons/fa';
 import { useRouter } from "next/navigation";
 import CloseCohortModal from "@/components/modals/cerrar-cohorte-modal";
 import { Course } from '@/data/types';
@@ -46,7 +47,9 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
   const [cohortName, setCohortName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [capacity, setCapacity] = useState(20);
+  
+  // ✨ FIX 1: Permitimos que el estado acepte un string vacío
+  const [capacity, setCapacity] = useState<number | string>(20);
 
   const estadoReal = String(course.estado_gestion || course.estado).toLowerCase();
   const hasContract = !!(course.contrato_id || course.documento_legal_id);
@@ -58,14 +61,17 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
     event.preventDefault();
     setIsSubmittingForm(true);
 
-    if (!cohortName || !startDate || !endDate || capacity <= 0) {
+    // ✨ FIX 2: Convertimos la capacidad a número para la validación y el envío
+    const parsedCapacity = Number(capacity);
+
+    if (!cohortName || !startDate || !endDate || isNaN(parsedCapacity) || parsedCapacity <= 0) {
       toast({ title: "Error de validación.", description: "Por favor, completa todos los campos requeridos.", status: "error", duration: 3000, isClosable: true });
       setIsSubmittingForm(false);
       return;
     }
 
     try {
-      await courseService.openCohort(course.id, { cohortName, startDate, endDate, capacity });
+      await courseService.openCohort(course.id, { cohortName, startDate, endDate, capacity: parsedCapacity });
       toast({ title: "Cohorte Abierta.", description: `La cohorte "${cohortName}" ha sido iniciada. Los alumnos ya pueden verla.`, status: "success", duration: 5000, isClosable: true });
       window.location.reload();
     } catch (error: any) {
@@ -81,7 +87,7 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
     <>
       <Box p={6} borderTop="4px solid" borderColor="primary" rounded="lg" bg="surface" shadow="md">
         {isAbierto ? (
-          <VStack spacing={4}>
+          <VStack spacing={4} align="stretch">
             <Heading as="h2" size="lg" mb={4} textAlign="center" color="primary">
               Gestión de Cohorte Abierta
             </Heading>
@@ -109,7 +115,29 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
               </NumberInput>
             </FormControl>
             
-            <Button onClick={onOpen} colorScheme="red" size="lg" width="full" mt={4}>
+            <Box p={4} mt={2} bg="teal.50" _dark={{ bg: "teal.900" }} border="1px" borderColor="teal.200" rounded="md">
+              <Text fontSize="sm" fontWeight="bold" color="teal.800" _dark={{ color: "teal.200" }} mb={2}>
+                Preparación para el Cierre de Cohorte
+              </Text>
+              <Text fontSize="xs" color="teal.700" _dark={{ color: "teal.300" }} mb={3} lineHeight="tall">
+                Al finalizar el curso, se te exigirá subir el listado de estudiantes y sus calificaciones. 
+                Descarga el <b>formato oficial en Excel</b> desde ahora para ir registrando las notas durante el desarrollo del programa.
+              </Text>
+              <Button 
+                as="a" 
+                href="/formatos/plantilla-estudiantes.xlsx" 
+                download 
+                size="sm" 
+                colorScheme="teal" 
+                variant="outline"
+                width="full"
+                leftIcon={<FaDownload />}
+              >
+                Descargar Plantilla de Estudiantes
+              </Button>
+            </Box>
+
+            <Button onClick={onOpen} colorScheme="red" size="lg" width="full" mt={2}>
               Cerrar Cohorte
             </Button>
           </VStack>
@@ -167,10 +195,10 @@ export default function CohortManagementPanel({ course }: CohortPanelProps) {
                 <NumberInput 
                   min={1} max={100} 
                   value={capacity} 
-                  onChange={(_, valueAsNumber) => setCapacity(valueAsNumber)}
-                  focusBorderColor="primary" // ✨ MOVIDO AL CONTENEDOR PADRE
+                  // ✨ FIX 3: Si el usuario borra todo, seteamos string vacío en lugar de NaN
+                  onChange={(valueString, valueNumber) => setCapacity(valueString === '' ? '' : valueNumber)}
+                  focusBorderColor="primary"
                 >
-                  {/* ✨ REMOVIDO DEL HIJO PARA EVITAR EL ERROR DE TYPESCRIPT */}
                   <NumberInputField bg="background" color="text.primary" borderColor="border" />
                   <NumberInputStepper>
                     <NumberIncrementStepper color="text.primary" borderColor="border" />

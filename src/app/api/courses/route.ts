@@ -1,8 +1,10 @@
-// src/app/api/courses/route.ts
 import { NextResponse } from 'next/server';
 import { saveFileAndGetUrl } from '../utils/fileHandler'; 
 import { cookies } from 'next/headers'; 
 import { userService } from '@/servicios/users-service';
+// ✨ Importamos fs para asegurarnos de que el directorio existe
+import fs from 'fs';
+import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,11 +61,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Acceso Denegado' }, { status: 403 });
     }
 
+    // 📁 ASEGURAR DIRECTORIOS ANTES DE GUARDAR
+    const basePath = path.join(process.cwd(), 'public', 'uploads', 'providers', userId);
+    if (!fs.existsSync(path.join(basePath, 'covers'))) {
+        fs.mkdirSync(path.join(basePath, 'covers'), { recursive: true });
+    }
+    if (!fs.existsSync(path.join(basePath, 'facilitadores'))) {
+        fs.mkdirSync(path.join(basePath, 'facilitadores'), { recursive: true });
+    }
+
     // 🖼️ GUARDAMOS LA FOTO
     let image_url = payload.image_url || payload.cover || null;
     if (coverFile && coverFile.size > 0) {
-        const folderName = `providers/${userId}/covers`;
-        image_url = await saveFileAndGetUrl(coverFile, folderName);
+        try {
+            const folderName = `providers/${userId}/covers`;
+            image_url = await saveFileAndGetUrl(coverFile, folderName);
+        } catch (e) {
+            console.error("Error guardando cover:", e);
+            return NextResponse.json({ error: 'No se pudo guardar la imagen de portada' }, { status: 500 });
+        }
     } else if (!image_url) {
       return NextResponse.json({ error: 'Falta imagen de portada' }, { status: 400 });
     }
@@ -71,8 +87,13 @@ export async function POST(request: Request) {
     // 📄 GUARDAMOS EL PDF DEL CV DEL FACILITADOR
     let cv_facilitador_url = payload.cv_facilitador_url || null;
     if (cvFacilitadorFile && cvFacilitadorFile.size > 0) {
-        const cvFolder = `providers/${userId}/facilitadores`;
-        cv_facilitador_url = await saveFileAndGetUrl(cvFacilitadorFile, cvFolder);
+        try {
+            const cvFolder = `providers/${userId}/facilitadores`;
+            cv_facilitador_url = await saveFileAndGetUrl(cvFacilitadorFile, cvFolder);
+        } catch (e) {
+            console.error("Error guardando PDF facilitador:", e);
+            return NextResponse.json({ error: 'No se pudo guardar el CV del facilitador' }, { status: 500 });
+        }
     }
 
     // 👨‍🏫 BÚSQUEDA CRUZADA DE FACULTAD
@@ -120,7 +141,7 @@ export async function POST(request: Request) {
       nombre: payload.titulo || payload.denominacion || payload.nombre || "Curso sin título",
       descripcion: payload.fundamentacion || payload.descripcion || "",
       image_url: image_url,
-      cv_facilitador_url: cv_facilitador_url,
+      cv_facilitador_url: cv_facilitador_url, // ✨ Aseguramos inyectar la variable local que armamos arriba
       
       creado_en: new Date().toISOString(),
       actualizado_en: new Date().toISOString()
@@ -163,7 +184,7 @@ export async function GET(request: Request) {
         queryParams = queryParams.slice(0, -1);
     }
 
-    // ✨ LA MAGIA: Traemos de AMBAS tablas para no perder los cursos en curso-requests
+    // ✨ LA MAGIA: Traemos de AMBAS tablas para no perder los cursos en course-requests
     const [resCourses, resRequests] = await Promise.all([
         fetch(`http://localhost:8080/courses?${queryParams}`, { 
             cache: 'no-store',

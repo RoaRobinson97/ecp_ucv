@@ -1,13 +1,13 @@
 "use client";
 
 import {
-  Table, Thead, Tbody, Tr, Th, Td, TableContainer, Tabs, TabList, Tab,
+  Table, Thead, Tbody, Tr, Th, Td, Tabs, TabList, Tab,
   TabPanels, TabPanel, Box, Text, Badge, RadioGroup, Stack, Radio,
   Tooltip, HStack,
 } from '@chakra-ui/react';
 import { FaFileSignature } from 'react-icons/fa'; 
-import { useRouter } from 'next/navigation'; 
-import React, { useState } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'; 
+import React from 'react';
 import { Solicitud, EstadoSolicitud } from '@/data/types';
 
 interface SolicitudEnriquecida extends Solicitud {
@@ -34,18 +34,21 @@ const getBadgeColorScheme = (estado: EstadoSolicitud | string) => {
     case 'aprobada': return 'green';
     case 'rechazada': return 'red';
     case 'remitida': return 'blue'; 
+    case 'cerrado': return 'green'; 
     default: return 'gray';
   }
 };
 
-const LegalSeal = ({ hasContract, user_id }: { hasContract: boolean, user_id: string }) => {
+const LegalSeal = ({ hasContract, user_id, isCompleted }: { hasContract: boolean, user_id: string, isCompleted: boolean }) => {
   const router = useRouter();
   const tooltipLabel = hasContract ? 'Contrato legal vinculado (Ver Perfil)' : 'Sin contrato legal (Ir al Perfil)';
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault(); 
-    e.stopPropagation(); 
-    router.push(`/profile/${user_id}`);
+    e.stopPropagation();
+    if (!isCompleted) {
+        router.push(`/profile/${user_id}`);
+    }
   };
 
   return (
@@ -54,7 +57,7 @@ const LegalSeal = ({ hasContract, user_id }: { hasContract: boolean, user_id: st
       ml={2} 
       lineHeight="1"
       onClick={handleClick}
-      cursor="pointer"
+      cursor={isCompleted ? "default" : "pointer"} 
     >
       <Tooltip label={tooltipLabel} placement="top" hasArrow>
         <Box opacity={hasContract ? 1 : 0.3} color={hasContract ? "teal.600" : "gray.400"}>
@@ -67,10 +70,10 @@ const LegalSeal = ({ hasContract, user_id }: { hasContract: boolean, user_id: st
 
 export function SolicitudesTable({ educacionContinua, grupoExtension }: SolicitudesTableProps) {
   const router = useRouter();
-  const [filter, setFilter] = useState('Todos');
-  const [legalFilter, setLegalFilter] = useState('Todos');
+  const pathname = usePathname(); 
+  const searchParams = useSearchParams(); 
 
-  const isCourseTypeSelected = filter.includes('formulacion') || filter === 'Todos';
+  const currentFilter = searchParams.get('tipo') || 'Todos';
   
   const educacionContinuaTypes = [
     'Todos',
@@ -80,92 +83,113 @@ export function SolicitudesTable({ educacionContinua, grupoExtension }: Solicitu
     'cierre-cohorte'
   ];
 
+  // Actualiza la URL para que el servidor filtre y reinicie a la página 1
+  const handleFilterChange = (value: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', '1'); 
+    
+    if (value === 'Todos') {
+        params.delete('tipo');
+    } else {
+        params.set('tipo', value);
+    }
+    
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
   const renderTable = (solicitudes: SolicitudEnriquecida[]) => {
-    let filteredSolicitudes = solicitudes;
-
-    if (filter !== 'Todos') {
-      filteredSolicitudes = filteredSolicitudes.filter(sol => sol.tipo === filter);
-    }
-
-    if (legalFilter !== 'Todos') {
-      const isLegalRequired = legalFilter === 'Vigente';
-      filteredSolicitudes = filteredSolicitudes.filter(sol => {
-          const payloadData = sol.payload as Record<string, any>;
-          const hasContract = !!(payloadData?.contrato_id || payloadData?.numContrato);
-          return hasContract === isLegalRequired;
-      });
-    }
-
     return (
-      <TableContainer minH="500px">
-        <Table variant="simple">
-          <Thead>
+      <Box w="100%" overflowX="auto" minH="500px" bg="white" shadow="sm" rounded="lg" borderWidth="1px">
+        <Table variant="simple" sx={{ tableLayout: 'auto', 'td, th': { whiteSpace: 'normal', wordBreak: 'break-word' } }}>
+          <Thead bg="gray.50">
             <Tr>
-              <Th>ID</Th>
-              <Th>Tipo</Th>
-              <Th>Solicitante</Th>
-              <Th>Fecha</Th>
-              <Th>Estado</Th>
+              <Th py={4}>ID</Th>
+              <Th py={4}>Tipo</Th>
+              <Th py={4}>Solicitante</Th>
+              <Th py={4}>Fecha</Th>
+              <Th py={4}>Estado</Th>
             </Tr>
           </Thead>
           <Tbody>
-            {filteredSolicitudes.length > 0 ? (
-              filteredSolicitudes.map((sol) => {
+            {solicitudes.length > 0 ? (
+              solicitudes.map((sol) => {
                 const isCourse = sol.tipo.includes('formulacion');
                 const payloadData = sol.payload as Record<string, any>;
-                const hasContract = !!(payloadData?.contrato_id || payloadData?.numContrato);
+                const hasContract = !!(payloadData?.contrato_id || payloadData?.documento_legal_id || payloadData?.numContrato);
                 
-                // ✨ FIX: Evaluamos si está aprobada para redirigir al perfil si falta contrato
-                const isApproved = sol.estado.toLowerCase() === 'aprobada' || sol.estado.toLowerCase() === 'aprobado';
+                let estadoNormalizado = String(sol.estado || 'pendiente').toLowerCase();
+                if (estadoNormalizado === 'cerrado' || estadoNormalizado === 'cerrada') {
+                    estadoNormalizado = 'aprobada';
+                }
+                
+                let isFullyCompleted = false;
+                if (estadoNormalizado === 'rechazada' || estadoNormalizado === 'rechazado') {
+                    isFullyCompleted = true; 
+                } else if (estadoNormalizado === 'aprobada' || estadoNormalizado === 'aprobado') {
+                    if (isCourse) {
+                        isFullyCompleted = hasContract; 
+                    } else {
+                        isFullyCompleted = true; 
+                    }
+                }
                 
                 const handleRowClick = () => {
-                  if (isCourse && isApproved && !hasContract) {
-                    router.push(`/profile/${sol.user_id}`); // Va al perfil para tramitar el contrato
+                  if (isFullyCompleted) return;
+                  if (isCourse && estadoNormalizado === 'aprobada' && !hasContract) {
+                    router.push(`/profile/${sol.user_id}`); 
                   } else {
-                    router.push(`/admin/solicitudes/${sol.id}`); // Flujo normal
+                    router.push(`/admin/solicitudes/${sol.id}`); 
                   }
                 };
                 
+                const fechaLimpia = sol.fecha ? new Date(sol.fecha).toLocaleDateString('es-VE') : 'Sin Fecha';
+
                 return (
                   <Tr 
                     key={`${sol.tipo}-${sol.id}`} 
-                    _hover={{ cursor: 'pointer', bg: 'gray.50' }}
+                    _hover={isFullyCompleted ? {} : { cursor: 'pointer', bg: 'gray.100' }}
                     onClick={handleRowClick}
-                    transition="background-color 0.2s"
+                    transition="all 0.2s"
+                    opacity={isFullyCompleted ? 0.6 : 1} 
+                    cursor={isFullyCompleted ? "default" : "pointer"}
                   >
-                    <Td fontWeight="bold" color="teal.600">{sol.id}</Td>
-                    <Td>
+                    <Td fontWeight="bold" color={isFullyCompleted ? "gray.400" : "teal.600"} py={4}>{sol.id}</Td>
+                    <Td py={4}>
                       <Badge colorScheme={tipoColorMap[sol.tipo] || 'gray'}>
-                        {sol.tipo.replace(/-/g, ' ').toUpperCase()}
+                        {/* ✨ FIX VISUAL 1: Si es proveedor, mostramos CÓDIGO COLABORADOR */}
+                        {sol.tipo === 'codigo-proveedor' 
+                            ? 'CÓDIGO COLABORADOR' 
+                            : sol.tipo.replace(/-/g, ' ').toUpperCase()}
                       </Badge>
                     </Td>
-                    <Td fontWeight="medium" color="gray.600">{sol.solicitante}</Td>
-                    <Td>{sol.fecha}</Td>
-                    <Td>
+                    <Td fontWeight="medium" color={isFullyCompleted ? "gray.500" : "gray.700"} py={4}>{sol.solicitante}</Td>
+                    <Td color="gray.500" py={4}>{fechaLimpia}</Td>
+                    <Td py={4}>
                       <HStack spacing={2}>
-                        <Badge colorScheme={getBadgeColorScheme(sol.estado)}>{sol.estado}</Badge>
-                        {isCourse && <LegalSeal hasContract={hasContract} user_id={sol.user_id} />}
+                        <Badge colorScheme={getBadgeColorScheme(estadoNormalizado)}>{estadoNormalizado.toUpperCase()}</Badge>
+                        {isCourse && <LegalSeal hasContract={hasContract} user_id={sol.user_id} isCompleted={isFullyCompleted} />}
                       </HStack>
                     </Td>
                   </Tr>
                 );
               })
             ) : (
-              <Tr><Td colSpan={5} textAlign="center" py={10}>No hay solicitudes registradas bajo estos criterios.</Td></Tr>
+              <Tr><Td colSpan={5} textAlign="center" py={10} color="gray.500">No hay solicitudes registradas bajo este filtro.</Td></Tr>
             )}
           </Tbody>
         </Table>
-      </TableContainer>
+      </Box>
     );
   };
 
-  const renderFilters = (types: string[], currentFilter: string, setFilter: (value: string) => void) => (
-    <RadioGroup onChange={setFilter} value={currentFilter}>
-      <Stack direction={{ base: 'column', md: 'row' }} spacing={4}>
+  const renderFilters = (types: string[], filterVal: string, onChange: (value: string) => void) => (
+    <RadioGroup onChange={onChange} value={filterVal}>
+      <Stack direction={{ base: 'column', md: 'row' }} spacing={4} flexWrap="wrap">
         {types.map(tipo => (
-          <Radio key={tipo} value={tipo} colorScheme="teal">
+          <Radio key={tipo} value={tipo} colorScheme="teal" size="md">
+            {/* ✨ FIX VISUAL 2: En los botones del filtro cambiamos Proveedor por Colaborador */}
             {tipo === 'Todos' ? 'Todos' : tipo
-              .replace('codigo-proveedor', 'Proveedor')
+              .replace('codigo-proveedor', 'Colaborador')
               .replace('formulacion-curso-directa', 'Formulación Directa')
               .replace('formulacion-curso-indirecta', 'Formulación Indirecta')
               .replace('cierre-cohorte', 'Cierre de Cohorte')
@@ -177,17 +201,15 @@ export function SolicitudesTable({ educacionContinua, grupoExtension }: Solicitu
   );
 
   return (
-    <Tabs variant="enclosed" onChange={() => { setFilter('Todos'); setLegalFilter('Todos'); }}>
+    <Tabs variant="enclosed">
       <TabList>
-        <Tab>Educación Continua ({educacionContinua.length})</Tab>
+        <Tab fontWeight="bold" color="teal.600">Educación Continua</Tab>
       </TabList>
       <TabPanels>
-        <TabPanel>
-          <Box mb={6}>
-            <Text mb={2} fontWeight="bold">Filtrar por tipo:</Text>
-            {renderFilters(educacionContinuaTypes, filter, setFilter)}
-            
-          
+        <TabPanel px={0}>
+          <Box mb={6} p={4} bg="white" shadow="sm" rounded="lg" borderWidth="1px">
+            <Text mb={3} fontWeight="bold" color="gray.700">Filtrar por tipo de solicitud:</Text>
+            {renderFilters(educacionContinuaTypes, currentFilter, handleFilterChange)}
           </Box>
           {renderTable(educacionContinua)}
         </TabPanel>

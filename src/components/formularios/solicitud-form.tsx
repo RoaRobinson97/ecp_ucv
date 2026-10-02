@@ -129,9 +129,11 @@ export const SolicitudForm = () => {
     } catch (e) { console.error(e); }
   }, [imageSrc, croppedAreaPixels, onClose]);
 
+  // CORRECCIÓN: Se eliminó 'legalDocs.islr' de la validación estricta.
+  // El Registro Mercantil ya estaba condicionado correctamente a 'juridica'.
   const isFormValid = Boolean(
     personType && facultadId !== '' && providerName.trim() !== '' && bio.trim() !== '' && finalImageFile &&
-    legalDocs.cedula && legalDocs.rif && legalDocs.islr && legalDocs.cv && legalDocs.titulo &&
+    legalDocs.cedula && legalDocs.rif && legalDocs.cv && legalDocs.titulo &&
     (personType === 'natural' || (personType === 'juridica' && legalDocs.regMercantil))
   );
 
@@ -166,6 +168,7 @@ export const SolicitudForm = () => {
       if (finalImageFile) formData.append('avatar', finalImageFile, 'avatar.jpg');
       if (legalDocs.cedula) formData.append('cedula', legalDocs.cedula);
       if (legalDocs.rif) formData.append('rif', legalDocs.rif);
+      // El ISLR se enviará solo si el usuario decidió subirlo
       if (legalDocs.islr) formData.append('islr', legalDocs.islr);
       if (legalDocs.titulo) formData.append('titulo', legalDocs.titulo);
       if (legalDocs.cv) formData.append('curriculum', legalDocs.cv);
@@ -285,7 +288,8 @@ export const SolicitudForm = () => {
                 <Heading size="md" color="primary">Documentación (Persona Natural)</Heading>
                 <FileUploadControl id="cedula" label="Cédula de Identidad *" accept=".pdf" onChange={(f) => handleDocChange('cedula', f)} file={legalDocs.cedula} />
                 <FileUploadControl id="rif-natural" label="Registro de Información Fiscal (RIF) *" accept=".pdf" onChange={(f) => handleDocChange('rif', f)} file={legalDocs.rif} />
-                <FileUploadControl id="islr-natural" label="Certificados de Declaración ISLR *" accept=".pdf" onChange={(f) => handleDocChange('islr', f)} file={legalDocs.islr} />
+                {/* CORRECCIÓN: Etiqueta ISLR actualizada a opcional */}
+                <FileUploadControl id="islr-natural" label="Certificados de Declaración ISLR (Opcional)" accept=".pdf" onChange={(f) => handleDocChange('islr', f)} file={legalDocs.islr} />
                 <FileUploadControl id="cv-natural" label="Resumen curricular del facilitador *" accept=".pdf" onChange={(f) => handleDocChange('cv', f)} file={legalDocs.cv} />
                 <FileUploadControl id="titulo-natural" label="Copia del título *" accept=".pdf" onChange={(f) => handleDocChange('titulo', f)} file={legalDocs.titulo} />
               </VStack>
@@ -297,7 +301,8 @@ export const SolicitudForm = () => {
                 <FileUploadControl id="reg-mercantil" label="Registro Mercantil *" accept=".pdf" onChange={(f) => handleDocChange('regMercantil', f)} file={legalDocs.regMercantil} />
                 <FileUploadControl id="cedula-legal" label="Cédula de Identidad del representante legal *" accept=".pdf" onChange={(f) => handleDocChange('cedula', f)} file={legalDocs.cedula} />
                 <FileUploadControl id="rif-juridico" label="Registro de Información Fiscal (RIF) *" accept=".pdf" onChange={(f) => handleDocChange('rif', f)} file={legalDocs.rif} />
-                <FileUploadControl id="islr-juridico" label="Certificado de Declaración ISLR *" accept=".pdf" onChange={(f) => handleDocChange('islr', f)} file={legalDocs.islr} />
+                {/* CORRECCIÓN: Etiqueta ISLR actualizada a opcional */}
+                <FileUploadControl id="islr-juridico" label="Certificado de Declaración ISLR (Opcional)" accept=".pdf" onChange={(f) => handleDocChange('islr', f)} file={legalDocs.islr} />
                 <FileUploadControl id="cv-juridico" label="Resumen curricular del facilitador(es) *" accept=".pdf" onChange={(f) => handleDocChange('cv', f)} file={legalDocs.cv} />
                 <FileUploadControl id="titulo-juridico" label="Copia del título *" accept=".pdf" onChange={(f) => handleDocChange('titulo', f)} file={legalDocs.titulo} />
               </VStack>

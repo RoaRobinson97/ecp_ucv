@@ -14,7 +14,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import NextLink from 'next/link';
-import { Pagination } from '@/components/ui/pagination'; 
+import { Pagination } from '@/components/ui/'; 
 import { Course } from '@/data/types'; 
 
 interface MyCoursesClientPageProps {
@@ -103,7 +103,7 @@ export default function MyCoursesClientPage({ courses, currentPage, totalPages }
 
       {/* Solo mostramos la paginación si hay más de 1 página */}
       {totalPages > 1 && (
-         <Pagination currentPage={currentPage} totalPages={totalPages} />
+         < currentPage={currentPage} totalPages={totalPages} />
       )}
     </Box>
   );

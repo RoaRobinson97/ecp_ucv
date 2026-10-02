@@ -1,6 +1,7 @@
-// src/app/api/providers/route.ts
 import { NextResponse } from 'next/server';
 import { saveFileAndGetUrl } from '../utils/fileHandler';
+import fs from 'fs';
+import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,24 +48,37 @@ export async function POST(request: Request) {
     const tituloFile = formData.get('titulo') as File | null;
     const regMercantilFile = formData.get('registro_mercantil') as File | null;
 
-    // 4. VALIDACIONES ESTRICTAS
-    if (!logoFile || !ciFile || !rifFile || !islrFile || !resumesFile || !tituloFile) {
+    // 4. VALIDACIONES ESTRICTAS (CORRECCIÓN: Se eliminó !islrFile)
+    if (!logoFile || !ciFile || !rifFile || !resumesFile || !tituloFile) {
         return NextResponse.json({ error: 'Faltan documentos base requeridos.' }, { status: 400 });
     }
-    const esJuridica = tipoPersona === 'juridical' || tipoPersona === 'juridica';
+    const esJuridica = tipoPersona === 'juridica' || tipoPersona === 'juridical';
     if (esJuridica && !regMercantilFile) {
         return NextResponse.json({ error: 'Falta el Registro Mercantil obligatorio para personas jurídicas.' }, { status: 400 });
     }
 
+    // ✨ 5. ASEGURAR DIRECTORIO ANTES DE GUARDAR
+    const basePath = path.join(process.cwd(), 'public', 'uploads', 'providers', userId);
+    if (!fs.existsSync(basePath)) {
+        fs.mkdirSync(basePath, { recursive: true });
+    }
+
     // 6. GUARDAMOS LOS ARCHIVOS
-    const folderName = `providers/${userId}`;
-    const logoUrl = await saveFileAndGetUrl(logoFile, folderName);
-    const ciUrl = await saveFileAndGetUrl(ciFile, folderName);
-    const rifUrl = await saveFileAndGetUrl(rifFile, folderName);
-    const islrUrl = await saveFileAndGetUrl(islrFile, folderName);
-    const resumesUrl = await saveFileAndGetUrl(resumesFile, folderName);
-    const tituloUrl = await saveFileAndGetUrl(tituloFile, folderName);
-    const regMercantilUrl = regMercantilFile ? await saveFileAndGetUrl(regMercantilFile, folderName) : null;
+    let logoUrl, ciUrl, rifUrl, islrUrl, resumesUrl, tituloUrl, regMercantilUrl = null;
+    try {
+        const folderName = `providers/${userId}`;
+        logoUrl = await saveFileAndGetUrl(logoFile, folderName);
+        ciUrl = await saveFileAndGetUrl(ciFile, folderName);
+        rifUrl = await saveFileAndGetUrl(rifFile, folderName);
+        // CORRECCIÓN: Guardar ISLR solo si fue proporcionado
+        islrUrl = islrFile ? await saveFileAndGetUrl(islrFile, folderName) : null;
+        resumesUrl = await saveFileAndGetUrl(resumesFile, folderName);
+        tituloUrl = await saveFileAndGetUrl(tituloFile, folderName);
+        regMercantilUrl = regMercantilFile ? await saveFileAndGetUrl(regMercantilFile, folderName) : null;
+    } catch (e) {
+        console.error("Error guardando archivos del proveedor:", e);
+        return NextResponse.json({ error: 'Error al subir los archivos al servidor.' }, { status: 500 });
+    }
 
     // 7. ✨ CONSTRUIMOS EL JSON CON EL COORDINADOR
     const newProvider = {
@@ -85,7 +99,8 @@ export async function POST(request: Request) {
         titulo: tituloUrl,                
         registro_mercantil: regMercantilUrl 
       },
-      fecha_creacion: new Date().toISOString()
+      fecha_creacion: new Date().toISOString(),
+      fecha_actualizacion: new Date().toISOString()
     };
 
     const createRes = await fetch('http://localhost:8080/providers', {

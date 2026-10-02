@@ -1,4 +1,3 @@
-// src/app/api/admin/closures/route.ts
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
@@ -45,11 +44,14 @@ export async function GET(request: Request) {
 
     // 3. Filtrado explícito y seguro según el Rol
     const cierresFiltrados = allClosures.filter(cierre => {
-        // Normalización de estado (cubre tanto 'under_review' como 'pendiente')
         const estadoCierre = String(cierre.estado || '').toLowerCase();
-        const matchesEstado = estadoParam === 'under_review' 
-            ? (estadoCierre === 'under_review' || estadoCierre === 'pendiente')
-            : estadoCierre === estadoParam.toLowerCase();
+        
+        // ✨ NUEVA REGLA: Si piden 'all', matchea siempre. Si no, busca el estado específico.
+        const matchesEstado = estadoParam === 'all' 
+            ? true 
+            : (estadoParam === 'under_review' 
+                ? (estadoCierre === 'under_review' || estadoCierre === 'pendiente')
+                : estadoCierre === estadoParam.toLowerCase());
 
         // Si es Admin, tiene acceso total siempre que el estado coincida
         if (isAdmin) {
@@ -64,8 +66,6 @@ export async function GET(request: Request) {
 
         return matchesEstado && matchesCoordinador;
     });
-
-    console.log(`✅ Cierres filtrados (Admin: ${isAdmin} | Coordinador: ${coordinadorIdParam}):`, cierresFiltrados.length);
 
     return NextResponse.json({ cierres: cierresFiltrados }, { status: 200 });
     

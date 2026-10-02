@@ -38,6 +38,7 @@ import {
     PrimaryButton,
     SecondaryButton,
 } from "../ui/buttons";
+import { userService } from "@/servicios/users-service";
 
 export const Navbar = () => {
     const { isAuthenticated, logout, user, isHydrated } = useAuth();
@@ -45,7 +46,7 @@ export const Navbar = () => {
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     const [hasPendingRequest, setHasPendingRequest] = useState(false);
-
+    const [isCheckingRequest, setIsCheckingRequest] = useState(true); // Añade este
     const codigo_proveedor = user?.codigo_proveedor;
     const safeUserId = user?.id || (user as any)?.userID || (user as any)?.sub;
 
@@ -75,19 +76,29 @@ export const Navbar = () => {
     const warningColor = useColorModeValue("red.600", "red.300");
 
     useEffect(() => {
-        if (showSolicitudButton && safeUserId) {
-            fetch(`http://127.0.0.1:8080/providers?usuario_id=${safeUserId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data && data.length > 0) {
-                        const isPending = data.some((req: any) => 
-                            req.estado === 'under_review' || req.estado === 'pendiente'
-                        );
+    let isMounted = true;
+
+    if (showSolicitudButton && safeUserId) {
+            setIsCheckingRequest(true); // Asegura que esté cargando
+            userService.checkPendingProviderRequest(safeUserId)
+                .then(isPending => {
+                    if (isMounted) {
                         setHasPendingRequest(isPending);
+                        setIsCheckingRequest(false); // Apaga la carga al terminar
                     }
                 })
-                .catch(e => console.error("Error al verificar solicitud pendiente:", e));
+                .catch(e => {
+                    console.error("Error al verificar solicitud pendiente:", e);
+                    if (isMounted) setIsCheckingRequest(false); // Apaga la carga si hay error
+                });
+        } else {
+            // Si no cumple las condiciones para mostrar el botón, no cargamos nada
+            setIsCheckingRequest(false);
         }
+
+        return () => {
+            isMounted = false;
+        };
     }, [showSolicitudButton, safeUserId]);
 
     return (
@@ -155,7 +166,13 @@ export const Navbar = () => {
                             )}
 
                             {showSolicitudButton && (
-                                hasPendingRequest ? (
+                                isCheckingRequest ? (
+                                    // Estado inicial de carga (evita el parpadeo)
+                                    <PrimaryButton size={"sm"} isLoading>
+                                        Solicitar Alianza
+                                    </PrimaryButton>
+                                ) : hasPendingRequest ? (
+                                    // Estado bloqueado
                                     <Tooltip label="Solicitud en revisión" hasArrow placement="bottom">
                                         <Box display="inline-block" cursor="not-allowed">
                                             <PrimaryButton size={"sm"} isDisabled style={{ pointerEvents: 'none' }}>
@@ -164,6 +181,7 @@ export const Navbar = () => {
                                         </Box>
                                     </Tooltip>
                                 ) : (
+                                    // Estado activo
                                     <NextLink href="/solicitar-organizacion" passHref>
                                         <PrimaryButton size={"sm"}>Solicitar Alianza</PrimaryButton>
                                     </NextLink>
