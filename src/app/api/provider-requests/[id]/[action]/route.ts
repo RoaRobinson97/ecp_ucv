@@ -67,6 +67,7 @@ export async function POST(
     const updatedProvider = {
       ...provider,
       estado: nuevoEstado,
+      estado_gestion: nuevoEstado,
       motivo_rechazo: action === 'reject' ? motivoRechazo : (provider.motivo_rechazo || ""),
       fecha_actualizacion: new Date().toISOString()
     };
@@ -81,6 +82,19 @@ export async function POST(
     if (!updateRes.ok) throw new Error('Fallo al actualizar el proveedor en la BD');
     
     const finalProvider = await updateRes.json();
+
+    // ✨ 8. FIX MAESTRO: ASCENDEMOS AL USUARIO SI FUE APROBADO
+    if (action === 'approve' && provider.usuario_id) {
+        await fetch(`http://localhost:8080/users/${provider.usuario_id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                rol: 'proveedor',
+                roles: ['proveedor'],
+                codigo_proveedor: id // El ID del proveedor es el código
+            })
+        });
+    }
 
     return NextResponse.json({ 
         message: `Proveedor ${nuevoEstado}`, 
