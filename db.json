@@ -346,6 +346,24 @@
       "facultad": null,
       "codigo_proveedor": null,
       "id": "8LZ8MTXcXJQ"
+    },
+    {
+      "ci": 14569856,
+      "email": "contacto@gic-venezuela.com",
+      "password": "123",
+      "first_name": "Javier Eduardo",
+      "last_name": "Yepez",
+      "date_of_birth": "12-12-1985",
+      "gender": "masculino",
+      "education": "universitaria_completa",
+      "address": "Parque Tecnológico Sartenejas, Caracas",
+      "rol": "proveedor",
+      "roles": [
+        "proveedor"
+      ],
+      "facultad": null,
+      "codigo_proveedor": "HJSA3ZVTLMo",
+      "id": "FIXgxUrxiLY"
     }
   ],
   "roles": [],
@@ -574,6 +592,30 @@
       "fecha_creacion": "2026-10-02T13:58:55.114Z",
       "fecha_actualizacion": "2026-10-02T13:58:55.114Z",
       "id": "bFpRfCbw2qE"
+    },
+    {
+      "usuario_id": "FIXgxUrxiLY",
+      "coordinador_id": "4",
+      "nombre_proveedor": "Grupo de Investigaciones Computacionales (GIC C.A.)",
+      "biografia": "Firma venezolana de base tecnológica enfocada en el desarrollo de software científico, simulaciones de alto rendimiento y consultoría en ciencia de datos para instituciones académicas e industriales.",
+      "tipo_persona": "natural",
+      "tipo_lucro": "no_lucrativo",
+      "es_interno": false,
+      "estado": "aprobada",
+      "archivos": {
+        "logo": "/uploads/providers/FIXgxUrxiLY/1791236226126-avatar.jpg",
+        "ci": "/uploads/providers/FIXgxUrxiLY/1791236226127-sample-local-pdf.pdf",
+        "rif": "/uploads/providers/FIXgxUrxiLY/1791236226127-sample-local-pdf.pdf",
+        "islr": "/uploads/providers/FIXgxUrxiLY/1791236226128-sample-local-pdf.pdf",
+        "curriculum": "/uploads/providers/FIXgxUrxiLY/1791236226129-sample-local-pdf.pdf",
+        "titulo": "/uploads/providers/FIXgxUrxiLY/1791236226130-sample-local-pdf.pdf",
+        "registro_mercantil": null
+      },
+      "fecha_creacion": "2026-10-05T21:37:06.131Z",
+      "fecha_actualizacion": "2026-10-05T21:37:38.367Z",
+      "id": "HJSA3ZVTLMo",
+      "estado_gestion": "aprobada",
+      "motivo_rechazo": ""
     }
   ],
   "courses": [],
@@ -1317,6 +1359,37 @@
       "creado_en": "2026-10-02T13:39:38.725Z",
       "actualizado_en": "2026-10-02T13:39:38.725Z",
       "id": "aNgvGwSwOB8"
+    },
+    {
+      "usuario_id": "FIXgxUrxiLY",
+      "tipo_curso": "formulacion-curso-directa",
+      "estado": "under_review",
+      "estado_gestion": "under_review",
+      "facultad": "Ciencias",
+      "coordinador_id": "4",
+      "facultad_origen": "Ciencias",
+      "coordinador_origen": "4",
+      "titulo": "Introducción a Python para Análisis de Datos",
+      "denominacion": "Introducción a Python para Análisis de Datos",
+      "proposito": "Desarrollar habilidades prácticas en el manejo de librerías científicas (Pandas y NumPy) para el procesamiento de grandes volúmenes de datos.",
+      "fundamentacion": "La necesidad de procesar grandes volúmenes de información hace indispensable el dominio de Python en el sector corporativo y de investigación. Este programa cierra la brecha técnica en el manejo de datos tabulares para estudiantes y profesionales.",
+      "duracion": "120 horas académicas. Modalidad Mixta (Virtual con laboratorios presenciales).",
+      "estructura_costos": "El participante debe disponer de un computador con 8GB de RAM, conexión a internet estable y el entorno Anaconda (Python 3.10+) instalado.",
+      "perfil_docente": "Profesional egresado de Computación, Estadística o áreas afines, con experiencia comprobable en ciencia de datos y docencia.",
+      "perfiles": "Perfil de Ingreso y Egreso: Ingreso: Profesionales y estudiantes con conocimientos básicos de estadística. Egreso: El participante será capaz de estructurar, limpiar y analizar datasets complejos de forma autónoma y reproducible.",
+      "exigencias": "Honorarios docentes (50%), uso de plataforma tecnológica y servidores de cálculo (30%), aranceles administrativos DEU (20%).",
+      "estructura_curricular": "El programa se articula en dos módulos secuenciales. Cada bloque consta de sesiones teóricas asíncronas seguidas de laboratorios prácticos de programación supervisados.",
+      "evaluacion": "Asignaciones prácticas de código (40%) y un Proyecto Final aplicado a un dataset real de la economía venezolana (60%).",
+      "cronograma": "Dos cohortes anuales. Cohorte I: Marzo - Julio. Cohorte II: Septiembre - Enero. Clases sincrónicas los días sábados de 8:00 am a 12:00 pm.",
+      "contenido_competencias": "Módulo 1: Fundamentos de Python y Librerías Científicas\nContenido: Estructuras de datos, control de flujo, introducción a NumPy, Pandas y Matplotlib.\nCompetencia: Manipula y transforma volúmenes de datos tabulares aplicando funciones vectorizadas de forma eficiente.\n\nMódulo 2: Limpieza y Visualización de Datos\nContenido: Tratamiento de valores nulos (NaN), agrupaciones (groupby), uniones (merges) y diseño de gráficos estadísticos complejos.\nCompetencia: Diseña reportes visuales claros y precisos a partir de conjuntos de datos crudos o ruidosos.",
+      "bibliografia": "McKinney, W. (2017). Python for Data Analysis: Data Wrangling with Pandas, NumPy, and IPython (2da ed.). O'Reilly Media. VanderPlas, J. (2016). Python Data Science Handbook. O'Reilly Media.",
+      "nombre": "Introducción a Python para Análisis de Datos",
+      "descripcion": "La necesidad de procesar grandes volúmenes de información hace indispensable el dominio de Python en el sector corporativo y de investigación. Este programa cierra la brecha técnica en el manejo de datos tabulares para estudiantes y profesionales.",
+      "image_url": "/uploads/providers/FIXgxUrxiLY/covers/1791236392890-curso1.jpg",
+      "cv_facilitador_url": "/uploads/providers/FIXgxUrxiLY/facilitadores/1791236392894-sample-local-pdf.pdf",
+      "creado_en": "2026-10-05T21:39:52.962Z",
+      "actualizado_en": "2026-10-05T21:39:52.962Z",
+      "id": "NVQIIp1C_nI"
     }
   ],
   "course-cycles": [

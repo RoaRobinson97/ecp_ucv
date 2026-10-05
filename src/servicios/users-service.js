@@ -45,9 +45,18 @@ class UserService {
             if (user && (user.rol === 'proveedor' || (user.roles && user.roles.includes('proveedor'))) && user.codigo_proveedor) {
                 const allProviders = await ApiService.get('providers'); 
                 
-                // ✨ FIX: Ahora busca comparando con el 'id' del proveedor o el 'usuario_id'
-                const providerData = allProviders.find(
-                    p => (p.id === user.codigo_proveedor) || (p.usuario_id === user.id)
+                // ✨ FIX ANTI-CRASHEO: Asegurarnos de que sea un array antes de hacer .find()
+                let providersArray = [];
+                if (Array.isArray(allProviders)) {
+                    providersArray = allProviders;
+                } else if (allProviders && Array.isArray(allProviders.proveedores)) {
+                    providersArray = allProviders.proveedores;
+                } else if (allProviders && Array.isArray(allProviders.data)) {
+                    providersArray = allProviders.data;
+                }
+                
+                const providerData = providersArray.find(
+                    p => String(p.id) === String(user.codigo_proveedor) || String(p.usuario_id) === String(user.id)
                 );
 
                 if (!providerData) {
