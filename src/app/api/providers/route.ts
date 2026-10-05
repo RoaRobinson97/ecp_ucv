@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers'; 
 import { saveFileAndGetUrl } from '../utils/fileHandler';
 import fs from 'fs';
 import path from 'path';
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     const tituloFile = formData.get('titulo') as File | null;
     const regMercantilFile = formData.get('registro_mercantil') as File | null;
 
-    // 4. VALIDACIONES ESTRICTAS (CORRECCIÓN: Se eliminó !islrFile)
+    // 4. VALIDACIONES ESTRICTAS
     if (!logoFile || !ciFile || !rifFile || !resumesFile || !tituloFile) {
         return NextResponse.json({ error: 'Faltan documentos base requeridos.' }, { status: 400 });
     }
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
         logoUrl = await saveFileAndGetUrl(logoFile, folderName);
         ciUrl = await saveFileAndGetUrl(ciFile, folderName);
         rifUrl = await saveFileAndGetUrl(rifFile, folderName);
-        // CORRECCIÓN: Guardar ISLR solo si fue proporcionado
+        // Guardar ISLR solo si fue proporcionado
         islrUrl = islrFile ? await saveFileAndGetUrl(islrFile, folderName) : null;
         resumesUrl = await saveFileAndGetUrl(resumesFile, folderName);
         tituloUrl = await saveFileAndGetUrl(tituloFile, folderName);
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
     // 7. ✨ CONSTRUIMOS EL JSON CON EL COORDINADOR
     const newProvider = {
       usuario_id: userId,
-      coordinador_id: coordinadorId, // 🔥 SE GUARDA LA FACULTAD
+      coordinador_id: coordinadorId, 
       nombre_proveedor: nombre,
       biografia: bio,
       tipo_persona: tipoPersona,
@@ -122,30 +123,78 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('usuario_id');
+    const status = searchParams.get('status') || 'all';
+    const coordinador_id = searchParams.get('coordinador_id');
     
-    // ✨ AGREGAMOS SOPORTE PARA FILTRAR POR COORDINADOR
-    const coordinadorId = searchParams.get('coordinador_id');
-    
-    let url = 'http://localhost:8080/providers';
-    const query = new URLSearchParams();
+    // ✨ Definimos la URL dinámica una sola vez
+    const targetUrl = status === 'all' 
+        ? `http://localhost:8080/providers` 
+        : `http://localhost:8080/providers?estado=${status}`;
 
-    if (userId) query.append('usuario_id', userId);
-    if (coordinadorId) query.append('coordinador_id', coordinadorId);
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token')?.value;
 
-    const queryString = query.toString();
-    if (queryString) {
-       url += `?${queryString}`;
+    // 1. ATAJO DIRECTO PARA EL ADMIN
+    if (token) {
+        try {
+            const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+            const decoded = JSON.parse(Buffer.from(base64, 'base64').toString('utf-8'));
+            
+            const v1Data = decoded.v1 || {};
+            const roles = v1Data.roles || decoded.roles || [];
+            const rol = decoded.rol || v1Data.rol || '';
+
+            if (roles.includes('admin') || roles.includes('deu_admin') || rol === 'admin') {
+                const res = await fetch(targetUrl, { cache: 'no-store' });
+                if (!res.ok) throw new Error('Fallo al obtener proveedores');
+                
+                const data = await res.json();
+                return NextResponse.json({ proveedores: data }, { status: 200 });
+            }
+        } catch (e) {
+            console.error("Error decodificando token en providers:", e);
+        }
     }
+
+    // 2. LÓGICA EXCLUSIVA PARA EL COORDINADOR
+    let userData: any = null;
+
+    if (coordinador_id && coordinador_id !== 'undefined') {
+        try {
+            const userRes = await fetch(`http://localhost:8080/users/${coordinador_id}`, { cache: 'no-store' });
+            if (userRes.ok) {
+                userData = await userRes.json();
+            }
+        } catch (err) {
+            console.error("Error al hacer fetch del usuario en la BD:", err);
+        }
+    }
+
+    // 3. TUBERÍA AL JSON SERVER USANDO LA URL DINÁMICA
+    const res = await fetch(targetUrl, { cache: 'no-store' });
     
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Fallo al obtener colaboradores');
+    if (!res.ok) throw new Error('Fallo al obtener proveedores');
+
+    let data = await res.json();
     
-    const data = await res.json();
-    return NextResponse.json(data, { status: 200 });
-    
+    // 4. FILTRADO ESTRICTO PARA EL COORDINADOR
+    if (userData) {
+        const isCoordinador = userData.rol === 'coordinador' || userData.roles?.includes('coordinador');
+
+        if (isCoordinador) {
+            data = data.filter((prov: any) => {
+                return String(prov.coordinador_id) === String(userData.id);
+            });
+        } else {
+            data = [];
+        }
+    } else {
+        data = [];
+    }
+
+    return NextResponse.json({ proveedores: data }, { status: 200 });
   } catch (error) {
-    console.error("ERROR AL OBTENER COLABORADORES:", error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+    console.error("ERROR EN API PROVIDERS:", error);
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 }
