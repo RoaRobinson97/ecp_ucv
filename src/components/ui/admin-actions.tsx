@@ -135,18 +135,33 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
       const nuevoEstado = action === 'Aprobar' ? 'aprobada' : 'rechazada';
       const motivo_rechazo = action === 'Rechazar' ? message : undefined; 
 
-      if (action === 'Aprobar' && isCourseRequest) {
-          const formData = new FormData();
-          formData.append('estado', 'aprobada');
-          formData.append('calificacion', calificacion);
-          formData.append('archivo_evaluacion', evaluationFile as Blob); 
-          formData.append('clasificacion', currentClassification); 
-
-          await solicitudesService.updateStatusWithFile(solicitudId, solicitudTipo, formData);
+      if (isCourseRequest) {
+          // Lógica intacta para CURSOS
+          if (action === 'Aprobar') {
+              const formData = new FormData();
+              formData.append('estado', 'aprobada');
+              formData.append('calificacion', calificacion);
+              formData.append('archivo_evaluacion', evaluationFile as Blob); 
+              formData.append('clasificacion', currentClassification); 
+              await solicitudesService.updateStatusWithFile(solicitudId, solicitudTipo, formData);
+          } else {
+              await solicitudesService.updateStatus(solicitudId, solicitudTipo, nuevoEstado, motivo_rechazo as any, {
+                  clasificacion: currentClassification 
+              });
+          }
       } else {
-          await solicitudesService.updateStatus(solicitudId, solicitudTipo, nuevoEstado, motivo_rechazo as any, {
-              clasificacion: currentClassification 
+          // ✨ FIX: Lógica para COLABORADORES (Pega al backend de Next.js)
+          const endpointAction = action === 'Aprobar' ? 'approve' : 'reject';
+          const response = await fetch(`/api/provider-requests/${solicitudId}/${endpointAction}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ observaciones: motivo_rechazo })
           });
+
+          if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.error || 'Fallo al actualizar el colaborador');
+          }
       }
 
       toast({
