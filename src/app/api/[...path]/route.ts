@@ -26,7 +26,8 @@ async function handler(req: NextRequest, { params }: { params: Promise<{ path: s
     }
 
     const res = await fetch(targetUrl, fetchInit);
-    const data = await res.arrayBuffer();
+    // Response no admite cuerpo (ni vacío) con 204, 205 o 304.
+    const data = [204, 205, 304].includes(res.status) ? null : await res.arrayBuffer();
 
     // fetch ya descomprimió el cuerpo, así que estos encabezados ya no aplican.
     const resHeaders = new Headers(res.headers);

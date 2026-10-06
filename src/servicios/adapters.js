@@ -61,6 +61,16 @@ export function providerToLegacy(p) {
 }
 
 /** Curso de Go -> curso del mock. `estado_gestion` refleja si aún está en revisión. */
+/**
+ * Formulación indirecta: la solicitud fue remitida a otra facultad para su aval, así que la
+ * facultad que la revisa (facultad) difiere de la que la formuló (facultad_origen).
+ */
+export function formulationType(c) {
+    return c?.facultad_origen && c.facultad && c.facultad_origen !== c.facultad
+        ? 'formulacion-curso-indirecta'
+        : 'formulacion-curso-directa';
+}
+
 export function courseToLegacy(c) {
     if (!c) return null;
     const contrato = c.tiene_documentacion_legal ? 'CONTRATO-VIGENTE' : null;
@@ -92,7 +102,7 @@ export function courseToLegacy(c) {
         contrato_id: contrato,
         documento_legal_id: contrato,
         costo: c.estructura_costos || null,
-        tipo: 'formulacion-curso-directa',
+        tipo: formulationType(c),
         link_certificados: null,
         providerDetails: c.proveedor
             ? { nombre_proveedor: c.proveedor.nombre, archivos: { logo: c.proveedor.logo_url || null } }

@@ -49,7 +49,9 @@ class UserService {
         }
 
         const response = await ApiService.get('providers', { type: 'courses', per_page: 1000 });
-        return (response?.proveedores || []).find(p => String(p.usuario_id) === String(user_id)) || null;
+        const found = (response?.proveedores || []).find(p => String(p.usuario_id) === String(user_id));
+        // El listado no trae los contratos legales; el detalle sí.
+        return found ? await ApiService.get('providers', found.id) : null;
     }
 
     async hasInitialContract(user_id) {

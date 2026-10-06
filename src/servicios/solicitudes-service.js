@@ -1,6 +1,6 @@
 import { ApiService } from './BaseApiService';
 import { CONFIG } from '../config/config';
-import { providerToLegacy, requestStatusToLegacy, courseToLegacy } from './adapters';
+import { providerToLegacy, requestStatusToLegacy, courseToLegacy, formulationType } from './adapters';
 
 // En Go cada tipo de solicitud tiene su propia tabla e IDs, así que el ID que ve la UI lleva el
 // tipo como prefijo: "prov-5", "curso-3", "cierre-7".
@@ -39,7 +39,7 @@ function courseRequestToSolicitud(r) {
     return {
         id: prefixedId('curso', r.id),
         user_id: String(r.usuario_id || '0'),
-        tipo: 'formulacion-curso-directa',
+        tipo: formulationType(r.curso),
         estado: requestStatusToLegacy(r.estado),
         fecha_creacion: r.creado_en || new Date().toISOString(),
         fecha_actualizacion: r.actualizado_en,
