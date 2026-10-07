@@ -156,16 +156,8 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
                 const providerUserId = courseData.user_id || (courseData as any).userId;
                 if (providerUserId) {
                     try {
-                        const provRes = await fetch(`http://localhost:8080/providers?usuario_id=${providerUserId}`);
-                        if (provRes.ok) {
-                            const provList = await provRes.json();
-                            if (provList && provList.length > 0) {
-                                setProvider(provList[0]);
-                            } else {
-                                const providerData = await userService.getProviderDetails(String(providerUserId)) as FullProvider;
-                                setProvider(providerData);
-                            }
-                        }
+                        const providerData = await userService.getProviderDetails(String(providerUserId)) as FullProvider;
+                        setProvider(providerData);
                     } catch (providerError: any) {
                         console.warn("Could not fetch provider details:", providerError.message);
                     }
@@ -284,7 +276,7 @@ export default function CourseClientPage({ courseId }: { courseId: string }) {
 
     const rawLogo = (provider as any)?.archivos?.logo || (provider as any)?.provider_avatar_url || (provider as any)?.avatar_url;
     const providerAvatarUrl = rawLogo 
-        ? (rawLogo.startsWith('/') ? `http://localhost:8080${rawLogo}` : rawLogo)
+        ? rawLogo
         : `https://i.pravatar.cc/150?u=${provider?.id || 'default'}`;
 
     // 👇 DEBUG: ESTOS CONSOLE.LOGS NOS DIRÁN QUÉ ESTÁ PASANDO EXACTAMENTE 👇

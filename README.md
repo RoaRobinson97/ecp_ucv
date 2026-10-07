@@ -1,5 +1,9 @@
 # 🚀 Plataforma ECP - Entorno de Desarrollo Local
 
+>⚠️ **IMPORTANTE** ⚠️: *En producción esta aplicación **no** usa `json-server`: consume el backend Go del repositorio principal DEU UCV.*
+Las instrucciones para levantar el proyecto de esa forma están en [este enlace](https://github.com/eaguilar88/DEU_UCV/blob/main/docs/diplomados_prod.md).
+---
+
 Esta guía describe los pasos exactos para inicializar tanto la aplicación frontend (Next.js) como el servidor de base de datos simulado (json-server).
 
 ## 1. Instalar y Configurar Node.js

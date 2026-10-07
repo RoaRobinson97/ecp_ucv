@@ -1,26 +1,34 @@
 import { ApiService } from './BaseApiService';
 import { CONFIG } from '../config/config';
+import { courseToLegacy, periodToCohort } from './adapters';
+import { sessionFromToken } from '../utils/session';
+
+// Go rechaza la apertura (409) en tres casos que el mock de Node resumía en un solo mensaje.
+const OPEN_COHORT_REJECTIONS = [
+    'course is not covered by a legal contract',
+    'a course period is already open for this course',
+    'course has a pending closure request',
+];
+const OPEN_COHORT_REJECTED_MESSAGE =
+    'El curso debe estar amparado legalmente (aprobado con contrato o cerrado) para poder abrir una cohorte.';
 
 class CourseService {
 
     async getPublicCourses(limit = 15) {
         try {
-            const res = await fetch('http://localhost:8080/course-requests', { cache: 'no-store' });
-            if (!res.ok) return { courses: [] };
-
-            const allCourses = await res.json();
-
-            // Filtramos en el servicio para que solo pasen los que tengan contrato
-            const filteredCourses = allCourses.filter(c => c.contrato_id || c.documento_legal_id);
-
-            const adapted = filteredCourses.slice(0, limit).map(c => ({
-                id: String(c.id),
-                titulo: c.nombre || c.titulo || "Curso Sin Título",
-                descripcion: c.descripcion || c.fundamentacion || "",
-                image: c.image_url || c.imagen || c.cover || null,
-                estado_gestion: c.estado || c.estado_gestion || 'pendiente',
-                documento_legal_id: c.contrato_id || c.documento_legal_id || null
-            }));
+            // Cursos aprobados, amparados por contrato y que ya abrieron alguna cohorte.
+            const response = await ApiService.get('courses/public', { per_page: limit });
+            const adapted = (response?.cursos || []).map(c => {
+                const course = courseToLegacy(c);
+                return {
+                    id: course.id,
+                    titulo: course.titulo,
+                    descripcion: course.descripcion,
+                    image: course.image,
+                    estado_gestion: course.estado_gestion,
+                    documento_legal_id: course.documento_legal_id
+                };
+            });
 
             return { courses: adapted };
         } catch (error) {
@@ -42,8 +50,8 @@ class CourseService {
             
             try {
                 const queryParams = { 
-                    _page: page, 
-                    _limit: limit,
+                    page, 
+                    per_page: limit,
                     _t: Date.now() // ✨ FIX CRÍTICO: Esto obliga al navegador a no usar el caché
                 };
                 
@@ -52,54 +60,17 @@ class CourseService {
                 if (estado) queryParams.estado = estado; 
 
                 const response = await ApiService.get('courses', queryParams);
+                let coursesAdapted = (response?.cursos || []).map(courseToLegacy);
 
-                let rawCourses = [];
-                let totalCourses = 0;
-
-                if (response.data && Array.isArray(response.data)) {
-                    rawCourses = response.data;
-                    totalCourses = response.total || response.data.length; 
-                } else if (Array.isArray(response)) {
-                    rawCourses = response;
-                    totalCourses = response.length;
-                } else if (response.cursos && Array.isArray(response.cursos)) {
-                    rawCourses = response.cursos;
-                    totalCourses = response.total || rawCourses.length;
+                // GET /courses solo trae cursos aprobados. El dueño también ve sus propuestas en
+                // revisión o rechazadas, que salen de sus solicitudes de curso.
+                if (user_id && !estado) {
+                    coursesAdapted = coursesAdapted.concat(await this._pendingCoursesOf(user_id, coursesAdapted));
                 }
 
-                const coursesAdapted = rawCourses.map(backendCourse => ({
-                    ...backendCourse, // ✨ IMPORTANTE: Mantiene coordinador_id, coordinador_origen, contrato_id, etc.
-                    id: String(backendCourse.id), 
-                    titulo: backendCourse.nombre || backendCourse.titulo || "Curso Sin Título",
-                    descripcion: backendCourse.descripcion || backendCourse.fundamentacion || "Sin descripción disponible.",
-                    image: backendCourse.imagen || backendCourse.image_url || backendCourse.cover || null,
-                    slug: backendCourse.slug || `curso-${backendCourse.id}`, 
-                    
-                    proposito: backendCourse.proposito || null,
-                    fundamentacion: backendCourse.fundamentacion || backendCourse.descripcion || null,
-                    duracion: backendCourse.duracion || null,
-                    estructura_costos: backendCourse.estructura_costos || null,
-                    perfil_docente: backendCourse.perfil_docente || null,
-                    perfiles: backendCourse.perfiles || null,
-                    exigencias: backendCourse.exigencias || null,
-                    estructura_curricular: backendCourse.estructura_curricular || null,
-                    evaluacion: backendCourse.evaluacion || null,
-                    cronograma: backendCourse.cronograma || null,
-                    contenido_competencias: backendCourse.contenido_competencias || null,
-                    bibliografia: backendCourse.bibliografia || null,
-                    cv_facilitador_url: backendCourse.cv_facilitador_url || null,
-                    
-                    codigo_proveedor: backendCourse.codigo_proveedor || null,
-                    user_id: backendCourse.usuario_id || backendCourse.user_id || null,
-                    estado_gestion: backendCourse.estado || backendCourse.estado_gestion || backendCourse.status || 'under_review',
-                    documento_legal_id: backendCourse.contrato_id || backendCourse.documento_legal_id || null, 
-
-                    costo: backendCourse.costo || null,
-                    tipo: backendCourse.tipo_curso || backendCourse.tipo || 'formulacion-curso-directa',
-                    link_certificados: backendCourse.link_certificados || null
-                }));
-
-                const totalPages = Math.ceil(totalCourses / limit) || 1;
+                // Go no devuelve el total: si la página vino llena, puede haber otra.
+                const totalCourses = (page - 1) * limit + coursesAdapted.length;
+                const totalPages = coursesAdapted.length >= limit ? page + 1 : page;
 
                 return { 
                     courses: coursesAdapted, 
@@ -119,73 +90,55 @@ class CourseService {
         }
     }
 
+    /** Propuestas del usuario que aún no son cursos aprobados (en revisión o rechazadas). */
+    async _pendingCoursesOf(user_id, approvedCourses) {
+        try {
+            const session = sessionFromToken(await this._token());
+            if (!session || String(session.id) !== String(user_id)) return [];
+
+            const response = await ApiService.get('course-requests', { pageSize: 100 });
+            const approvedIds = new Set(approvedCourses.map(c => String(c.id)));
+            return (response?.solicitudes || [])
+                .filter(r => r.curso && !approvedIds.has(String(r.curso.id)) && r.estado !== 'approved')
+                .map(r => ({
+                    ...courseToLegacy({ ...r.curso, usuario_id: user_id }),
+                    estado_gestion: r.estado === 'rejected' ? 'rechazada' : 'under_review',
+                }));
+        } catch (error) {
+            console.warn("No se pudieron cargar las propuestas en revisión:", error);
+            return [];
+        }
+    }
+
+    async _token() {
+        if (typeof window !== 'undefined') {
+            const { default: Cookies } = await import('js-cookie');
+            return Cookies.get('auth_token');
+        }
+        const { cookies } = await import('next/headers');
+        return (await cookies()).get('auth_token')?.value;
+    }
+
     async getCourseById(courseId) {
         try {
-            // 1. Buscamos el curso base (pasa por /api/courses/[id] que ya trae cohortes y publicaciones)
-            const backendCourse = await ApiService.get(`courses/${courseId}`);
+            const backendCourse = await ApiService.get('courses', courseId);
             if (!backendCourse) throw new Error(`Curso ${courseId} no encontrado.`);
 
-            let cohortes = Array.isArray(backendCourse.cohortes) ? backendCourse.cohortes : [];
-
-            // 2. Solo si no vinieron cohortes desde la API interna (ej. en Server Component directo), intentamos buscarlas
-            if (cohortes.length === 0 && typeof window === 'undefined') {
-                try {
-                    const queryCohortes = await fetch(`http://localhost:8080/course-cycles?course_id=${courseId}&_t=${Date.now()}`);
-                    if (queryCohortes.ok) {
-                        cohortes = await queryCohortes.json();
-                        cohortes.sort((a, b) => new Date(b.creado_en || 0).getTime() - new Date(a.creado_en || 0).getTime());
-                    }
-                    const queryPubs = await fetch(`http://localhost:8080/publications?course_id=${courseId}&_t=${Date.now()}`);
-                    if (queryPubs.ok) {
-                        const publicaciones = await queryPubs.json();
-                        cohortes = cohortes.map(cohorte => ({
-                            ...cohorte,
-                            publicaciones: publicaciones.filter(pub => String(pub.cohort_id) === String(cohorte.id))
-                        }));
-                    }
-                } catch (err) {
-                    console.warn("No se pudieron cargar las cohortes en fallback");
-                }
+            // Cohortes activas con sus publicaciones, de la más nueva a la más vieja.
+            let cohortes = [];
+            try {
+                const periods = await ApiService.get(`courses/${courseId}/periods`, { per_page: 100, _t: Date.now() });
+                cohortes = (periods?.periodos || []).map(p => periodToCohort(p, courseId));
+                cohortes.sort((a, b) => new Date(b.creado_en || 0).getTime() - new Date(a.creado_en || 0).getTime());
+            } catch (err) {
+                console.warn("No se pudieron cargar las cohortes del curso", err);
             }
 
-            const ultimaCohorte = backendCourse.cohorteActiva || (cohortes.length > 0 ? cohortes[0] : null);
-
-            const courseAdapted = {
-                ...backendCourse,
-                id: String(backendCourse.id),
-                titulo: backendCourse.nombre || backendCourse.titulo || "Curso Sin Título",
-                descripcion: backendCourse.descripcion || backendCourse.fundamentacion || "Sin descripción disponible.",
-                image: backendCourse.imagen || backendCourse.image_url || backendCourse.cover || null,
-                slug: backendCourse.slug || `curso-${backendCourse.id}`,
-                
-                proposito: backendCourse.proposito,
-                fundamentacion: backendCourse.fundamentacion || backendCourse.descripcion,
-                duracion: backendCourse.duracion,
-                estructura_costos: backendCourse.estructura_costos,
-                perfil_docente: backendCourse.perfil_docente,
-                perfiles: backendCourse.perfiles,
-                exigencias: backendCourse.exigencias,
-                estructura_curricular: backendCourse.estructura_curricular,
-                evaluacion: backendCourse.evaluacion,
-                cronograma: backendCourse.cronograma,
-                contenido_competencias: backendCourse.contenido_competencias || null,
-                bibliografia: backendCourse.bibliografia || null,
-                cv_facilitador_url: backendCourse.cv_facilitador_url || null,
-                
-                codigo_proveedor: backendCourse.codigo_proveedor,
-                user_id: backendCourse.usuario_id || backendCourse.user_id,
-                estado_gestion: backendCourse.estado || backendCourse.estado_gestion || backendCourse.status,
-                documento_legal_id: backendCourse.contrato_id || backendCourse.documento_legal_id || null, 
-                
-                costo: backendCourse.costo || null,
-                tipo: backendCourse.tipo_curso || backendCourse.tipo || 'formulacion-curso-directa',
-                link_certificados: backendCourse.link_certificados || null,
-
-                cohorteActiva: ultimaCohorte,
-                cohortes: cohortes
+            return {
+                ...courseToLegacy(backendCourse),
+                cohorteActiva: cohortes.length > 0 ? cohortes[0] : null,
+                cohortes
             };
-
-            return courseAdapted;
 
         } catch (error) {
             console.error(`Error en CourseService.getCourseById(${courseId}):`, error);
@@ -200,7 +153,18 @@ class CourseService {
              return { success: true };
         }
 
-        return await ApiService.post(`courses/${courseId}/closures`, files, true);
+        // Go cierra la cohorte (período) activa del curso: el formulario trae los 3 archivos y las
+        // observaciones, y aquí se agrega el ID de la cohorte.
+        const course = await this.getCourseById(courseId);
+        if (!course.cohorteActiva) throw new Error("El curso no tiene una cohorte activa para cerrar.");
+
+        const goFormData = new FormData();
+        goFormData.append('course_cycle_id', course.cohorteActiva.id);
+        goFormData.append('observaciones', files.get('observaciones') || '');
+        for (const key of ['archivo_participantes', 'archivo_vouchers', 'archivo_encuesta']) {
+            if (files.has(key)) goFormData.append(key, files.get(key));
+        }
+        return await ApiService.post('course-cycle-close-requests', goFormData, true);
     }
 
     async getCoursesByUserId(user_id, { page = 1, limit = 9 } = {}) {
@@ -257,33 +221,38 @@ class CourseService {
         try {
             if (CONFIG.USE_MOCK_DATA) return { success: true };
             
-            // Enviamos la data al nuevo endpoint de Next.js
-            return await ApiService.post(`courses/${courseId}/open`, cohortData);
+            return await ApiService.post(`courses/${courseId}/periods`, {
+                nombre_cohorte: cohortData.cohortName,
+                fecha_inicio: cohortData.startDate,
+                fecha_fin: cohortData.endDate,
+                capacidad: Number(cohortData.capacity)
+            });
         } catch (error) {
             console.error(`Error abriendo cohorte para curso ${courseId}:`, error);
-            throw error;
+            if (OPEN_COHORT_REJECTIONS.some(m => error.message?.includes(m))) {
+                throw new Error(OPEN_COHORT_REJECTED_MESSAGE);
+            }
+            throw new Error(error.message.replace('Fallo en la comunicación API: ', ''));
         }
     }
 
+    // Las publicaciones son anuncios de cada cohorte (período) y vienen dentro de ella.
     async getPublicationsByCourse(courseId) {
         try {
             if (CONFIG.USE_MOCK_DATA) return [];
-            // Llama a nuestro nuevo GET pasando el ID del curso
-            return await ApiService.get('publications', { course_id: courseId });
+            const course = await this.getCourseById(courseId);
+            return course.cohortes.flatMap(c => c.publicaciones);
         } catch (error) {
             console.error("Error al obtener publicaciones:", error);
             return []; // Si falla, devolvemos un array vacío para no romper la vista
         }
     }
 
-    // ✨ FIX: Ahora pedimos curso y cohorte explícitamente
     async getPublicationsByCohort(courseId, cohortId) {
         try {
             if (CONFIG.USE_MOCK_DATA) return [];
-            return await ApiService.get('publications', { 
-                course_id: courseId, 
-                cohort_id: cohortId 
-            });
+            const course = await this.getCourseById(courseId);
+            return course.cohortes.find(c => String(c.id) === String(cohortId))?.publicaciones || [];
         } catch (error) {
             console.error("Error al obtener publicaciones:", error);
             return []; 
@@ -294,8 +263,12 @@ class CourseService {
         try {
             if (CONFIG.USE_MOCK_DATA) return { success: true, data: publicationData };
             
-            // Enviamos el POST a la tabla "publications"
-            return await ApiService.post('publications', publicationData);
+            const created = await ApiService.post(`course-periods/${publicationData.cohort_id}/announcements`, {
+                titulo: publicationData.titulo,
+                contenido: publicationData.contenido
+            });
+            // Go solo devuelve el ID: la vista muestra la publicación tal como se envió.
+            return { ...publicationData, id: String(created?.id ?? publicationData.id) };
         } catch (error) {
             console.error("Error al crear publicación en la API:", error);
             throw error;
