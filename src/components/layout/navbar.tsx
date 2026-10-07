@@ -39,7 +39,6 @@ import {
     PrimaryButton,
     SecondaryButton,
 } from "../ui/buttons";
-import { userService } from "@/servicios/users-service";
 
 export const Navbar = () => {
     const { isAuthenticated, logout, user, isHydrated } = useAuth();

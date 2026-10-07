@@ -74,6 +74,12 @@ function closeRequestToSolicitud(c) {
     };
 }
 
+// Go rechaza (409) una solicitud de proveedor duplicada con estos textos; la UI muestra los de Node.
+const PROVIDER_REQUEST_REJECTIONS = {
+    'provider request already under review': 'Ya tienes una solicitud de colaborador en revisión.',
+    'user is already an approved provider': 'Ya eres un colaborador aprobado.',
+};
+
 /** @typedef {import('@/data/types').Solicitud} Solicitud */
 
 class SolicitudesService {
@@ -118,7 +124,7 @@ class SolicitudesService {
             // 2. CURSOS: en revisión, o aprobados que aún no tienen contrato (pendientes de documentos legales)
             if (coursesRes.status === 'fulfilled') {
                 const courses = (coursesRes.value?.solicitudes || []).filter(r =>
-                    r.estado === 'under_review' || (r.estado === 'approved' && !r.curso?.tiene_documentacion_legal)
+                    r.estado === 'under_review' || (r.estado === 'approved' && !r.curso?.documento_legal_id)
                 );
                 rawData = rawData.concat(courses.map(courseRequestToSolicitud));
             }
@@ -200,11 +206,16 @@ class SolicitudesService {
                     if (data.has('rif')) goFormData.append('rif', data.get('rif'));
                     if (data.has('islr')) goFormData.append('islr', data.get('islr'));
                     if (data.has('curriculum')) goFormData.append('resumes', data.get('curriculum'));
-                    // Go no tiene campos propios para el título ni el registro mercantil: van como "otros".
-                    if (data.has('titulo')) goFormData.append('others', data.get('titulo'));
-                    if (data.has('registro_mercantil')) goFormData.append('others', data.get('registro_mercantil'));
+                    if (data.has('titulo')) goFormData.append('titulo', data.get('titulo'));
+                    if (data.has('registro_mercantil')) goFormData.append('registro_mercantil', data.get('registro_mercantil'));
                     
-                    return await ApiService.post('providers', goFormData, true);
+                    try {
+                        return await ApiService.post('providers', goFormData, true);
+                    } catch (error) {
+                        const match = Object.keys(PROVIDER_REQUEST_REJECTIONS).find(m => error.message?.includes(m));
+                        if (match) throw new Error(PROVIDER_REQUEST_REJECTIONS[match]);
+                        throw error;
+                    }
                 }
                 
                 case 'formulacion-curso-directa':

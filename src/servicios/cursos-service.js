@@ -3,6 +3,15 @@ import { CONFIG } from '../config/config';
 import { courseToLegacy, periodToCohort } from './adapters';
 import { sessionFromToken } from '../utils/session';
 
+// Go rechaza la apertura (409) en tres casos que el mock de Node resumía en un solo mensaje.
+const OPEN_COHORT_REJECTIONS = [
+    'course is not covered by a legal contract',
+    'a course period is already open for this course',
+    'course has a pending closure request',
+];
+const OPEN_COHORT_REJECTED_MESSAGE =
+    'El curso debe estar amparado legalmente (aprobado con contrato o cerrado) para poder abrir una cohorte.';
+
 class CourseService {
 
     async getPublicCourses(limit = 15) {
@@ -220,7 +229,10 @@ class CourseService {
             });
         } catch (error) {
             console.error(`Error abriendo cohorte para curso ${courseId}:`, error);
-            throw error;
+            if (OPEN_COHORT_REJECTIONS.some(m => error.message?.includes(m))) {
+                throw new Error(OPEN_COHORT_REJECTED_MESSAGE);
+            }
+            throw new Error(error.message.replace('Fallo en la comunicación API: ', ''));
         }
     }
 

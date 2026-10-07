@@ -42,8 +42,9 @@ export function providerToLegacy(p) {
             rif: archivos.rif || null,
             islr: archivos.islr || null,
             curriculum: (archivos.resumenes || [])[0] || null,
-            titulo: otros[0] || null,
-            registro_mercantil: otros[1] || null,
+            // Los proveedores registrados antes de que Go tuviera estos campos los guardaron como "otros".
+            titulo: archivos.titulo || otros[0] || null,
+            registro_mercantil: archivos.registro_mercantil || otros[1] || null,
         },
         legal_status: {
             tiene_carta_intencion: !!inicial,
@@ -73,13 +74,14 @@ export function formulationType(c) {
 
 export function courseToLegacy(c) {
     if (!c) return null;
-    const contrato = c.tiene_documentacion_legal ? 'CONTRATO-VIGENTE' : null;
+    // INTENCION-<id> o ADENDA-<id>: el contrato que ampara el curso.
+    const contrato = c.documento_legal_id || null;
     return {
         ...c,
         id: String(c.id),
         titulo: c.nombre || 'Curso Sin Título',
         descripcion: c.descripcion || 'Sin descripción disponible.',
-        image: c.portada || null,
+        image: c.image_url || null,
         slug: `curso-${c.id}`,
         proposito: c.objetivos || null,
         fundamentacion: c.fundamentacion || null,

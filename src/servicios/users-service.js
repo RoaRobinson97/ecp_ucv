@@ -89,23 +89,7 @@ class UserService {
     async getProviderDetails(user_id) {
         try {
             const user = await ApiService.get('users', user_id);
-            
-            if (user && (user.rol === 'proveedor' || (user.roles && user.roles.includes('proveedor'))) && user.codigo_proveedor) {
-                const allProviders = await ApiService.get('providers'); 
-                
-                // ✨ FIX ANTI-CRASHEO: Asegurarnos de que sea un array antes de hacer .find()
-                let providersArray = [];
-                if (Array.isArray(allProviders)) {
-                    providersArray = allProviders;
-                } else if (allProviders && Array.isArray(allProviders.proveedores)) {
-                    providersArray = allProviders.proveedores;
-                } else if (allProviders && Array.isArray(allProviders.data)) {
-                    providersArray = allProviders.data;
-                }
-                
-                const providerData = providersArray.find(
-                    p => String(p.id) === String(user.codigo_proveedor) || String(p.usuario_id) === String(user.id)
-                );
+            if (!user) return user;
 
             const provider = await this.findProviderByUserId(user_id).catch(() => null);
             if (!provider) return user;
@@ -149,15 +133,9 @@ class UserService {
         if (!user_id || user_id === '0' || user_id === 'undefined') return false;
         
         try {
-            // Usamos ApiService que maneja las URLs automáticamente
-            const proveedores = await ApiService.get('providers', { usuario_id: user_id });
-            
-            if (proveedores && Array.isArray(proveedores) && proveedores.length > 0) {
-                return proveedores.some(req => 
-                    req.estado === 'under_review' || req.estado === 'pendiente'
-                );
-            }
-            return false;
+            // El proveedor propio sale del ID de proveedor del token (v1.providerID).
+            const provider = await this.findProviderByUserId(user_id);
+            return provider?.estado === 'under_review';
         } catch (error) {
             console.error("Error al verificar solicitud pendiente en UserService:", error);
             return false;
