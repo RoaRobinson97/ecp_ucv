@@ -150,18 +150,8 @@ export function AdminActions({ solicitudId, solicitudTipo, currentUserId }: Admi
               });
           }
       } else {
-          // ✨ FIX: Lógica para COLABORADORES (Pega al backend de Next.js)
-          const endpointAction = action === 'Aprobar' ? 'approve' : 'reject';
-          const response = await fetch(`/api/provider-requests/${solicitudId}/${endpointAction}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ observaciones: motivo_rechazo })
-          });
-
-          if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.error || 'Fallo al actualizar el colaborador');
-          }
+          // Colaboradores: el servicio llama a admin/providers/:id/approve|reject en Go.
+          await solicitudesService.updateStatus(solicitudId, solicitudTipo, nuevoEstado, motivo_rechazo as any);
       }
 
       toast({

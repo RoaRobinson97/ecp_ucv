@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/auth-context"; 
+import { userService } from "@/servicios/users-service";
 import { User, FullProvider } from "@/data/types";
 import { ProfileOwnerView } from "@/components/ui/profile-owner-view";
 import { ProfileCoordinatorReview } from "@/components/ui/profile-coordinator-review";
@@ -33,10 +34,9 @@ export function HybridUserProfileClient({ targetUser }: { targetUser: User | Ful
         async function fetchCoordinadorId() {
             if (isCoordinador && isTargetProveedor && !realCoordinadorId) {
                 try {
-                    const res = await fetch(`http://localhost:8080/providers?usuario_id=${targetUserId}`);
-                    const data = await res.json();
-                    if (data && data.length > 0) {
-                        setRealCoordinadorId(String(data[0].coordinador_id));
+                    const provider: any = await userService.getProviderDetails(targetUserId);
+                    if (provider?.coordinador_id) {
+                        setRealCoordinadorId(String(provider.coordinador_id));
                     }
                 } catch (e) {
                     console.error("Fallo al buscar el coordinador_id en providers", e);
@@ -61,7 +61,8 @@ export function HybridUserProfileClient({ targetUser }: { targetUser: User | Ful
         );
     }
 
-    const isMyProvider = isCoordinador && realCoordinadorId === currentUserId;
+    // En Go el "coordinador" de un proveedor es la facultad a la que dirigió su solicitud.
+    const isMyProvider = isCoordinador && (realCoordinadorId === currentUserId || realCoordinadorId === String((user as any)?.facultad || ''));
     const isViewerAuthorizedAdminOrCoord = isAdmin || isMyProvider;
 
     // ✨ EL CONSOLA DE RASTREO QUE PEDISTE

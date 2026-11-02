@@ -30,17 +30,19 @@ const DataBox = ({ label, value }: { label: string; value: string | number | und
 const EmbeddedViewer = ({ title, url }: { title: string, url: string }) => {
   const bgColor = useColorModeValue('gray.100', 'gray.800');
   const borderColor = useColorModeValue('gray.300', 'gray.600');
+  const excelBgColor = useColorModeValue('gray.50', 'gray.800');
 
   if (!url) return null;
 
   // Extraemos la extensión de la URL para saber qué hacer
-  const extension = url.split('.').pop()?.toLowerCase() || '';
+  // Las URLs prefirmadas traen query string (?X-Amz-...): la extensión sale solo de la ruta.
+  const extension = url.split('?')[0].split('.').pop()?.toLowerCase() || '';
   const isExcel = ['xlsx', 'xls', 'csv'].includes(extension);
 
   // SI ES EXCEL: Devolvemos la vista clásica de "solo descarga"
   if (isExcel) {
     return (
-      <Box p={4} rounded="md" bg={useColorModeValue('gray.50', 'gray.800')} border="1px solid" borderColor={borderColor}>
+      <Box p={4} rounded="md" bg={excelBgColor} border="1px solid" borderColor={borderColor}>
          <Text 
            as="a" 
            href={url} 

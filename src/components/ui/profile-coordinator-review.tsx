@@ -198,12 +198,7 @@ export function ProfileCoordinatorReview({ user, mode }: { user: User | FullProv
                 if (file2) formData.append('carta_compromiso_adenda', file2); 
             }
 
-            const res = await fetch(`/api/legal-status/${safeUserId}`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!res.ok) throw new Error("Fallo al procesar la documentación en el servidor.");
+            await userService.submitLegalDocuments(safeUserId, formData);
 
             toast({ 
                 title: "Amparo legal registrado", 
