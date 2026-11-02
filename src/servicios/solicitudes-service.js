@@ -131,7 +131,7 @@ class SolicitudesService {
 
             // 3. CIERRES DE COHORTE
             if (closuresRes.status === 'fulfilled') {
-                const closures = (closuresRes.value?.solicitudes || []).filter(c => c.estado === status);
+                const closures = (closuresRes.value?.solicitudes || []).filter(c => status === 'all' || c.estado === status);
                 rawData = rawData.concat(closures.map(closeRequestToSolicitud));
             }
             
