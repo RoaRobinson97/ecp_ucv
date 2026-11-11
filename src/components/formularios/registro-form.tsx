@@ -15,21 +15,7 @@ import {
 import { useAuth } from "@/app/context/auth-context";
 import { useRouter } from "next/navigation";
 import { authService } from '@/servicios/auth-service';
-
-const genderOptions = [
-  { value: "masculino", label: "Masculino" },
-  { value: "femenino", label: "Femenino" },
-  { value: "otro", label: "Otro" }
-];
-
-const educationOptions = [
-  { value: "primaria", label: "Primaria" },
-  { value: "bachillerato", label: "Bachillerato" },
-  { value: "tecnico_superior", label: "Técnico Superior" },
-  { value: "universitaria_incompleta", label: "Universitaria Incompleta" },
-  { value: "universitaria_completa", label: "Universitaria Completa" },
-  { value: "postgrado", label: "Postgrado" }
-];
+import { genderOptions, educationOptions } from '@/data/user-options';
 
 const formFields = [
   { id: "firstName", label: "Nombres", type: "text", isRequired: true },

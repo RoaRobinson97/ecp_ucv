@@ -7,7 +7,8 @@ import { User, FullProvider } from "@/data/types";
 import { ProfileOwnerView } from "@/components/ui/profile-owner-view";
 import { ProfileCoordinatorReview } from "@/components/ui/profile-coordinator-review";
 import { UserProfileClient } from "@/components/ui/user-profile";
-import { Flex, Spinner, Text } from "@chakra-ui/react";
+import { Button, Flex, Spinner, Text } from "@chakra-ui/react";
+import NextLink from "next/link";
 
 export function HybridUserProfileClient({ targetUser }: { targetUser: User | FullProvider }) {
     const { user, isHydrated } = useAuth();
@@ -85,22 +86,37 @@ export function HybridUserProfileClient({ targetUser }: { targetUser: User | Ful
         );
     }
 
+    // Los administradores (root, deu_admin) pueden editar el perfil de otros usuarios.
+    const adminEditButton = isAdmin && (
+        <Flex justify="flex-end" mb={4}>
+            <Button as={NextLink} href={`/profile/${targetUserId}/editar`} size="sm" colorScheme="purple" variant="outline">
+                Editar perfil
+            </Button>
+        </Flex>
+    );
+
     // Caso B: Eres un Coordinador/Admin revisando a un Proveedor
     if (isViewerAuthorizedAdminOrCoord && isTargetProveedor) {
         console.log("👉 DECISIÓN: Dirigiendo al Caso B (ProfileCoordinatorReview)");
         return (
-            <ProfileCoordinatorReview 
-                user={targetUser} 
-                mode={isAdmin ? "Gestión: ADMIN" : "Gestión: COORDINACIÓN ORIGEN"} 
-            />
+            <>
+                {adminEditButton}
+                <ProfileCoordinatorReview
+                    user={targetUser}
+                    mode={isAdmin ? "Gestión: ADMIN" : "Gestión: COORDINACIÓN ORIGEN"}
+                />
+            </>
         );
     }
 
     // Caso C: Cualquier otro escenario (Visitantes)
     console.log("👉 DECISIÓN: Dirigiendo al Caso C (UserProfileClient - Público)");
     return (
-        <UserProfileClient 
-          user={targetUser}
-        />
+        <>
+            {adminEditButton}
+            <UserProfileClient
+              user={targetUser}
+            />
+        </>
     );
 }
