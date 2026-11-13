@@ -16,6 +16,7 @@ import {
     InputRightElement,
 } from "@chakra-ui/react";
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
+import NextLink from 'next/link';
 import { useAuth } from "@/app/context/auth-context"; 
 import { useRouter } from "next/navigation";
 import { FormControl, FormLabel, Input } from "@/components/ui/form-controls";
@@ -149,7 +150,7 @@ export const LoginForm = () => {
                     </FormControl>
 
                     <Flex justify="flex-end">
-                        <Link color="primary" fontSize="sm" fontWeight="medium" _hover={{ textDecoration: 'underline' }}>
+                        <Link as={NextLink} href="/recuperar-contrasena" color="primary" fontSize="sm" fontWeight="medium" _hover={{ textDecoration: 'underline' }}>
                             ¿Olvidaste tu contraseña?
                         </Link>
                     </Flex>

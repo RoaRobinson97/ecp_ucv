@@ -4,6 +4,7 @@ import { CONFIG } from '../config/config';
 import { providerToLegacy } from './adapters';
 import { FACULTADES } from '../data/facultades';
 import { sessionFromToken } from '../utils/session';
+import { cleanApiError } from './auth-service';
 
 // Sesión del usuario que navega, en el navegador o en el servidor (SSR).
 async function getCurrentSession() {
@@ -109,6 +110,26 @@ class UserService {
         } catch (error) {
             console.error("Error en getProviderDetails:", error);
             throw error;
+        }
+    }
+
+    /**
+     * Actualiza el perfil (PUT /users/:id, multipart). Solo se cambian los campos presentes en
+     * formData: cedula, email, nombres, apellidos, fecha_de_nacimiento (DD-MM-YYYY), genero,
+     * nivel_educativo, direccion y el archivo profile_picture. Devuelve el usuario actualizado.
+     */
+    async updateUser(user_id, formData) {
+        try {
+            return await ApiService.put('users', user_id, formData, true);
+        } catch (error) {
+            const msg = cleanApiError(error);
+            if (msg.includes('already in use')) {
+                throw new Error("Este correo o cédula ya está registrado por otro usuario.");
+            }
+            if (msg.includes('not allowed')) {
+                throw new Error("No tienes permiso para editar este perfil.");
+            }
+            throw new Error(msg);
         }
     }
 

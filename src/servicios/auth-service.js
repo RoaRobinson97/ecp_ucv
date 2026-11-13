@@ -8,7 +8,7 @@ import { CONFIG } from '../config/config';
  * Convierte 'YYYY-MM-DD' (de Next.js/HTML) a 'D-M-YYYY' (lo que pide Go)
  * eliminando ceros a la izquierda (ej: 05 -> 5).
  */
-function formatDateForBackend(htmlDate) {
+export function formatDateForBackend(htmlDate) {
     if (!htmlDate) return "";
     
     // htmlDate viene del input date como "1988-09-03"
@@ -164,6 +164,36 @@ class AuthService {
     }
   }
 
+  /**
+   * Cambia la contraseña del usuario de la sesión (PUT /auth/password).
+   * Una contraseña actual incorrecta responde 400 "contraseña actual incorrecta".
+   */
+  async changePassword(passwordActual, passwordNueva) {
+    try {
+      return await ApiService.put('auth', 'password', { passwordActual, passwordNueva });
+    } catch (error) {
+      throw new Error(cleanApiError(error));
+    }
+  }
+
+  /**
+   * Pide el enlace para restablecer la contraseña (POST /auth/password/forgot). El backend
+   * responde lo mismo esté o no registrado el correo.
+   */
+  async forgotPassword(email) {
+    try {
+      const response = await ApiService.post('auth/password/forgot', { email });
+      return response?.mensaje || "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.";
+    } catch (error) {
+      throw new Error(cleanApiError(error));
+    }
+  }
+
+}
+
+/** Quita el prefijo técnico que agrega BaseApiService a los errores. */
+export function cleanApiError(error) {
+  return String(error?.message || error).replace("Fallo en la comunicación API: ", "");
 }
 
 export const authService = new AuthService();

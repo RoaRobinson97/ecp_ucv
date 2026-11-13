@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Box, Heading, Text, Divider, useColorModeValue, VStack, Avatar,
-    Table, Thead, Tbody, Tr, Th, Td, TableContainer, Badge, HStack, Icon, Center, Link as ChakraLink 
+    Table, Thead, Tbody, Tr, Th, Td, TableContainer, Badge, HStack, Icon, Center, Link as ChakraLink, Button
 } from '@chakra-ui/react';
 import { MdEmail, MdPhone } from 'react-icons/md'; 
 import NextLink from 'next/link';
@@ -98,7 +98,7 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
     }
 
     // ✨ SIN IMÁGENES RANDOM: Si no tiene foto subida, queda undefined y muestra sus iniciales
-    const rawAvatar = providerData?.archivos?.logo || safeUser?.archivos?.logo || safeUser?.provider_avatar_url || safeUser?.avatar_url;
+    const rawAvatar = providerData?.archivos?.logo || safeUser?.archivos?.logo || safeUser?.provider_avatar_url || safeUser?.avatar_url || safeUser?.foto_perfil;
     let finalAvatarUrl = isInstitutional ? undefined : (rawAvatar || undefined);
     
     if (finalAvatarUrl && typeof finalAvatarUrl === 'string') {
@@ -137,6 +137,14 @@ export function ProfileOwnerView({ user, mode }: { user: User | FullProvider, mo
                     {isAdmin ? "Panel de Administración" : isCoordinador ? "Panel de Coordinación" : "Mi Perfil"}
                 </Heading>
                 <Badge colorScheme="teal">{mode}</Badge>
+            </HStack>
+            <HStack spacing={3} justify="flex-end" wrap="wrap">
+                <Button as={NextLink} href={`/profile/${safeUserId}/editar`} size="sm" colorScheme="teal" variant="outline">
+                    Editar perfil
+                </Button>
+                <Button as={NextLink} href={`/profile/${safeUserId}/contrasena`} size="sm" variant="ghost">
+                    Cambiar contraseña
+                </Button>
             </HStack>
             <Divider my={4} />
             
